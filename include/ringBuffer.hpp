@@ -48,7 +48,7 @@ class RingBuffer {
 
         // assertions
         static_assert(N > 0U && "No trivial RingBuffers allowed!");
-        static_assert(N < std::numeric_limits<std::size_t>::max() && "Needed to differentiate empty from full RingBuffer."),
+        static_assert(N < std::numeric_limits<std::size_t>::max() && "Needed to differentiate empty from full RingBuffer.");
 
         // overflow protection
         // can be commented out if number of inserts will be less than the maximum value of std::size_t
