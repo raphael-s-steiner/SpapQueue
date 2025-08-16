@@ -8,7 +8,12 @@
 namespace parPrioQ
 {
 
-
+/**
+ * @brief A single-producer single consumer first-in-first-out queue implemented as a ring buffer on the stack
+ * 
+ * @tparam T Data type
+ * @tparam N Size of ring buffer
+ */
 template<typename T, std::size_t N>
 class RingBuffer {
     private:

@@ -5,5 +5,5 @@ build/
 .vscode/
 
 # doxygen
-doc/
+doc/*
 !doc/Doxyfile.in
