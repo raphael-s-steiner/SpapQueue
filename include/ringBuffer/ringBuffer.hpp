@@ -3,7 +3,7 @@
 #include <array>
 #include <limits>
 
-#include "config.hpp"
+#include "configuration/config.hpp"
 
 namespace parPrioQ
 {
