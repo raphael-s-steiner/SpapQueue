@@ -69,7 +69,7 @@ template<typename T, std::size_t N>
 inline bool RingBuffer<T, N>::push(const T &value) noexcept {
     bool nonFull = !isFull();
     if (nonFull) {
-        data_[getHeadPosition()] = T;
+        data_[getHeadPosition()] = value;
         advanceHead();
     }
     return nonFull;
@@ -77,7 +77,7 @@ inline bool RingBuffer<T, N>::push(const T &value) noexcept {
 
 template<typename T, std::size_t N>
 template<class InputIt>
-inline bool RingBuffer<T, N>::push<InputIt>(InputIt first, InputIt last) noexcept {
+inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
     std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
     std::size_t occ = occupancy();
 
