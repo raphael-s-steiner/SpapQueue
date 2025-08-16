@@ -47,13 +47,13 @@ class RingBuffer {
         inline bool push(InputIt first, InputIt last) noexcept;
 
         // assertions
-        static_assert(N > 0U && "No trivial RingBuffers allowed!");
-        static_assert(N < std::numeric_limits<std::size_t>::max() && "Needed to differentiate empty from full RingBuffer.");
+        static_assert(N > 0U, "No trivial RingBuffers allowed!");
+        static_assert(N < std::numeric_limits<std::size_t>::max(), "Needed to differentiate empty from full RingBuffer.");
 
         // overflow protection
         // can be commented out if number of inserts will be less than the maximum value of std::size_t
         // to relax this condition, one can have tailCounter_ and headCounter_ be modulo 2N assuming 2N <= max value of std::size_t
-        static_assert((std::numeric_limits<std::size_t>::max() - N + 1U) % N == 0U && "Modulo operations need to be consistent!");
+        static_assert(sizeof(std::size_t) >= 8 || ((std::numeric_limits<std::size_t>::max() - N + 1U) % N == 0U), "Modulo operations need to be consistent or number of operations need to be smaller than max value of std::size_t!");
 };
 
 template<typename T, std::size_t N>
