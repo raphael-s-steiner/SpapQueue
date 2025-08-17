@@ -1,9 +1,8 @@
 #include <gtest/gtest.h>
 
-#include <iostream>
 #include <thread>
 
-#include "ringBuffer/ringBuffer.hpp"
+#include "RingBuffer/RingBuffer.hpp"
 
 using namespace spapq;
 

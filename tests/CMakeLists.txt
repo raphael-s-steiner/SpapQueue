@@ -26,8 +26,8 @@ endmacro()
 
 
 
-_add_test( ringBuffer )
-
+_add_test( RingBuffer )
+_add_test( QNetwork )
 
 
 # Custom target to compile all the tests
