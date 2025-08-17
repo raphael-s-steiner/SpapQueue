@@ -1,1 +1,1 @@
-# Parallel Priority Queue
+# Sparse Parallel Approximate Priority-Queue

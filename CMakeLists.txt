@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(ParallelPriorityQueue VERSION 0.1 LANGUAGES CXX)
+project(SPAPQueue VERSION 0.1 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
@@ -52,9 +52,9 @@ target_compile_options(ProjectExecutableFlags INTERFACE
 
 
 # --- Library Definition ---
-add_library(ParallelPriorityQueue INTERFACE)
+add_library(SPAPQueue INTERFACE)
 
-target_include_directories(ParallelPriorityQueue INTERFACE
+target_include_directories(SPAPQueue INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )

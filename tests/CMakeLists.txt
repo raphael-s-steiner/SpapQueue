@@ -18,7 +18,7 @@ macro( _add_test name )
   list( APPEND tests_list ${name}Test )
   # Create the test
   add_executable(${name}Test ${name}.cpp)
-  target_link_libraries(${name}Test PRIVATE ParallelPriorityQueue GTest::gtest_main ProjectExecutableFlags)
+  target_link_libraries(${name}Test PRIVATE SPAPQueue GTest::gtest_main ProjectExecutableFlags)
   target_include_directories( ${name}Test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include )
 
   gtest_discover_tests(${name}Test)

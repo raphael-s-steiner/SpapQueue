@@ -5,7 +5,7 @@
 
 #include "configuration/config.hpp"
 
-namespace parPrioQ
+namespace spapq
 {
 
 /**
@@ -98,4 +98,4 @@ inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
 };
 
 
-} // end namespace parPrioQ
+} // end namespace spapq

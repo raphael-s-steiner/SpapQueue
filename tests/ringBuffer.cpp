@@ -5,7 +5,7 @@
 
 #include "ringBuffer/ringBuffer.hpp"
 
-using namespace parPrioQ;
+using namespace spapq;
 
 TEST(RingBufferTest, AlignAssertions) {
 
