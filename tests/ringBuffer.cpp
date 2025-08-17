@@ -64,14 +64,14 @@ TEST(RingBufferTest, Functionality1) {
   EXPECT_TRUE(channel.isEmpty());
   EXPECT_FALSE(channel.isFull());
   EXPECT_EQ(channel.occupancy(), 0U);
-  EXPECT_EQ(channel.getCapacity(), 5);
+  EXPECT_EQ(channel.getCapacity(), 5U);
 
   for (std::size_t i = 0U; i < values.size(); ++i) {
     int val = values[i];
     EXPECT_EQ(channel.occupancy(), std::min(i, static_cast<std::size_t>(5U)));
     bool success = channel.push(val);
     EXPECT_EQ(channel.occupancy(), std::min(i+1, static_cast<std::size_t>(5U)));
-    EXPECT_EQ(success, i < 5);
+    EXPECT_EQ(success, i < 5U);
   }
 
   EXPECT_TRUE(channel.isFull());
@@ -85,7 +85,7 @@ TEST(RingBufferTest, Functionality2) {
   EXPECT_TRUE(channel.isEmpty());
   EXPECT_FALSE(channel.isFull());
   EXPECT_EQ(channel.occupancy(), 0U);
-  EXPECT_EQ(channel.getCapacity(), 6);
+  EXPECT_EQ(channel.getCapacity(), 6U);
 
   for (std::size_t i = 0U; i < values.size(); ++i) {
     int val = values[i];
@@ -159,7 +159,7 @@ TEST(RingBufferTest, Functionality3) {
 
 TEST(RingBufferTest, Multithread1) {
   std::vector<int> values(100000);
-  for (std::size_t i = 0; i < values.size(); ++i) {
+  for (std::size_t i = 0U; i < values.size(); ++i) {
     values[i] = std::rand();
   }
 
@@ -169,7 +169,7 @@ TEST(RingBufferTest, Multithread1) {
 
   std::thread consumer(
     [&channel, &values]() {
-      for (std::size_t i = 0; i < values.size(); ++i) {
+      for (std::size_t i = 0U; i < values.size(); ++i) {
         while (channel.isEmpty()) {}
         EXPECT_FALSE(channel.isEmpty());
         EXPECT_LE(0U, channel.occupancy());
@@ -184,7 +184,7 @@ TEST(RingBufferTest, Multithread1) {
 
   std::thread producer(
     [&channel, &values]() {
-      for (std::size_t i = 0; i < values.size(); ++i) {
+      for (std::size_t i = 0U; i < values.size(); ++i) {
         while (channel.isFull()) {}
         EXPECT_FALSE(channel.isFull());
         EXPECT_LE(0U, channel.occupancy());
@@ -201,18 +201,18 @@ TEST(RingBufferTest, Multithread1) {
 }
 
 TEST(RingBufferTest, Multithread2) {
-  std::vector<long> values(100000);
+  std::vector<long> values(1000000);
   for (std::size_t i = 0; i < values.size(); ++i) {
     values[i] = std::rand();
   }
 
-  constexpr std::size_t capacity = 16;
+  constexpr std::size_t capacity = 16U;
   RingBuffer<long, capacity> channel;
   EXPECT_EQ(capacity, channel.getCapacity());
 
   std::thread consumer(
     [&channel, &values]() {
-      for (std::size_t i = 0; i < values.size(); ++i) {
+      for (std::size_t i = 0U; i < values.size(); ++i) {
         while (channel.isEmpty()) {}
         EXPECT_FALSE(channel.isEmpty());
         EXPECT_LE(0U, channel.occupancy());
@@ -227,7 +227,7 @@ TEST(RingBufferTest, Multithread2) {
 
   std::thread producer(
     [&channel, &values]() {
-      for (std::size_t i = 0; i < values.size(); ++i) {
+      for (std::size_t i = 0U; i < values.size(); ++i) {
         while (!channel.push(values[i])) {}
       }
     }
