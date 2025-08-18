@@ -60,6 +60,9 @@ constexpr bool QNetwork<workers, channels>::isValidQNetwork() const {
     if ( not std::all_of(batchSize_.cbegin(), batchSize_.cend(), [](const std::size_t& batch) { return batch > 0U;}) ) {
         return false;
     }
+    if ( not std::all_of(numPorts_.cbegin(), numPorts_.cend(), [](const std::size_t& ports) { return ports > 0U;}) ) {
+        return false;
+    }
 
     for (std::size_t worker = 0U; worker < numWorkers_; ++worker) {
         if (vertexPointer_[worker] == vertexPointer_[worker + 1]) {
