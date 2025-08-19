@@ -138,4 +138,7 @@ TEST(QNetworkTest, Validity) {
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<4>().isValidQNetwork());
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<7>().isValidQNetwork());
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<12>().isValidQNetwork());
+
+    constexpr QNetwork<8, 64> netw = FULLY_CONNECTED_GRAPH<8>(); 
+    EXPECT_TRUE(netw.isValidQNetwork());
 }

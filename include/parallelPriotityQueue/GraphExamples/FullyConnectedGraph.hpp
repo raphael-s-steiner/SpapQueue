@@ -5,7 +5,7 @@
 namespace spapq {
 
 template<std::size_t N>
-constexpr QNetwork<N, N * N> FULLY_CONNECTED_GRAPH() {
+consteval QNetwork<N, N * N> FULLY_CONNECTED_GRAPH() {
     static_assert(N > 0, "Needs to have at least one worker!");
 
     std::array<std::size_t, N + 1> vertexPtr;
