@@ -3,8 +3,9 @@
 #include <initializer_list>
 
 #include "parallelPriotityQueue/QNetwork.hpp"
-#include "parallelPriotityQueue/GraphExamples/PetersenGraph.hpp"
+#include "parallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
 #include "parallelPriotityQueue/GraphExamples/LineGraph.hpp"
+#include "parallelPriotityQueue/GraphExamples/PetersenGraph.hpp"
 
 using namespace spapq;
 
@@ -131,5 +132,10 @@ TEST(QNetworkTest, Ports2) {
 
 TEST(QNetworkTest, Validity) {
     EXPECT_TRUE(PETERSEN_GRAPH.isValidQNetwork());
-    EXPECT_TRUE(FULLY_CONNECTED_2_GRAPH.isValidQNetwork());
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<1>().isValidQNetwork());
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<2>().isValidQNetwork());
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<3>().isValidQNetwork());
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<4>().isValidQNetwork());
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<7>().isValidQNetwork());
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<12>().isValidQNetwork());
 }
