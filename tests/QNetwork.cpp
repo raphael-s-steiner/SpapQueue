@@ -3,6 +3,8 @@
 #include <initializer_list>
 
 #include "parallelPriotityQueue/QNetwork.hpp"
+#include "parallelPriotityQueue/GraphExamples/PetersenGraph.hpp"
+#include "parallelPriotityQueue/GraphExamples/LineGraph.hpp"
 
 using namespace spapq;
 
@@ -86,21 +88,7 @@ TEST(QNetworkTest, Ports1) {
 }
 
 TEST(QNetworkTest, Ports2) {
-    constexpr QNetwork<10, 30> netw(
-        {0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30},
-        {
-            1, 5, 4,
-            2, 6, 0,
-            3, 7, 1,
-            4, 8, 2,
-            0, 9, 3,
-            6, 0, 9,
-            7, 1, 5,
-            8, 2, 6,
-            9, 3, 7,
-            5, 4, 8
-        }
-    );
+    constexpr QNetwork<10, 30> netw = PETERSEN_GRAPH;
     std::vector<std::vector<std::size_t>> outGraph(netw.numWorkers_);
     std::vector<std::vector<std::size_t>> inGraph(netw.numWorkers_);
 
@@ -139,4 +127,9 @@ TEST(QNetworkTest, Ports2) {
     }
 
     EXPECT_TRUE(netw.isValidQNetwork());
+}
+
+TEST(QNetworkTest, Validity) {
+    EXPECT_TRUE(PETERSEN_GRAPH.isValidQNetwork());
+    EXPECT_TRUE(FULLY_CONNECTED_2_GRAPH.isValidQNetwork());
 }
