@@ -132,13 +132,13 @@ TEST(QNetworkTest, Ports2) {
 
 TEST(QNetworkTest, Validity) {
     EXPECT_TRUE(PETERSEN_GRAPH.isValidQNetwork());
+
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<1>().isValidQNetwork());
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<2>().isValidQNetwork());
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<3>().isValidQNetwork());
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<4>().isValidQNetwork());
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<7>().isValidQNetwork());
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<12>().isValidQNetwork());
-
     constexpr QNetwork<8, 64> netw = FULLY_CONNECTED_GRAPH<8>(); 
     EXPECT_TRUE(netw.isValidQNetwork());
 }

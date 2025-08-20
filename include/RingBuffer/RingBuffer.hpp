@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <limits>
 
 #include "configuration/config.hpp"
@@ -17,16 +18,16 @@ namespace spapq
 template<typename T, std::size_t N>
 class RingBuffer {
     private:
-        alignas(CACHE_LINE_SIZE) volatile std::size_t tailCounter_{0};
-        alignas(CACHE_LINE_SIZE) volatile std::size_t headCounter_{0};
+        alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> tailCounter_{0};
+        alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> headCounter_{0};
         alignas(CACHE_LINE_SIZE) std::array<T, N> data_;
 
     protected:
-        inline std::size_t getTailPosition() const noexcept { return tailCounter_ % N; };
-        inline std::size_t getHeadPosition() const noexcept { return headCounter_ % N; };
+        inline std::size_t getTailPosition() const noexcept { return tailCounter_.load(std::memory_order_acquire) % N; };
+        inline std::size_t getHeadPosition() const noexcept { return headCounter_.load(std::memory_order_acquire) % N; }; // could be std::memory_order_relaxed
 
-        inline void advanceTail(std::size_t n = 1U) noexcept { tailCounter_ += n; };
-        inline void advanceHead(std::size_t n = 1U) noexcept { headCounter_ += n; };
+        inline void advanceTail(std::size_t n = 1U) noexcept { tailCounter_.fetch_add(n, std::memory_order_release); };
+        inline void advanceHead(std::size_t n = 1U) noexcept { headCounter_.fetch_add(n, std::memory_order_release); };
 
     public:
         RingBuffer() = default;
@@ -38,10 +39,10 @@ class RingBuffer {
 
         inline constexpr std::size_t getCapacity() const noexcept { return N; };
 
-        inline bool isEmpty() const noexcept { return tailCounter_ == headCounter_; };
-        inline bool isFull() const noexcept { return tailCounter_ + N == headCounter_; };
+        inline bool isEmpty() const noexcept { return tailCounter_.load(std::memory_order_relaxed) == headCounter_.load(std::memory_order_relaxed); };
+        inline bool isFull() const noexcept { return tailCounter_.load(std::memory_order_relaxed) + N == headCounter_.load(std::memory_order_relaxed); };
 
-        inline std::size_t occupancy() const noexcept { return headCounter_ - tailCounter_; };
+        inline std::size_t occupancy() const noexcept { return headCounter_.load(std::memory_order_relaxed) - tailCounter_.load(std::memory_order_relaxed); };
 
         inline const T& front() const noexcept { return data_[getTailPosition()]; };
         
