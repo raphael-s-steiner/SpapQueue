@@ -142,3 +142,18 @@ TEST(QNetworkTest, Validity) {
     constexpr QNetwork<8, 64> netw = FULLY_CONNECTED_GRAPH<8>(); 
     EXPECT_TRUE(netw.isValidQNetwork());
 }
+
+TEST(QNetworkTest, LineGraphNumEdges) {
+    EXPECT_EQ(lineGraphNumEdges(PETERSEN_GRAPH), 90);
+
+    constexpr QNetwork<4, 4> netw({0, 1, 2, 3, 4}, {1, 2, 3, 0});
+    EXPECT_EQ(lineGraphNumEdges(netw), 4);
+
+    EXPECT_EQ(lineGraphNumEdges(FULLY_CONNECTED_GRAPH<1>()), 1 * 1 * 1);
+    EXPECT_EQ(lineGraphNumEdges(FULLY_CONNECTED_GRAPH<2>()), 2 * 2 * 2);
+    EXPECT_EQ(lineGraphNumEdges(FULLY_CONNECTED_GRAPH<3>()), 3 * 3 * 3);
+    EXPECT_EQ(lineGraphNumEdges(FULLY_CONNECTED_GRAPH<5>()), 5 * 5 * 5);
+    EXPECT_EQ(lineGraphNumEdges(FULLY_CONNECTED_GRAPH<8>()), 8 * 8 * 8);
+    EXPECT_EQ(lineGraphNumEdges(FULLY_CONNECTED_GRAPH<13>()), 13 * 13 * 13);
+    EXPECT_EQ(lineGraphNumEdges(FULLY_CONNECTED_GRAPH<21>()), 21 * 21 * 21);
+}
