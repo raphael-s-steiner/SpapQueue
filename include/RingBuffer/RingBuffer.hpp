@@ -3,6 +3,7 @@
 #include <array>
 #include <atomic>
 #include <limits>
+#include <optional>
 
 #include "configuration/config.hpp"
 
@@ -45,10 +46,8 @@ class RingBuffer {
         inline bool isFull() const noexcept { return tailCounter_.load(std::memory_order_acquire) + N == headCounter_.load(std::memory_order_relaxed); };
 
         inline std::size_t occupancy() const noexcept { return headCounter_.load(std::memory_order_acquire) - tailCounter_.load(std::memory_order_acquire); };
-
-        inline const T& front() const noexcept { return data_[getTailPosition()]; };
         
-        inline bool pop() noexcept;
+        inline std::optional<T> pop() noexcept;
         inline bool push(const T &value) noexcept;
 
         template<class InputIt>
@@ -65,17 +64,18 @@ class RingBuffer {
 };
 
 template<typename T, std::size_t N>
-inline bool RingBuffer<T, N>::pop() noexcept {
-    bool nonEmpty = !isEmpty();
-    if (nonEmpty) {
+inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
+    std::optional<T> result(std::nullopt);
+    if (!isEmpty()) {
+        result = data_[getTailPosition()];
         advanceTail();
     }
-    return nonEmpty;
+    return result;
 };
 
 template<typename T, std::size_t N>
 inline bool RingBuffer<T, N>::push(const T &value) noexcept {
-    bool nonFull = !isFull();
+    const bool nonFull = !isFull();
     if (nonFull) {
         data_[getHeadPosition()] = value;
         advanceHead();
@@ -86,16 +86,18 @@ inline bool RingBuffer<T, N>::push(const T &value) noexcept {
 template<typename T, std::size_t N>
 template<class InputIt>
 inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
-    std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
-    std::size_t occ = occupancyPushSafe();
+    const std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
+    const std::size_t occ = occupancyPushSafe();
 
-    bool enoughSpace = ((numElements + occ) <= N);
+    const bool enoughSpace = ((numElements + occ) <= N);
     if (enoughSpace) {
+        std::size_t head = headCounter_.load(std::memory_order_relaxed);
         while (first != last) {
-            data_[getHeadPosition()] = *first;
-            advanceHead();
+            data_[head % N] = *first;
+            ++head;
             ++first;
         }
+        advanceHead(numElements);
     }
     return enoughSpace;
 };
