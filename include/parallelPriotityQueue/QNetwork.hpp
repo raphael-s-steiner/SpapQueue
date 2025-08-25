@@ -2,13 +2,14 @@
 
 #include <algorithm>
 #include <array>
+#include <iostream>
 
 namespace spapq {
 
 template<std::size_t workers, std::size_t channels>
 struct QNetwork {
-    std::size_t numWorkers_;
-    std::size_t numChannels_;
+    const std::size_t numWorkers_;
+    const std::size_t numChannels_;
     // Graph CSR
     std::array<std::size_t, workers + 1> vertexPointer_;
     std::array<std::size_t, workers> numPorts_;
@@ -22,6 +23,8 @@ struct QNetwork {
     constexpr void assignTargetPorts();
 
     constexpr bool isValidQNetwork() const;
+
+    void printQNetwork() const;
 
     constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets, std::array<std::size_t, channels> multiplicities, std::array<std::size_t, channels> batchSize) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets), multiplicities_(multiplicities), batchSize_(batchSize) { assignTargetPorts(); };
     constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets, std::array<std::size_t, channels> multiplicities) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets), multiplicities_(multiplicities) { setDefaultBatchSize(); assignTargetPorts(); };
@@ -71,6 +74,45 @@ constexpr bool QNetwork<workers, channels>::isValidQNetwork() const {
     }
 
     return true;
+}
+
+template<std::size_t workers, std::size_t channels>
+void QNetwork<workers, channels>::printQNetwork() const {
+    std::cout << "\nQNetwork\n";
+    for (std::size_t i = 0U; i < numWorkers_; ++i) {
+        std::cout << "Worker: " << i << "\n";
+        
+        std::cout << "Target: ";
+        for (std::size_t j = vertexPointer_[i]; j < vertexPointer_[i + 1]; ++j) {
+            const std::size_t tgt = edgeTargets_[j];
+            std::cout << tgt;
+            if (j < vertexPointer_[i + 1] - 1) {
+                std::cout << ", ";
+            }
+        }
+        std::cout << "\n";
+
+        std::cout << "Multip: ";
+        for (std::size_t j = vertexPointer_[i]; j < vertexPointer_[i + 1]; ++j) {
+            const std::size_t mult = multiplicities_[j];
+            std::cout << mult;
+            if (j < vertexPointer_[i + 1] - 1) {
+                std::cout << ", ";
+            }
+        }
+        std::cout << "\n";
+
+        std::cout << "Batchs: ";
+        for (std::size_t j = vertexPointer_[i]; j < vertexPointer_[i + 1]; ++j) {
+            const std::size_t batch = batchSize_[j];
+            std::cout << batch;
+            if (j < vertexPointer_[i + 1] - 1) {
+                std::cout << ", ";
+            }
+        }
+        std::cout << "\n";
+        std::cout << "\n";
+    }
 }
 
 } // end namespace spapq

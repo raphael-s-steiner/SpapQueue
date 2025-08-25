@@ -157,3 +157,24 @@ TEST(QNetworkTest, LineGraphNumEdges) {
     EXPECT_EQ(lineGraphNumEdges(FULLY_CONNECTED_GRAPH<13>()), 13 * 13 * 13);
     EXPECT_EQ(lineGraphNumEdges(FULLY_CONNECTED_GRAPH<21>()), 21 * 21 * 21);
 }
+
+TEST(QNetworkTest, LineGraph) {
+    constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {1, 1, 1, 1}, {1, 2, 1, 2});
+    EXPECT_TRUE(graph.isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(graph).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(graph)).isValidQNetwork());
+
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()))).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())))).isValidQNetwork());
+
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>())).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()))).isValidQNetwork());
+
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>()).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>())).isValidQNetwork());
+
+    EXPECT_TRUE(LINE_GRAPH(PETERSEN_GRAPH).isValidQNetwork());
+}

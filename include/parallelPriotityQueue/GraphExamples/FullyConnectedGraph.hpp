@@ -16,7 +16,7 @@ consteval QNetwork<N, N * N> FULLY_CONNECTED_GRAPH() {
     }
 
     for (std::size_t i = 0U; i < N * N; ++i) {
-        edges[i] = i % N;
+        edges[i] = (i + (i / N)) % N;
     }
 
     return QNetwork<N, N * N>(vertexPtr, edges);
