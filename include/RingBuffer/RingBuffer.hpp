@@ -5,7 +5,7 @@
 #include <limits>
 #include <optional>
 
-#include "configuration/config.hpp"
+#include "Configuration/config.hpp"
 
 namespace spapq
 {

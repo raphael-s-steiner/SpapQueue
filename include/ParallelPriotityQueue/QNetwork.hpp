@@ -24,6 +24,11 @@ struct QNetwork {
 
     constexpr bool isValidQNetwork() const;
 
+    constexpr std::size_t maxBatchSize() const;
+    constexpr std::size_t maxPortNum() const;
+
+    constexpr bool hasHomogeneousPorts() const;
+
     void printQNetwork() const;
 
     constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets, std::array<std::size_t, channels> multiplicities, std::array<std::size_t, channels> batchSize) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets), multiplicities_(multiplicities), batchSize_(batchSize) { assignTargetPorts(); };
@@ -113,6 +118,38 @@ void QNetwork<workers, channels>::printQNetwork() const {
         std::cout << "\n";
         std::cout << "\n";
     }
+}
+
+template<std::size_t workers, std::size_t channels>
+constexpr std::size_t QNetwork<workers, channels>::maxBatchSize() const {
+    std::size_t max = 0U;
+    for (std::size_t i = 0U; i < batchSize_.size(); ++i) {
+        max = std::max(max, batchSize_[i]);
+    }
+    return max;
+}
+
+template<std::size_t workers, std::size_t channels>
+constexpr std::size_t QNetwork<workers, channels>::maxPortNum() const {
+    std::size_t max = 0U;
+    for (std::size_t i = 0U; i < numPorts_.size(); ++i) {
+        max = std::max(max, numPorts_[i]);
+    }
+    return max;
+}
+
+template<std::size_t workers, std::size_t channels>
+constexpr bool QNetwork<workers, channels>::hasHomogeneousPorts() const {
+    if (numPorts_.size() == 0) {
+        return true;
+    }
+    std::size_t ports = numPorts_[0];
+    for (std::size_t i = 0U; i < numPorts_.size(); ++i) {
+        if (ports != numPorts_[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // end namespace spapq

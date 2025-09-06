@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parallelPriotityQueue/QNetwork.hpp"
+#include "ParallelPriotityQueue/QNetwork.hpp"
 
 namespace spapq {
 
