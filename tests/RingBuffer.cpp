@@ -146,7 +146,7 @@ TEST(RingBufferTest, Multithread1) {
   RingBuffer<int, capacity> channel;
   EXPECT_EQ(capacity, channel.getCapacity());
 
-  std::thread consumer(
+  std::jthread consumer(
     [&channel, &values]() {
       for (std::size_t i = 0U; i < values.size(); ++i) {
         while (channel.isEmpty()) {}
@@ -161,7 +161,7 @@ TEST(RingBufferTest, Multithread1) {
     }
   );
 
-  std::thread producer(
+  std::jthread producer(
     [&channel, &values]() {
       for (std::size_t i = 0U; i < values.size(); ++i) {
         while (channel.isFull()) {}
@@ -189,7 +189,7 @@ TEST(RingBufferTest, Multithread2) {
   RingBuffer<long, capacity> channel;
   EXPECT_EQ(capacity, channel.getCapacity());
 
-  std::thread consumer(
+  std::jthread consumer(
     [&channel, &values]() {
       for (std::size_t i = 0U; i < values.size(); ++i) {
         while (channel.isEmpty()) {}
@@ -204,7 +204,7 @@ TEST(RingBufferTest, Multithread2) {
     }
   );
 
-  std::thread producer(
+  std::jthread producer(
     [&channel, &values]() {
       for (std::size_t i = 0U; i < values.size(); ++i) {
         while (!channel.push(values[i])) {}
@@ -228,7 +228,7 @@ TEST(RingBufferTest, Multithread3) {
   RingBuffer<long, capacity> channel;
   EXPECT_EQ(capacity, channel.getCapacity());
 
-  std::thread consumer(
+  std::jthread consumer(
     [&channel, &values]() {
       for (std::size_t i = 0U; i < values.size(); ++i) {
         std::optional<long> popVal(std::nullopt);
@@ -243,7 +243,7 @@ TEST(RingBufferTest, Multithread3) {
     }
   );
 
-  std::thread producer(
+  std::jthread producer(
     [&channel, &values]() {
       for (std::size_t i = 0U; i < values.size(); ++i) {
         while (!channel.push(values[i])) {}
@@ -267,7 +267,7 @@ TEST(RingBufferTest, Multithread4) {
   RingBuffer<long, capacity> channel;
   EXPECT_EQ(capacity, channel.getCapacity());
 
-  std::thread consumer(
+  std::jthread consumer(
     [&channel, &values]() {
       for (std::size_t i = 0U; i < values.size(); ++i) {
         std::optional<long> popVal(std::nullopt);
@@ -280,7 +280,7 @@ TEST(RingBufferTest, Multithread4) {
     }
   );
 
-  std::thread producer(
+  std::jthread producer(
     [&channel, &values]() {
       for (std::size_t i = 0U; i < values.size(); ++i) {
         while (!channel.push(values[i])) {}

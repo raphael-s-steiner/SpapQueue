@@ -25,9 +25,11 @@ TEST(QNetworkTest, Constructors1) {
     for (std::size_t i = 0; i < 4; ++i) {
         EXPECT_EQ(netw.batchSize_[i], (i + 1));
     }
+    
     EXPECT_EQ(netw.maxBatchSize(), 4);
     EXPECT_TRUE(netw.hasHomogeneousPorts());
     EXPECT_EQ(netw.maxPortNum(), 1U);
+    EXPECT_EQ(netw.bufferSize_, 16U);
 }
 
 
