@@ -29,7 +29,9 @@ struct QNetwork {
     constexpr std::size_t maxBatchSize() const;
     constexpr std::size_t maxPortNum() const;
 
+    constexpr bool hasHomogeneousMultiplicities() const;
     constexpr bool hasHomogeneousPorts() const;
+    constexpr bool hasHomogeneousBatchSize() const;
 
     void printQNetwork() const;
 
@@ -161,6 +163,34 @@ constexpr bool QNetwork<workers, channels>::hasHomogeneousPorts() const {
     }
     for (std::size_t i = 0U; i < vertexPointer_.size() - 1; ++i) {
         if (ports != vertexPointer_[i + 1] - vertexPointer_[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template<std::size_t workers, std::size_t channels>
+constexpr bool QNetwork<workers, channels>::hasHomogeneousBatchSize() const {
+    if (batchSize_.size() == 0) {
+        return true;
+    }
+    std::size_t num = batchSize_[0];
+    for (std::size_t i = 0U; i < batchSize_.size(); ++i) {
+        if (num != batchSize_[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template<std::size_t workers, std::size_t channels>
+constexpr bool QNetwork<workers, channels>::hasHomogeneousMultiplicities() const {
+    if (multiplicities_.size() == 0) {
+        return true;
+    }
+    std::size_t num = multiplicities_[0];
+    for (std::size_t i = 0U; i < multiplicities_.size(); ++i) {
+        if (num != multiplicities_[i]) {
             return false;
         }
     }
