@@ -159,6 +159,11 @@ constexpr bool QNetwork<workers, channels>::hasHomogeneousPorts() const {
             return false;
         }
     }
+    for (std::size_t i = 0U; i < vertexPointer_.size() - 1; ++i) {
+        if (ports != vertexPointer_[i + 1] - vertexPointer_[i]) {
+            return false;
+        }
+    }
     return true;
 }
 
