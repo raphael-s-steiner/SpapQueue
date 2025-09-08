@@ -48,10 +48,10 @@ class RingBuffer {
         inline std::size_t occupancy() const noexcept { return headCounter_.load(std::memory_order_acquire) - tailCounter_.load(std::memory_order_acquire); };
         
         inline std::optional<T> pop() noexcept;
-        inline bool push(const T &value) noexcept;
+        [[nodiscard("Push can fail")]] inline bool push(const T &value) noexcept;
 
         template<class InputIt>
-        inline bool push(InputIt first, InputIt last) noexcept;
+        [[nodiscard("Push can fail")]] inline bool push(InputIt first, InputIt last) noexcept;
 
         // assertions
         static_assert(N > 0U, "No trivial RingBuffers allowed!");

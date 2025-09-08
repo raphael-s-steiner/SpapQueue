@@ -13,7 +13,8 @@ TEST(RingBufferTest, Values1) {
   
   RingBuffer<int, 5> channel;
   for (int val : values) {
-    channel.push(val);
+    bool succ = channel.push(val);
+    EXPECT_TRUE(succ);
   }
   for (int val : values) {
     EXPECT_EQ(channel.pop().value(), val);
@@ -27,7 +28,8 @@ TEST(RingBufferTest, Values2) {
   
   RingBuffer<int, 5> channel;
   for (int val : values) {
-    channel.push(val);
+    bool succ = channel.push(val);
+    EXPECT_TRUE(succ);
     EXPECT_EQ(channel.pop().value(), val);
   }
 }
