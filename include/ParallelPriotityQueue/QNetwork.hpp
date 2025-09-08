@@ -72,6 +72,13 @@ constexpr void QNetwork<workers, channels>::assignTargetPorts() {
 
 template<std::size_t workers, std::size_t channels>
 constexpr bool QNetwork<workers, channels>::isValidQNetwork() const {
+    if (numWorkers_ == 0U) {
+        return false;
+    }
+    if (numChannels_ == 0) {
+        return false;
+    }
+
     if ( not std::all_of(multiplicities_.cbegin(), multiplicities_.cend(), [](const std::size_t& mul) { return mul > 0U;}) ) {
         return false;
     }
