@@ -36,6 +36,6 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
     return QNetwork<channels, outNumEdges>(vertPointer, edgeTargets, multiplicities, batchSize);
 }
 
-# define LINE_GRAPH(qNetwork) (lineGraph<qNetwork.numWorkers_, qNetwork.numChannels_, lineGraphNumEdges(qNetwork)>(qNetwork))
+#define LINE_GRAPH(qNetwork) (lineGraph<qNetwork.numWorkers_, qNetwork.numChannels_, lineGraphNumEdges(qNetwork)>(qNetwork))
 
 } // end namespace spapq
