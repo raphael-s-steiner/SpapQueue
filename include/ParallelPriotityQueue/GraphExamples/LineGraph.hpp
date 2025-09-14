@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 #include "ParallelPriotityQueue/QNetwork.hpp"
 
 namespace spapq {
@@ -14,7 +16,9 @@ constexpr std::size_t lineGraphNumEdges(const QNetwork<workers, channels> &qNetw
 }
 
 template<std::size_t workers, std::size_t channels, std::size_t outNumEdges>
-consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, channels> qNetwork) {
+consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, channels> &qNetwork) {
+    assert(outNumEdges == lineGraphNumEdges(qNetwork));
+
     std::array<std::size_t, channels + 1> vertPointer;
     std::array<std::size_t, outNumEdges> edgeTargets;
     std::array<std::size_t, outNumEdges> multiplicities;
