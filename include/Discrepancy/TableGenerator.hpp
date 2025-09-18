@@ -9,6 +9,22 @@
 namespace spapq {
 
 template<std::size_t N>
+consteval std::array<std::size_t, N> reducedIntegerArray(const std::array<std::size_t, N> arr) {
+    std::size_t commonGCD = 0U;
+    for (const std::size_t &val : arr) {
+        commonGCD = std::gcd(commonGCD, val);
+    }
+
+    assert(commonGCD > 0U);
+    std::array<std::size_t, N> reducedArr;
+    for (std::size_t i = 0U; i < arr.size(); ++i) {
+        reducedArr[i] = arr[i] / commonGCD;
+    }
+
+    return reducedArr;
+};
+
+template<std::size_t N>
 consteval std::size_t sumArray(const std::array<std::size_t, N> arr) {
     return std::accumulate(arr.cbegin(), arr.cend(), static_cast<std::size_t>(0U));
 };
@@ -50,5 +66,6 @@ consteval std::array<std::size_t, tableSize> EarliestDeadlineFirstTable(const st
 };
 
 #define EARLIEST_DEADLINE_FIRST_TABLE(frequencies) (EarliestDeadlineFirstTable<frequencies.size(), sumArray<frequencies.size()>(frequencies)>(frequencies))
+#define REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(frequencies) (EARLIEST_DEADLINE_FIRST_TABLE(reducedIntegerArray<frequencies.size()>(frequencies)))
 
 } // end namespace spapq
