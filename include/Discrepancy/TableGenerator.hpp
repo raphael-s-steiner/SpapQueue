@@ -7,6 +7,7 @@
 #include <numeric>
 
 namespace spapq {
+namespace tables {
 
 template<std::size_t N>
 consteval std::array<std::size_t, N> reducedIntegerArray(const std::array<std::size_t, N> arr) {
@@ -65,7 +66,8 @@ consteval std::array<std::size_t, tableSize> EarliestDeadlineFirstTable(const st
     return table;
 };
 
-#define EARLIEST_DEADLINE_FIRST_TABLE(frequencies) (EarliestDeadlineFirstTable<frequencies.size(), sumArray<frequencies.size()>(frequencies)>(frequencies))
-#define REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(frequencies) (EARLIEST_DEADLINE_FIRST_TABLE(reducedIntegerArray<frequencies.size()>(frequencies)))
+#define EARLIEST_DEADLINE_FIRST_TABLE(frequencies) (spapq::tables::EarliestDeadlineFirstTable<frequencies.size(), spapq::tables::sumArray<frequencies.size()>(frequencies)>(frequencies))
+#define REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(frequencies) (EARLIEST_DEADLINE_FIRST_TABLE(spapq::tables::reducedIntegerArray<frequencies.size()>(frequencies)))
 
+} // end namespace tables
 } // end namespace spapq
