@@ -34,6 +34,7 @@ set(COMMON_CXX_WARNING_FLAGS
     "-Wunused"
     "-Wunreachable-code"
     "-Wuninitialized"
+    "-Wno-interference-size" # disables warning that std::hardware_destructive_interference_size may depend on hardware, compiler, and flags
     "-Werror"
 )
 
