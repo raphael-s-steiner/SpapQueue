@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Discrepancy/TableGenerator.hpp"
+#include "Discrepancy/QNetworkTables.hpp"
 
 using namespace spapq;
 
@@ -120,4 +121,36 @@ TEST(DiscrepancyTablesTest, ReducedEarliestDeadlineFirst) {
     constexpr auto table6 = REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(testArr6);
     EXPECT_TRUE( validTable(table6, testArr6) );
     EXPECT_TRUE( satisfiesDiscrepancyInequality(table6, testArr6) );
+}
+
+TEST(DiscrepancyTablesTest, QNetworkTables) {
+    constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {2, 1, 1, 2}, {1, 2, 1, 2});
+
+    constexpr auto tableFreq0 = tables::qNetworkTableFrequencies<2, 4, graph, 0>();
+    constexpr auto tableFreq1 = tables::qNetworkTableFrequencies<2, 4, graph, 1>();
+
+    EXPECT_EQ(tableFreq0.size(), 2U);
+    EXPECT_EQ(tableFreq1.size(), 2U);
+
+    EXPECT_EQ(tableFreq0[0], 4U);
+    EXPECT_EQ(tableFreq0[1], 1U);
+
+    EXPECT_EQ(tableFreq1[0], 1U);
+    EXPECT_EQ(tableFreq1[1], 1U);
+
+    std::size_t worker = 0U;
+    for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
+        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
+            EXPECT_EQ(tableFreq0[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
+                        tableFreq0[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
+        }
+    }
+
+    worker = 1U;
+    for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
+        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
+            EXPECT_EQ(tableFreq1[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
+                        tableFreq1[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
+        }
+    }
 }

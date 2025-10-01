@@ -10,6 +10,8 @@ template<std::size_t workers, std::size_t channels>
 struct QNetwork {
     const std::size_t numWorkers_;
     const std::size_t numChannels_;
+    std::size_t bufferSize_;
+    std::size_t maxPushAttempts_;
     // Graph CSR
     std::array<std::size_t, workers + 1> vertexPointer_;
     std::array<std::size_t, workers> numPorts_;
@@ -17,11 +19,11 @@ struct QNetwork {
     std::array<std::size_t, channels> multiplicities_;
     std::array<std::size_t, channels> targetPort_;
     std::array<std::size_t, channels> batchSize_;
-    std::size_t bufferSize_;
 
     constexpr void setDefaultMultiplicities();
     constexpr void setDefaultBatchSize();
     constexpr void setDefaultBufferSize();
+    constexpr void setDefaultMaxPushAttempts();
     constexpr void assignTargetPorts();
 
     constexpr bool isValidQNetwork() const;
@@ -35,10 +37,10 @@ struct QNetwork {
 
     void printQNetwork() const;
 
-    constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets, std::array<std::size_t, channels> multiplicities, std::array<std::size_t, channels> batchSize, std::size_t bufferSize) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets), multiplicities_(multiplicities), batchSize_(batchSize), bufferSize_(bufferSize) { assignTargetPorts(); };
-    constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets, std::array<std::size_t, channels> multiplicities, std::array<std::size_t, channels> batchSize) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets), multiplicities_(multiplicities), batchSize_(batchSize) { setDefaultBufferSize(); assignTargetPorts(); };
-    constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets, std::array<std::size_t, channels> multiplicities) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets), multiplicities_(multiplicities) { setDefaultBatchSize(); setDefaultBufferSize(); assignTargetPorts(); };
-    constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets) { setDefaultMultiplicities(); setDefaultBatchSize(); setDefaultBufferSize(); assignTargetPorts(); };
+    constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets, std::array<std::size_t, channels> multiplicities, std::array<std::size_t, channels> batchSize, std::size_t bufferSize, std::size_t maxPushAttempts) : numWorkers_(workers), numChannels_(channels), bufferSize_(bufferSize), maxPushAttempts_(maxPushAttempts), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets), multiplicities_(multiplicities), batchSize_(batchSize) { assignTargetPorts(); };
+    constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets, std::array<std::size_t, channels> multiplicities, std::array<std::size_t, channels> batchSize) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets), multiplicities_(multiplicities), batchSize_(batchSize) { setDefaultBufferSize(); setDefaultMaxPushAttempts(); assignTargetPorts(); };
+    constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets, std::array<std::size_t, channels> multiplicities) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets), multiplicities_(multiplicities) { setDefaultBatchSize(); setDefaultBufferSize(); setDefaultMaxPushAttempts(); assignTargetPorts(); };
+    constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer, std::array<std::size_t, channels> edgeTargets) : numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets) { setDefaultMultiplicities(); setDefaultBatchSize(); setDefaultBufferSize(); setDefaultMaxPushAttempts(); assignTargetPorts(); };
 };
 
 template<std::size_t workers, std::size_t channels>
@@ -61,6 +63,11 @@ constexpr void QNetwork<workers, channels>::setDefaultBufferSize() {
 }
 
 template<std::size_t workers, std::size_t channels>
+constexpr void QNetwork<workers, channels>::setDefaultMaxPushAttempts() {
+    maxPushAttempts_ = 4U; 
+}
+
+template<std::size_t workers, std::size_t channels>
 constexpr void QNetwork<workers, channels>::assignTargetPorts() {
     for (std::size_t i = 0U; i < numPorts_.size(); ++i) {
         numPorts_[i] = 0U;
@@ -72,19 +79,18 @@ constexpr void QNetwork<workers, channels>::assignTargetPorts() {
 
 template<std::size_t workers, std::size_t channels>
 constexpr bool QNetwork<workers, channels>::isValidQNetwork() const {
-    if (numWorkers_ == 0U) {
-        return false;
-    }
-    if (numChannels_ == 0) {
-        return false;
-    }
+    if (numWorkers_ == 0U) return false;
+    
+    if (numChannels_ == 0) return false;
 
     if ( not std::all_of(multiplicities_.cbegin(), multiplicities_.cend(), [](const std::size_t& mul) { return mul > 0U;}) ) {
         return false;
     }
+
     if ( not std::all_of(batchSize_.cbegin(), batchSize_.cend(), [](const std::size_t& batch) { return batch > 0U;}) ) {
         return false;
     }
+
     if ( not std::all_of(numPorts_.cbegin(), numPorts_.cend(), [](const std::size_t& ports) { return ports > 0U;}) ) {
         return false;
     }
@@ -96,6 +102,7 @@ constexpr bool QNetwork<workers, channels>::isValidQNetwork() const {
     }
 
     if ( bufferSize_ < maxBatchSize() ) return false;
+    if ( maxPushAttempts_ == 0U ) return false;
 
     return true;
 }
