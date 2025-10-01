@@ -123,11 +123,11 @@ TEST(DiscrepancyTablesTest, ReducedEarliestDeadlineFirst) {
     EXPECT_TRUE( satisfiesDiscrepancyInequality(table6, testArr6) );
 }
 
-TEST(DiscrepancyTablesTest, QNetworkTables) {
+TEST(DiscrepancyTablesTest, QNetworkTableFrequency1) {
     constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {2, 1, 1, 2}, {1, 2, 1, 2});
 
-    constexpr auto tableFreq0 = tables::qNetworkTableFrequencies<2, 4, graph, 0>();
-    constexpr auto tableFreq1 = tables::qNetworkTableFrequencies<2, 4, graph, 1>();
+    constexpr auto tableFreq0 = tables::qNetworkTableFrequencies<2, 4, 2>(graph, 0);
+    constexpr auto tableFreq1 = tables::qNetworkTableFrequencies<2, 4, 2>(graph, 1);
 
     EXPECT_EQ(tableFreq0.size(), 2U);
     EXPECT_EQ(tableFreq1.size(), 2U);
@@ -151,6 +151,20 @@ TEST(DiscrepancyTablesTest, QNetworkTables) {
         for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
             EXPECT_EQ(tableFreq1[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
                         tableFreq1[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
+        }
+    }
+}
+
+TEST(DiscrepancyTablesTest, QNetworkTableFrequency2) {
+    constexpr auto graph = QNetwork<4, 8>({0, 2, 4, 6, 8}, {0, 1, 1, 2, 2, 3, 3, 0}, {2, 1, 1, 2, 3, 2, 3, 2}, {1, 2, 1, 2, 2, 3, 6, 9});
+    
+    for (std::size_t worker = 0U; worker < graph.numWorkers_; ++worker) {
+        const auto tableFreq = tables::qNetworkTableFrequencies<4, 8, 2>(graph, worker);
+        for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
+            for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
+                EXPECT_EQ(tableFreq[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
+                            tableFreq[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
+            }
         }
     }
 }
