@@ -1,0 +1,195 @@
+#pragma once
+
+#include <iterator>
+#include <memory>
+#include <thread>
+#include <tuple>
+#include <type_traits>
+#include <vector>
+#include <queue>
+
+#include "ParallelPriotityQueue/QNetwork.hpp"
+#include "RingBuffer/RingBuffer.hpp"
+
+
+namespace spapq
+{
+
+template<typename T, QNetwork<workers, channels> netw, typename LocalQType = std::priority_queue<T>>
+class SpapQueue {
+    public:
+        using GlobalQType = SpapQueue<T, netw, LocalQType>;
+
+        template<std::size_t numPorts, std::size_t tableLength>
+        class WorkerResource {
+            template<std::size_t, std::size_t> friend class WorkerResource;
+            friend class GlobalQType;
+
+            private:
+                const std::size_t workerId_;
+                GlobalQType &globalQueue_;
+                std::array<T, netw.maxBatchSize()>::iterator bufferPointer_;
+                std::array<std::size_t, tableLength>::const_iterator channelPointer_;
+                std::array<T, netw.maxBatchSize()> outBuffer_;
+                const std::array<std::size_t, tableLength> channelIndices_;
+                std::array<RingBuffer<T, netw.bufferSize_>, numPorts> inPorts_;
+                LocalQType queue_;
+
+                inline void pushOutBuffer();
+                inline void pushOutBufferSelf();
+
+                inline void enqueueInChannels();
+                virtual inline void processElement(T &&val) = 0;
+                
+                inline bool push(const T &val, std::size_t port) { return inPorts_[port].push(val); };
+                template<class InputIt>
+                inline bool push(InputIt first, InputIt last, std::size_t port) { return inPorts_[port].push(first, last); }
+
+            protected:
+                inline void enqueueGlobal(const T &val);
+
+            public:
+                WorkerResource(std::size_t workerId, GlobalQType &globalQueue, const std::array<std::size_t, tableLength> channelIndices) : workerId_(workerId), globalQueue_(globalQueue), bufferPointer_(outBuffer.begin()), channelPointer_(channelIndices_.begin()), channelIndices_(std::move(channelIndices)) {};
+                WorkerResource(const WorkerResource &other) = 0;
+                WorkerResource(WorkerResource &&other) = 0;
+                WorkerResource& operator=(const WorkerResource &other) = 0;
+                WorkerResource& operator=(WorkerResource &&other) = 0;
+                ~WorkerResource() = default;
+
+                inline void run();
+
+        };
+
+        template <std::size_t N> 
+        struct WorkerCollectiveHelper{
+            static_assert(N <= netw.numWorkers_);
+            template<typename... Args> using partialType = typename WorkerCollectiveHelper<N-1>::template partialType<WorkerResource<netw.numPorts_[N - 1], XXXX tableLength>*, Args...>; // TODO std unique pointer table length
+        };
+        template <> 
+        struct WorkerCollectiveHelper<0> {
+            template<typename... Args> using partialType = std::tuple<Args...>;   
+        };
+        using WorkerCollective = typename WorkerCollectiveHelper<netw.numWorkers_>::template partialType<>;
+
+        alignas(CACHE_LINE_SIZE) std::array<std::jthread, netw.numWorkers_> workers_; // TODO does not need to be aligned
+        alignas(CACHE_LINE_SIZE) WorkerCollective workerResources_;
+        alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> globalCount_{0U};
+        std::atomic_flag initSync;
+
+        void initQueue();
+        void pushUnsafe(const T &val, std::size_t workerId = 0U);
+        void pushUnsafe(T &&val, std::size_t workerId = 0U);
+        void processQueue() { initSynch.test_and_set(std::memory_order_release); initSynch.notify_all(); };
+        void waitProcessFinish();
+
+    static_assert(netw.isValidQNetwork(), "The QNetwork needs to be valid!");
+    static_assert(std::is_same_v<T, typename LocalQType::value_type>, "The Local Queue Type needs to have matching value_type!");
+};
+
+
+template<typename T, QNetwork netw, typename LocalQType>
+template<std::size_t numPorts, std::size_t tableLength>
+inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength>::enqueueGlobal(const T &val) {
+    assert(bufferPointer_ != outBuffer_.end());
+
+    globalQueue_.globalCount_.fetch_add(1U, std::memory_order_relaxed);
+    *bufferPointer_ = val;
+    ++bufferPointer_;
+
+    std::size_t maxAttempts = netw.maxPushAttempts_;
+    while (std::distance(outBuffer_, bufferPointer_) >= netw.batchSize_[*channelPointer] && maxAttempts-- > 0U) {
+        pushOutBuffer();
+        ++channelPointer_;
+        if (channelPointer_ == channelIndices_.cend()) {
+            channelPointer_ = channelIndices_.cbegin();
+        }
+    }
+    if (maxAttempts == 0U && std::distance(outBuffer.begin(), bufferPointer_) >= netw.batchSize_[*channelPointer]) [[unlikely]] {
+        pushOutBufferSelf();
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
+template<std::size_t numPorts, std::size_t tableLength>
+inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength>::pushOutBuffer() {
+    const std::size_t targetWorker = netw.edgeTargets_[*channelPointer_];
+    
+    if (targetWorker == workerId_) {
+        pushOutBufferSelf();
+    } else {
+        const std::size_t port = netw.targetPort_[*channelPointer_];
+        const std::size_t batch = netw.batchSize_[*channelPointer_];
+        const std::array<T, netw.maxBatchSize()>::iterator itBegin = bufferPointer_;
+        assert(batch <= std::distance(outBuffer.begin(), bufferPointer_));
+        std::prev(itBegin, batch);
+
+        if (globalQueue_.workerResources_[targetWorker]->push(itBegin, outBuffer_.begin(), port)) {
+            bufferPointer_ = itBegin;
+        }
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
+template<std::size_t numPorts, std::size_t tableLength>
+inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength>::pushOutBufferSelf() {
+    constexpr bool hasBatchPush = requires(LocalQType &q, std::array<T, netw.maxBatchSize()>::iterator first, std::array<T, netw.maxBatchSize()>::iterator last) {
+        q.push(first, last);
+    };
+
+    if constexpr (hasBatchPush) {
+        queue_.push(outBuffer_.begin(), bufferPointer_);
+    } else {
+        for (auto it = outBuffer_.begin(); it != bufferPointer_; ++it) {
+            queue_.push(*it);
+        }
+    }
+    bufferPointer_ = outBuffer_.begin();
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
+template<std::size_t numPorts, std::size_t tableLength>
+inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength>::enqueueInChannels() {
+    for (const auto &portRingBuffer : inPorts_) {
+        std::optional<T> data = portRingBuffer.pop();
+        while (data.has_value()) {
+            queue_.push(data.value());
+            data = portRingBuffer.pop();
+        }
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
+template<std::size_t numPorts, std::size_t tableLength>
+inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength>::run() {
+    while (globalQueue_.globalCount_.load(std::memory_order_acquire) > 0) {
+        while (not queue_.empty()) [[likely]] {
+            enqueueInChannels();
+            T val = queue_.top();
+            queue_.pop();
+            processElement(std::move(val));
+            globalQueue_.globalCount_.fetch_sub(1U, std::memory_order_release);
+        }
+        enqueueInChannels();
+        pushOutBufferSelf();
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType = std::priority_queue<T>>
+void SpapQueue<T, netw, LocalQType>::waitProcessFinish() {
+    for (auto &thread : workers_) {
+        thread.join();
+    }
+    initSync.clear();
+}
+
+template<typename T, QNetwork netw, typename LocalQType = std::priority_queue<T>>
+void SpapQueue<T, netw, LocalQType>::pushUnsafe(const T &val, std::size_t workerId) {
+    // TODO
+}
+
+template<typename T, QNetwork netw, typename LocalQType = std::priority_queue<T>>
+void SpapQueue<T, netw, LocalQType>::pushUnsafe(T &&val, std::size_t workerId) {
+    // TODO
+}
+
+} // end namespace spapq
