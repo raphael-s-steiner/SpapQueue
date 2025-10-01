@@ -153,6 +153,16 @@ TEST(DiscrepancyTablesTest, QNetworkTableFrequency1) {
                         tableFreq1[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
         }
     }
+
+    const auto table0 = tables::qNetworkTable<2, 4, 2, 5>(graph, 0U);
+    const auto table1 = tables::qNetworkTable<2, 4, 2, 2>(graph, 1U);
+
+    for (const std::size_t &val : table0) {
+        EXPECT_TRUE(val == 0U || val == 1U);
+    }
+    for (const std::size_t &val : table1) {
+        EXPECT_TRUE(val == 2U || val == 3U);
+    }
 }
 
 TEST(DiscrepancyTablesTest, QNetworkTableFrequency2) {
@@ -166,5 +176,34 @@ TEST(DiscrepancyTablesTest, QNetworkTableFrequency2) {
                             tableFreq[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
             }
         }
+    }
+
+    std::array<bool, 8> foundChannel = {false, false, false, false, false, false, false, false};
+    const auto table0 = tables::qNetworkTable<4, 8, 2, 5>(graph, 0U);
+    for (const std::size_t &val : table0) {
+        EXPECT_TRUE(val == 0U || val == 1U);
+        foundChannel[val] = true;
+    }
+
+    const auto table1 = tables::qNetworkTable<4, 8, 2, 2>(graph, 1U);
+    for (const std::size_t &val : table1) {
+        EXPECT_TRUE(val == 2U || val == 3U);
+        foundChannel[val] = true;
+    }
+
+    const auto table2 = tables::qNetworkTable<4, 8, 2, 13>(graph, 2U);
+    for (const std::size_t &val : table2) {
+        EXPECT_TRUE(val == 4U || val == 5U);
+        foundChannel[val] = true;
+    }
+
+    const auto table3 = tables::qNetworkTable<4, 8, 2, 13>(graph, 3U);
+    for (const std::size_t &val : table3) {
+        EXPECT_TRUE(val == 6U || val == 7U);
+        foundChannel[val] = true;
+    }
+
+    for (const bool val : foundChannel) {
+        EXPECT_TRUE(val);
     }
 }

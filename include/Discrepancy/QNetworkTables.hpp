@@ -7,7 +7,7 @@ namespace spapq {
 namespace tables {
 
 template<std::size_t networkWorkers, std::size_t networkChannels, std::size_t workerOutChannels>
-constexpr std::array<std::size_t, workerOutChannels> qNetworkTableFrequencies(QNetwork<networkWorkers, networkChannels> netw, std::size_t worker) {
+constexpr std::array<std::size_t, workerOutChannels> qNetworkTableFrequencies(const QNetwork<networkWorkers, networkChannels> &netw, const std::size_t worker) {
     assert(netw.isValidQNetwork());
     assert(worker < workers);
     assert(workerOutChannels == netw.vertexPointer_[worker + 1] - netw.vertexPointer_[worker]);
@@ -24,6 +24,24 @@ constexpr std::array<std::size_t, workerOutChannels> qNetworkTableFrequencies(QN
     }
 
     return reducedIntegerArray<frequencies.size()>(frequencies);
+}
+
+template<std::size_t networkWorkers, std::size_t networkChannels, std::size_t workerOutChannels, std::size_t tableLength>
+constexpr std::array<std::size_t, tableLength> qNetworkTable(const QNetwork<networkWorkers, networkChannels> &netw, const std::size_t worker) {
+    assert(netw.isValidQNetwork());
+    assert(worker < workers);
+    assert(workerOutChannels == netw.vertexPointer_[worker + 1] - netw.vertexPointer_[worker]);
+    assert(tableLength == sumArray(qNetworkTableFrequencies(netw, worker)));
+
+    const std::array<std::size_t, workerOutChannels> frequencies = qNetworkTableFrequencies<networkWorkers, networkChannels, workerOutChannels>(netw, worker);
+    
+    auto table = EarliestDeadlineFirstTable<workerOutChannels, tableLength>(frequencies);
+
+    for (std::size_t &val : table) {
+        val += netw.vertexPointer_[worker];
+    }
+
+    return table;
 }
 
 } // end namespace tables
