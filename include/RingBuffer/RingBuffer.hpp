@@ -19,9 +19,12 @@ namespace spapq
 template<typename T, std::size_t N>
 class RingBuffer {
     private:
-        alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> tailCounter_{0};
-        alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> headCounter_{0};
         alignas(CACHE_LINE_SIZE) std::array<T, N> data_;
+        alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> tailCounter_{N};
+        alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> headCounter_{N};
+        alignas(CACHE_LINE_SIZE) std::size_t cachedTailCounter_{N};
+        alignas(CACHE_LINE_SIZE) std::size_t cachedHeadCounter_{N};
+        char padding_[CACHE_LINE_SIZE - sizeof(std::size_t)]; 
 
     protected:
         inline std::size_t getTailPosition() const noexcept { return tailCounter_.load(std::memory_order_relaxed) % N; };
@@ -50,24 +53,29 @@ class RingBuffer {
         inline std::optional<T> pop() noexcept;
         [[nodiscard("Push can fail")]] inline bool push(const T &value) noexcept;
 
-        template<class InputIt>
-        [[nodiscard("Push can fail")]] inline bool push(InputIt first, InputIt last) noexcept;
+        template<class InputIt, typename RetT = bool>
+        [[nodiscard("Push can fail")]] inline std::enable_if_t<(sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U)), RetT> push(InputIt first, InputIt last) noexcept;
+
+        template<class InputIt, typename RetT = bool>
+        [[nodiscard("Push can fail")]] inline std::enable_if_t<not ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U))), RetT> push(InputIt first, InputIt last) noexcept;
 
         // assertions
         static_assert(N > 0U, "No trivial RingBuffers allowed!");
         static_assert(N < std::numeric_limits<std::size_t>::max(), "Needed to differentiate empty from full RingBuffer.");
+        static_assert(std::atomic<std::size_t>::is_always_lock_free, "Want atomic to be lock free.");
 
         // overflow protection
         // can be commented out if number of inserts will be less than the maximum value of std::size_t
         // to relax this condition, one can have tailCounter_ and headCounter_ be modulo 2N assuming 2N <= max value of std::size_t
-        static_assert(sizeof(std::size_t) >= 8 || ((std::numeric_limits<std::size_t>::max() - N + 1U) % N == 0U), "Modulo operations need to be consistent or number of operations need to be smaller than max value of std::size_t!");
+        static_assert(sizeof(std::size_t) >= 8 || (((std::numeric_limits<std::size_t>::max() - N + 1U) % N == 0U)), "Modulo operations need to be consistent or number of operations need to be smaller than max value of std::size_t!");
 };
 
 template<typename T, std::size_t N>
 inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
     std::optional<T> result(std::nullopt);
-    if (!isEmpty()) {
-        result = data_[getTailPosition()];
+    const std::size_t tail = tailCounter_.load(std::memory_order_relaxed);
+    if ((cachedHeadCounter_ != tail) || ((cachedHeadCounter_ = headCounter_.load(std::memory_order_acquire)) != tail)) {
+        result = data_[tail % N];
         advanceTail();
     }
     return result;
@@ -75,23 +83,48 @@ inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
 
 template<typename T, std::size_t N>
 inline bool RingBuffer<T, N>::push(const T &value) noexcept {
-    const bool nonFull = !isFull();
+    const std::size_t head = headCounter_.load(std::memory_order_relaxed);
+    const std::size_t headLoopAround = head - N;
+    const bool nonFull = (cachedTailCounter_ != headLoopAround) || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) != headLoopAround);
     if (nonFull) {
-        data_[getHeadPosition()] = value;
+        data_[head % N] = value;
         advanceHead();
     }
     return nonFull;
 };
 
 template<typename T, std::size_t N>
-template<class InputIt>
-inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
-    const std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
-    const std::size_t occ = occupancyPushSafe();
+template<class InputIt, typename RetT>
+inline std::enable_if_t<(sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U)), RetT> RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
 
-    const bool enoughSpace = ((numElements + occ) <= N);
+    const std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
+    std::size_t head = headCounter_.load(std::memory_order_relaxed);
+    
+    const std::size_t diff = head - N + numElements;
+    const bool enoughSpace = (cachedTailCounter_ >= diff) || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) >= diff);
+    
     if (enoughSpace) {
-        std::size_t head = headCounter_.load(std::memory_order_relaxed);
+        while (first != last) {
+            data_[head % N] = *first;
+            ++head;
+            ++first;
+        }
+        advanceHead(numElements);
+    }
+    return enoughSpace;
+};
+
+
+template<typename T, std::size_t N>
+template<class InputIt, typename RetT>
+inline std::enable_if_t<not ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U))), RetT>  RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
+    const std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
+    std::size_t head = headCounter_.load(std::memory_order_relaxed);
+    
+    const std::size_t diff = N - numElements;
+    const bool enoughSpace = ((head - cachedTailCounter_ <= diff) || ((head - (cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire))) <= diff));
+
+    if (enoughSpace) {
         while (first != last) {
             data_[head % N] = *first;
             ++head;
