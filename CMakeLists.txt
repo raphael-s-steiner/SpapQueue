@@ -50,8 +50,6 @@ target_compile_options(ProjectExecutableFlags INTERFACE
     $<$<CONFIG:RELWITHDEBINFO>:-O2;-g>
 )
 
-
-
 # --- Library Definition ---
 add_library(SPAPQueue INTERFACE)
 
@@ -59,8 +57,6 @@ target_include_directories(SPAPQueue INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
-
-
 
 # --- Build Tests Configuration ---
 # Option to control whether tests are built.
@@ -70,18 +66,31 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 if(BUILD_TESTS)
+    message(STATUS "Tests will be built.")
     enable_testing()
     add_subdirectory(tests)
-    message(STATUS "Tests will be built.")
 else()
     message(STATUS "Tests will not be built (BUILD_TESTS is OFF).")
 endif()
 
+# Option to control whether benchmarks are built.
+option(BUILD_BENCHMARK "Build benchmarks for the project" ON)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(BUILD_BENCHMARK OFF)
+endif()
+
+if(BUILD_BENCHMARK)
+    message(STATUS "Benchmarks will be built.")
+    add_subdirectory(benchmarks)
+else()
+    message(STATUS "Benchmarks will not be built (BUILD_BENCHMARK is OFF).")
+endif()
 
 # --- Documentation Generation ---
 # Add a custom target to build Doxygen documentation
 find_package(Doxygen QUIET)
 if(DOXYGEN_FOUND)
+    message(STATUS "FOUND Doxygen. 'doc' target available for building documentation.")
     include(FetchContent)
     FetchContent_Declare(
         doxygen-awesome-css
@@ -99,14 +108,12 @@ if(DOXYGEN_FOUND)
     set(DOXYFILE_OUT ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile)
     configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
 
-
     add_custom_target(doc
         COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating API documentation with Doxygen"
         VERBATIM
     )
-    message(STATUS "FOUND Doxygen. 'doc' target available for building documentation.")
 else()
     message(STATUS "Doxygen not found. Documentation target 'doc' will not be available.")
 endif()

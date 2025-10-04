@@ -52,13 +52,14 @@ class RingBuffer {
         inline std::size_t occupancy() const noexcept { return headCounter_.load(std::memory_order_acquire) - tailCounter_.load(std::memory_order_acquire); };
         
         inline std::optional<T> pop() noexcept;
-        [[nodiscard("Push can fail")]] inline bool push(const T &value) noexcept;
+        [[nodiscard("Pop may fail when queue is empty")]] inline bool pop(T &out) noexcept;
+        [[nodiscard("Push may fail when queue is full")]] inline bool push(const T &value) noexcept;
 
         template<class InputIt, typename RetT = bool>
-        [[nodiscard("Push can fail")]] inline std::enable_if_t<(sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U)), RetT> push(InputIt first, InputIt last) noexcept;
+        [[nodiscard("Push may fail when queue is full")]] inline std::enable_if_t<(sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U)), RetT> push(InputIt first, InputIt last) noexcept;
 
         template<class InputIt, typename RetT = bool>
-        [[nodiscard("Push can fail")]] inline std::enable_if_t<not ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U))), RetT> push(InputIt first, InputIt last) noexcept;
+        [[nodiscard("Push may fail when queue is full")]] inline std::enable_if_t<not ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U))), RetT> push(InputIt first, InputIt last) noexcept;
 
         // assertions
         static_assert(N > 0U, "No trivial RingBuffers allowed!");
@@ -80,6 +81,17 @@ inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
         advanceTail();
     }
     return result;
+};
+
+template<typename T, std::size_t N>
+inline bool RingBuffer<T, N>::pop(T &out) noexcept {
+    const std::size_t tail = tailCounter_.load(std::memory_order_relaxed);
+    const bool hasData = (cachedHeadCounter_ != tail) || ((cachedHeadCounter_ = headCounter_.load(std::memory_order_acquire)) != tail);
+    if (hasData) {
+        out = data_[tail % N];
+        advanceTail();
+    }
+    return hasData;
 };
 
 template<typename T, std::size_t N>
