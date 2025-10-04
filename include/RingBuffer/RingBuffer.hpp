@@ -4,6 +4,7 @@
 #include <atomic>
 #include <limits>
 #include <optional>
+#include <type_traits>
 
 #include "Configuration/config.hpp"
 
@@ -96,6 +97,7 @@ inline bool RingBuffer<T, N>::push(const T &value) noexcept {
 template<typename T, std::size_t N>
 template<class InputIt, typename RetT>
 inline std::enable_if_t<(sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U)), RetT> RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
+    static_assert(std::is_same_v<RetT, bool>);
 
     const std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
     std::size_t head = headCounter_.load(std::memory_order_relaxed);
@@ -118,6 +120,8 @@ inline std::enable_if_t<(sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limit
 template<typename T, std::size_t N>
 template<class InputIt, typename RetT>
 inline std::enable_if_t<not ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U))), RetT>  RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
+    static_assert(std::is_same_v<RetT, bool>);
+    
     const std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
     std::size_t head = headCounter_.load(std::memory_order_relaxed);
     
