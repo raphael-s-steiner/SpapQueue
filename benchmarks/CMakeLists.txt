@@ -25,6 +25,7 @@ FetchContent_MakeAvailable(GoogleBenchmark)
 
 # Create an empty list for the Benchmark
 set( BM_list )
+set( RUN_BM_COMMANDS )
 
 # Function to create a Benchmark
 macro( _add_BM name )
@@ -38,6 +39,8 @@ macro( _add_BM name )
     if ("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
         target_link_libraries(${name}_BM PRIVATE Shlwapi)
     endif()
+
+    list(APPEND RUN_BM_COMMANDS COMMAND $<TARGET_FILE:${name}_BM>)
 endmacro()
 
 # Adding Benchmarks
@@ -45,4 +48,4 @@ _add_BM( RingBuffer )
 
 # Custom target to compile all the Benchmarks
 add_custom_target( build_BM DEPENDS ${BM_list} )
-add_custom_target( run_BM DEPENDS build_BM )
+add_custom_target( run_BM COMMAND ${RUN_BM_COMMANDS} DEPENDS build_BM )
