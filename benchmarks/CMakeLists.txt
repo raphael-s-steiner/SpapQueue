@@ -36,10 +36,12 @@ macro( _add_BM name )
     target_link_libraries(${name}_BM PRIVATE SPAPQueue benchmark::benchmark ProjectExecutableFlags)
     target_include_directories(${name}_BM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+    # Extra required library for Windows
     if ("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
         target_link_libraries(${name}_BM PRIVATE Shlwapi)
     endif()
 
+    # Adding executable to to the run all benchmark command
     list(APPEND RUN_BM_COMMANDS COMMAND $<TARGET_FILE:${name}_BM>)
 endmacro()
 
