@@ -295,3 +295,13 @@ TEST(RingBufferTest, Multithread4) {
 
     EXPECT_TRUE(channel.isEmpty());
 }
+
+TEST(RingBufferTest, Alignment) {
+    RingBuffer<int, 5> channel1;
+    EXPECT_EQ(alignof(channel1) % CACHE_LINE_SIZE, 0U);
+    EXPECT_EQ(sizeof(channel1) % CACHE_LINE_SIZE, 0U);
+
+    RingBuffer<char, 125> channel2;
+    EXPECT_EQ(alignof(channel2) % CACHE_LINE_SIZE, 0U);
+    EXPECT_EQ(sizeof(channel2) % CACHE_LINE_SIZE, 0U);
+}
