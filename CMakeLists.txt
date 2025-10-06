@@ -61,9 +61,6 @@ target_include_directories(SPAPQueue INTERFACE
 # --- Build Tests Configuration ---
 # Option to control whether tests are built.
 option(BUILD_TESTS "Build tests for the project" ON)
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(BUILD_TESTS OFF)
-endif()
 
 if(BUILD_TESTS)
     message(STATUS "Tests will be built.")
