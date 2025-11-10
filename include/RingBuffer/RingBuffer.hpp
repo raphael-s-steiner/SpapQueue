@@ -54,6 +54,7 @@ class RingBuffer {
         inline std::optional<T> pop() noexcept;
         [[nodiscard("Pop may fail when queue is empty")]] inline bool pop(T &out) noexcept;
         [[nodiscard("Push may fail when queue is full")]] inline bool push(const T &value) noexcept;
+        [[nodiscard("Push may fail when queue is full")]] inline bool push(T &&value) noexcept;
 
         template<class InputIt, typename RetT = bool>
         [[nodiscard("Push may fail when queue is full")]] inline std::enable_if_t<(sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U)), RetT> push(InputIt first, InputIt last) noexcept;
@@ -101,6 +102,18 @@ inline bool RingBuffer<T, N>::push(const T &value) noexcept {
     const bool nonFull = (cachedTailCounter_ != headLoopAround) || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) != headLoopAround);
     if (nonFull) {
         data_[head % N] = value;
+        advanceHead();
+    }
+    return nonFull;
+};
+
+template<typename T, std::size_t N>
+inline bool RingBuffer<T, N>::push(T &&value) noexcept {
+    const std::size_t head = headCounter_.load(std::memory_order_relaxed);
+    const std::size_t headLoopAround = head - N;
+    const bool nonFull = (cachedTailCounter_ != headLoopAround) || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) != headLoopAround);
+    if (nonFull) {
+        data_[head % N] = std::move(value);
         advanceHead();
     }
     return nonFull;

@@ -34,6 +34,20 @@ TEST(RingBufferTest, Values2) {
     }
 }
 
+TEST(RingBufferTest, Values3) {
+
+    std::array<std::string, 5> values{"Hello World!", "", "Elephant", "312", "All done!"};
+
+    RingBuffer<std::string, 5> channel;
+    for (auto val : values) {
+        bool succ = channel.push(val);
+        EXPECT_TRUE(succ);
+    }
+    for (auto val : values) {
+        EXPECT_EQ(channel.pop().value(), val);
+    };
+}
+
 
 TEST(RingBufferTest, Functionality1) {
 
@@ -298,10 +312,10 @@ TEST(RingBufferTest, Multithread4) {
 
 TEST(RingBufferTest, Alignment) {
     RingBuffer<int, 5> channel1;
-    EXPECT_EQ(alignof(channel1) % CACHE_LINE_SIZE, 0U);
+    EXPECT_EQ(alignof(decltype(channel1)) % CACHE_LINE_SIZE, 0U);
     EXPECT_EQ(sizeof(channel1) % CACHE_LINE_SIZE, 0U);
 
     RingBuffer<char, 125> channel2;
-    EXPECT_EQ(alignof(channel2) % CACHE_LINE_SIZE, 0U);
+    EXPECT_EQ(alignof(decltype(channel2)) % CACHE_LINE_SIZE, 0U);
     EXPECT_EQ(sizeof(channel2) % CACHE_LINE_SIZE, 0U);
 }
