@@ -28,6 +28,11 @@ endif()
 set(COMMON_CXX_WARNING_FLAGS
     "-Wall"
     "-Wextra"
+    "-pedantic"
+    "-Wpedantic"
+    "-Wshadow"
+    "-Wnon-virtual-dtor"
+    "-Wold-style-cast"
     "-Wfatal-errors"
     "-Wconversion"
     "-Wsign-conversion"
