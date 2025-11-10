@@ -8,6 +8,7 @@
 #include <vector>
 #include <queue>
 
+#include "Auxilliary/tupleSwitch.hpp
 #include "ParallelPriotityQueue/QNetwork.hpp"
 #include "RingBuffer/RingBuffer.hpp"
 
@@ -30,6 +31,7 @@ class SpapQueue {
                 GlobalQType &globalQueue_;
                 std::array<T, netw.maxBatchSize()>::iterator bufferPointer_;
                 std::array<std::size_t, tableLength>::const_iterator channelPointer_;
+                // const std::array<std::size_t, tableLength>::const_iterator channelTableEndPointer_;
                 std::array<T, netw.maxBatchSize()> outBuffer_;
                 const std::array<std::size_t, tableLength> channelIndices_;
                 std::array<RingBuffer<T, netw.bufferSize_>, numPorts> inPorts_;
@@ -42,6 +44,7 @@ class SpapQueue {
                 virtual inline void processElement(T &&val) = 0;
                 
                 inline bool push(const T &val, std::size_t port) { return inPorts_[port].push(val); };
+                inline bool push(T &&val, std::size_t port) { return inPorts_[port].push(std::move(val)); };
                 template<class InputIt>
                 inline bool push(InputIt first, InputIt last, std::size_t port) { return inPorts_[port].push(first, last); }
 
@@ -63,7 +66,7 @@ class SpapQueue {
         template <std::size_t N> 
         struct WorkerCollectiveHelper{
             static_assert(N <= netw.numWorkers_);
-            template<typename... Args> using partialType = typename WorkerCollectiveHelper<N-1>::template partialType<WorkerResource<netw.numPorts_[N - 1], XXXX tableLength>*, Args...>; // TODO std unique pointer table length
+            template<typename... Args> using partialType = typename WorkerCollectiveHelper<N-1>::template partialType< std::unique_ptr< WorkerResource<netw.numPorts_[N - 1], sumArray(qNetworkTableFrequencies(netw, N - 1))> >, Args... >;
         };
         template <> 
         struct WorkerCollectiveHelper<0> {
@@ -77,10 +80,37 @@ class SpapQueue {
         std::atomic_flag initSync;
 
         void initQueue();
-        void pushUnsafe(const T &val, std::size_t workerId = 0U);
-        void pushUnsafe(T &&val, std::size_t workerId = 0U);
+        void pushUnsafe(const T &val, const std::size_t workerId = 0U);
+        void pushUnsafe(T &&val, const std::size_t workerId = 0U);
         void processQueue() { initSynch.test_and_set(std::memory_order_release); initSynch.notify_all(); };
         void waitProcessFinish();
+
+        template<std::size_t tupleSize>
+        inline void pushInternal(const T &val, const std::size_t workerId, const std::size_t port) {
+            if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
+                std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(val, port);
+            } else {
+                pushInternal<tupleSize - 1>(val, workerId, port);
+            }
+        }
+        
+        template<>
+        inline void pushInternal<0U>(const T &val, const std::size_t workerId, const std::size_t port) { };
+        
+        template<std::size_t tupleSize>
+        inline void pushInternal(T &&val, const std::size_t workerId, const std::size_t port) {
+            if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
+                std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(std::move(val), port);
+            } else {
+                pushInternal<tupleSize - 1>(std::move(val), workerId, port);
+            }
+        }
+        
+        template<>
+        inline void pushInternal<0U>(T &&val, const std::size_t workerId, const std::size_t port) { };
+
+        inline void pushInternal(const T &val, const std::size_t workerId, const std::size_t port) { pushInternal<netw.numWorkers_>(val, workerId, port); };
+        inline void pushInternal(T &&val, const std::size_t workerId, const std::size_t port) { pushInternal<netw.numWorkers_>(std::move(val), workerId, port); };
 
     static_assert(netw.isValidQNetwork(), "The QNetwork needs to be valid!");
     static_assert(std::is_same_v<T, typename LocalQType::value_type>, "The Local Queue Type needs to have matching value_type!");
@@ -113,7 +143,6 @@ template<typename T, QNetwork netw, typename LocalQType>
 template<std::size_t numPorts, std::size_t tableLength>
 inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength>::pushOutBuffer() {
     const std::size_t targetWorker = netw.edgeTargets_[*channelPointer_];
-    
     if (targetWorker == workerId_) {
         pushOutBufferSelf();
     } else {
@@ -123,7 +152,7 @@ inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength
         assert(batch <= std::distance(outBuffer.begin(), bufferPointer_));
         std::prev(itBegin, batch);
 
-        if (globalQueue_.workerResources_[targetWorker]->push(itBegin, outBuffer_.begin(), port)) {
+        if (std::get<targetWorker>(globalQueue_.workerResources_)->push(itBegin, outBuffer_.begin(), port)) { // TODO target worker needs to be constexpr
             bufferPointer_ = itBegin;
         }
     }
@@ -165,8 +194,8 @@ inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength
         while (not queue_.empty()) [[likely]] {
             enqueueInChannels();
             T val = queue_.top();
-            queue_.pop();
             processElement(std::move(val));
+            queue_.pop();
             globalQueue_.globalCount_.fetch_sub(1U, std::memory_order_release);
         }
         enqueueInChannels();
@@ -183,12 +212,12 @@ void SpapQueue<T, netw, LocalQType>::waitProcessFinish() {
 }
 
 template<typename T, QNetwork netw, typename LocalQType = std::priority_queue<T>>
-void SpapQueue<T, netw, LocalQType>::pushUnsafe(const T &val, std::size_t workerId) {
+void SpapQueue<T, netw, LocalQType>::pushUnsafe(const T &val, const std::size_t workerId) {
     // TODO
 }
 
 template<typename T, QNetwork netw, typename LocalQType = std::priority_queue<T>>
-void SpapQueue<T, netw, LocalQType>::pushUnsafe(T &&val, std::size_t workerId) {
+void SpapQueue<T, netw, LocalQType>::pushUnsafe(T &&val, const std::size_t workerId) {
     // TODO
 }
 
