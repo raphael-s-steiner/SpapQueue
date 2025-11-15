@@ -201,42 +201,41 @@ void SpapQueue<T, netw, LocalQType>::waitProcessFinish() {
 template<std::size_t tupleSize>
 template<typename T, QNetwork netw, typename LocalQType>
 inline void SpapQueue<T, netw, LocalQType>::pushInternal<tupleSize>(const T &val, const std::size_t workerId, const std::size_t port) {
+    static_assert(0 < tupleSize && tupleSize <= netw.numWorkers_);
     if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
         std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(val, port);
     } else {
-        pushInternal<tupleSize - 1>(val, workerId, port);
+        if constexpr (tupleSize > 1) {
+            pushInternal<tupleSize - 1>(val, workerId, port);
+        }
     }
 }
-
-template<typename T, QNetwork netw, typename LocalQType>
-inline void SpapQueue<T, netw, LocalQType>::pushInternal<0U>(const T &val, const std::size_t workerId, const std::size_t port) { }
 
 template<typename T, QNetwork netw, typename LocalQType>
 template<std::size_t tupleSize>
 inline void SpapQueue<T, netw, LocalQType>::pushInternal<tupleSize>(T &&val, const std::size_t workerId, const std::size_t port) {
+    static_assert(0 < tupleSize && tupleSize <= netw.numWorkers_);
     if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
         std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(std::move(val), port);
     } else {
-        pushInternal<tupleSize - 1>(std::move(val), workerId, port);
+        if constexpr (tupleSize > 1) {
+            pushInternal<tupleSize - 1>(std::move(val), workerId, port);
+        }
     }
 }
-
-template<typename T, QNetwork netw, typename LocalQType>
-inline void SpapQueue<T, netw, LocalQType>::pushInternal<0U>(T &&val, const std::size_t workerId, const std::size_t port) { }
 
 template<typename T, QNetwork netw, typename LocalQType>
 template<std::size_t tupleSize, class InputIt>
 inline void SpapQueue<T, netw, LocalQType>::pushInternal<tupleSize>(InputIt first, InputIt last, const std::size_t workerId, const std::size_t port) {
+    static_assert(0 < tupleSize && tupleSize <= netw.numWorkers_);
     if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
         std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(first, last, port);
     } else {
-        pushInternal<tupleSize - 1, InputIt>(first, last, workerId, port);
+        if constexpr (tupleSize > 1) {
+            pushInternal<tupleSize - 1, InputIt>(first, last, workerId, port);
+        }
     }
 }
-
-template<typename T, QNetwork netw, typename LocalQType>
-template<class InputIt>
-inline void SpapQueue<T, netw, LocalQType>::pushInternal<0U, InputIt>(InputIt first, InputIt last, const std::size_t workerId, const std::size_t port) { }
 
 template<typename T, QNetwork netw, typename LocalQType>
 inline void SpapQueue<T, netw, LocalQType>::pushInternal(const T &val, const std::size_t workerId, const std::size_t port) {
