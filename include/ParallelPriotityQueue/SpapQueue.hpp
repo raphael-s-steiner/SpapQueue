@@ -8,7 +8,6 @@
 #include <vector>
 #include <queue>
 
-#include "Auxilliary/tupleSwitch.hpp
 #include "ParallelPriotityQueue/QNetwork.hpp"
 #include "RingBuffer/RingBuffer.hpp"
 
@@ -72,7 +71,8 @@ class SpapQueue {
         struct WorkerCollectiveHelper<0> {
             template<typename... Args> using partialType = std::tuple<Args...>;   
         };
-        using WorkerCollective = typename WorkerCollectiveHelper<netw.numWorkers_>::template partialType<>;
+
+        using WorkerCollective = std::conditional_t<netw.hasHomogeneousInPorts(), std::array<std::unique_ptr< WorkerResource<netw.numPorts_[0U], maxTableSize(netw)>>, netw.numWorkers_>, typename WorkerCollectiveHelper<netw.numWorkers_>::template partialType<> >;
 
         alignas(CACHE_LINE_SIZE) std::array<std::jthread, netw.numWorkers_> workers_; // TODO does not need to be aligned
         alignas(CACHE_LINE_SIZE) WorkerCollective workerResources_;
@@ -85,32 +85,20 @@ class SpapQueue {
         void processQueue() { initSynch.test_and_set(std::memory_order_release); initSynch.notify_all(); };
         void waitProcessFinish();
 
+        // TODO std enable_if not homogeneous
         template<std::size_t tupleSize>
-        inline void pushInternal(const T &val, const std::size_t workerId, const std::size_t port) {
-            if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
-                std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(val, port);
-            } else {
-                pushInternal<tupleSize - 1>(val, workerId, port);
-            }
-        }
-        
-        template<>
-        inline void pushInternal<0U>(const T &val, const std::size_t workerId, const std::size_t port) { };
-        
+        inline void pushInternal(const T &val, const std::size_t workerId, const std::size_t port);
+        // TODO std enable_if not homogeneous
         template<std::size_t tupleSize>
-        inline void pushInternal(T &&val, const std::size_t workerId, const std::size_t port) {
-            if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
-                std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(std::move(val), port);
-            } else {
-                pushInternal<tupleSize - 1>(std::move(val), workerId, port);
-            }
-        }
-        
-        template<>
-        inline void pushInternal<0U>(T &&val, const std::size_t workerId, const std::size_t port) { };
+        inline void pushInternal(T &&val, const std::size_t workerId, const std::size_t port);
+        // TODO std enable_if not homogeneous
+        template<std::size_t tupleSize, class InputIt>
+        inline void pushInternal(InputIt first, InputIt last, const std::size_t workerId, const std::size_t port);
 
-        inline void pushInternal(const T &val, const std::size_t workerId, const std::size_t port) { pushInternal<netw.numWorkers_>(val, workerId, port); };
-        inline void pushInternal(T &&val, const std::size_t workerId, const std::size_t port) { pushInternal<netw.numWorkers_>(std::move(val), workerId, port); };
+        inline void pushInternal(const T &val, const std::size_t workerId, const std::size_t port);
+        inline void pushInternal(T &&val, const std::size_t workerId, const std::size_t port);
+        template<class InputIt>
+        inline void pushInternal(InputIt first, InputIt last, const std::size_t workerId, const std::size_t port);
 
     static_assert(netw.isValidQNetwork(), "The QNetwork needs to be valid!");
     static_assert(std::is_same_v<T, typename LocalQType::value_type>, "The Local Queue Type needs to have matching value_type!");
@@ -127,14 +115,14 @@ inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength
     ++bufferPointer_;
 
     std::size_t maxAttempts = netw.maxPushAttempts_;
-    while (std::distance(outBuffer_, bufferPointer_) >= netw.batchSize_[*channelPointer] && maxAttempts-- > 0U) {
+    while (std::distance(outBuffer_.begin(), bufferPointer_) >= netw.batchSize_[*channelPointer] && maxAttempts-- > 0U) {
         pushOutBuffer();
         ++channelPointer_;
         if (channelPointer_ == channelIndices_.cend()) {
             channelPointer_ = channelIndices_.cbegin();
         }
     }
-    if (maxAttempts == 0U && std::distance(outBuffer.begin(), bufferPointer_) >= netw.batchSize_[*channelPointer]) [[unlikely]] {
+    if (maxAttempts == 0U && std::distance(outBuffer_.begin(), bufferPointer_) >= netw.batchSize_[*channelPointer]) [[unlikely]] {
         pushOutBufferSelf();
     }
 }
@@ -149,12 +137,11 @@ inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength
         const std::size_t port = netw.targetPort_[*channelPointer_];
         const std::size_t batch = netw.batchSize_[*channelPointer_];
         const std::array<T, netw.maxBatchSize()>::iterator itBegin = bufferPointer_;
-        assert(batch <= std::distance(outBuffer.begin(), bufferPointer_));
+        assert(batch <= std::distance(outBuffer_.begin(), bufferPointer_));
         std::prev(itBegin, batch);
 
-        if (std::get<targetWorker>(globalQueue_.workerResources_)->push(itBegin, outBuffer_.begin(), port)) { // TODO target worker needs to be constexpr
-            bufferPointer_ = itBegin;
-        }
+        globalQueue_.pushInternal(itBegin, bufferPointer_, targetWorker, port);
+        bufferPointer_ = itBegin;
     }
 }
 
@@ -203,7 +190,7 @@ inline void SpapQueue<T, netw, LocalQType>::WorkerResource<numPorts, tableLength
     }
 }
 
-template<typename T, QNetwork netw, typename LocalQType = std::priority_queue<T>>
+template<typename T, QNetwork netw, typename LocalQType>
 void SpapQueue<T, netw, LocalQType>::waitProcessFinish() {
     for (auto &thread : workers_) {
         thread.join();
@@ -211,12 +198,80 @@ void SpapQueue<T, netw, LocalQType>::waitProcessFinish() {
     initSync.clear();
 }
 
-template<typename T, QNetwork netw, typename LocalQType = std::priority_queue<T>>
+template<std::size_t tupleSize>
+template<typename T, QNetwork netw, typename LocalQType>
+inline void SpapQueue<T, netw, LocalQType>::pushInternal<tupleSize>(const T &val, const std::size_t workerId, const std::size_t port) {
+    if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
+        std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(val, port);
+    } else {
+        pushInternal<tupleSize - 1>(val, workerId, port);
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
+inline void SpapQueue<T, netw, LocalQType>::pushInternal<0U>(const T &val, const std::size_t workerId, const std::size_t port) { }
+
+template<typename T, QNetwork netw, typename LocalQType>
+template<std::size_t tupleSize>
+inline void SpapQueue<T, netw, LocalQType>::pushInternal<tupleSize>(T &&val, const std::size_t workerId, const std::size_t port) {
+    if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
+        std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(std::move(val), port);
+    } else {
+        pushInternal<tupleSize - 1>(std::move(val), workerId, port);
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
+inline void SpapQueue<T, netw, LocalQType>::pushInternal<0U>(T &&val, const std::size_t workerId, const std::size_t port) { }
+
+template<typename T, QNetwork netw, typename LocalQType>
+template<std::size_t tupleSize, class InputIt>
+inline void SpapQueue<T, netw, LocalQType>::pushInternal<tupleSize>(InputIt first, InputIt last, const std::size_t workerId, const std::size_t port) {
+    if (workerId == (std::tuple_size_v(workerResources_) - tupleSize)) {
+        std::get<std::tuple_size_v(workerResources_) - tupleSize>(workerResources_).push(first, last, port);
+    } else {
+        pushInternal<tupleSize - 1, InputIt>(first, last, workerId, port);
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
+template<class InputIt>
+inline void SpapQueue<T, netw, LocalQType>::pushInternal<0U, InputIt>(InputIt first, InputIt last, const std::size_t workerId, const std::size_t port) { }
+
+template<typename T, QNetwork netw, typename LocalQType>
+inline void SpapQueue<T, netw, LocalQType>::pushInternal(const T &val, const std::size_t workerId, const std::size_t port) {
+    if constexpr (netw.hasHomogeneousInPorts()) {
+        workerResources_[workerId]->push(val, port);
+    } else {
+        pushInternal<netw.numWorkers_>(val, workerId, port);
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
+inline void SpapQueue<T, netw, LocalQType>::pushInternal(T &&val, const std::size_t workerId, const std::size_t port) {
+    if constexpr (netw.hasHomogeneousInPorts()) {
+        workerResources_[workerId]->push(std::move(val), port);
+    } else {
+        pushInternal<netw.numWorkers_>(std::move(val), workerId, port);
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
+template<class InputIt>
+inline void SpapQueue<T, netw, LocalQType>::pushInternal(InputIt first, InputIt last, const std::size_t workerId, const std::size_t port) {
+    if constexpr (netw.hasHomogeneousInPorts()) {
+        workerResources_[workerId]->push(first, last, port);
+    } else {
+        pushInternal<netw.numWorkers_, InputIt>(first, last, workerId, port);
+    }
+}
+
+template<typename T, QNetwork netw, typename LocalQType>
 void SpapQueue<T, netw, LocalQType>::pushUnsafe(const T &val, const std::size_t workerId) {
     // TODO
 }
 
-template<typename T, QNetwork netw, typename LocalQType = std::priority_queue<T>>
+template<typename T, QNetwork netw, typename LocalQType>
 void SpapQueue<T, netw, LocalQType>::pushUnsafe(T &&val, const std::size_t workerId) {
     // TODO
 }

@@ -44,5 +44,16 @@ constexpr std::array<std::size_t, tableLength> qNetworkTable(const QNetwork<netw
     return table;
 }
 
+template<std::size_t networkWorkers, std::size_t networkChannels>
+constexpr std::size_t maxTableSize(const QNetwork<networkWorkers, networkChannels> &netw) {
+    std::size_t maxVal = 0U;
+
+    for (std::size_t i = 0U; i < netw.numWorkers_; ++i) {
+        maxVal = std::max(maxVal, sumArray(qNetworkTableFrequencies(netw, i)));
+    }
+
+    return maxVal;
+}
+
 } // end namespace tables
 } // end namespace spapq
