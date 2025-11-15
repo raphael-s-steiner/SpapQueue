@@ -27,6 +27,8 @@ TEST(QNetworkTest, Constructors1) {
     }
     
     EXPECT_EQ(netw.maxBatchSize(), 4);
+    EXPECT_TRUE(netw.hasHomogeneousInPorts());
+    EXPECT_TRUE(netw.hasHomogeneousOutPorts());
     EXPECT_TRUE(netw.hasHomogeneousPorts());
     EXPECT_EQ(netw.maxPortNum(), 1U);
     EXPECT_EQ(netw.bufferSize_, 16U);
@@ -185,27 +187,53 @@ TEST(QNetworkTest, LineGraph) {
 }
 
 TEST(QNetworkTest, PortNumbers) {
+    EXPECT_TRUE(PETERSEN_GRAPH.hasHomogeneousInPorts());
+    EXPECT_TRUE(PETERSEN_GRAPH.hasHomogeneousOutPorts());
     EXPECT_TRUE(PETERSEN_GRAPH.hasHomogeneousPorts());
     EXPECT_EQ(PETERSEN_GRAPH.maxPortNum(), 3U);
 
     
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<3U>().hasHomogeneousInPorts());
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<3U>().hasHomogeneousOutPorts());
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<3U>().hasHomogeneousPorts());
     EXPECT_EQ(FULLY_CONNECTED_GRAPH<3U>().maxPortNum(), 3U);
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>()).hasHomogeneousInPorts());
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>()).hasHomogeneousOutPorts());
     EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>()).hasHomogeneousPorts());
     EXPECT_EQ(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>()).maxPortNum(), 3U);
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>())).hasHomogeneousInPorts());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>())).hasHomogeneousOutPorts());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>())).hasHomogeneousPorts());
     EXPECT_EQ(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>())).maxPortNum(), 3U);
 
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<5U>().hasHomogeneousInPorts());
+    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<5U>().hasHomogeneousOutPorts());
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<5U>().hasHomogeneousPorts());
     EXPECT_EQ(FULLY_CONNECTED_GRAPH<5U>().maxPortNum(), 5U);
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>()).hasHomogeneousInPorts());
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>()).hasHomogeneousOutPorts());
     EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>()).hasHomogeneousPorts());
     EXPECT_EQ(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>()).maxPortNum(), 5U);
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>())).hasHomogeneousInPorts());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>())).hasHomogeneousOutPorts());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>())).hasHomogeneousPorts());
     EXPECT_EQ(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>())).maxPortNum(), 5U);
 
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
+    EXPECT_FALSE(netw.hasHomogeneousInPorts());
+    EXPECT_FALSE(netw.hasHomogeneousOutPorts());
     EXPECT_FALSE(netw.hasHomogeneousPorts());
     EXPECT_EQ(netw.maxPortNum(), 2U);
     EXPECT_FALSE(LINE_GRAPH(netw).hasHomogeneousPorts());
     EXPECT_EQ(LINE_GRAPH(netw).maxPortNum(), 2U);
+
+    constexpr QNetwork<3, 3> netw2({0, 0, 1, 3}, {1, 0, 2});
+    EXPECT_TRUE(netw2.hasHomogeneousInPorts());
+    EXPECT_FALSE(netw2.hasHomogeneousOutPorts());
+    EXPECT_FALSE(netw2.hasHomogeneousPorts());
+
+    constexpr QNetwork<3, 3> netw3({0, 1, 2, 3}, {0, 0, 2});
+    EXPECT_FALSE(netw3.hasHomogeneousInPorts());
+    EXPECT_TRUE(netw3.hasHomogeneousOutPorts());
+    EXPECT_FALSE(netw3.hasHomogeneousPorts());
 }

@@ -32,6 +32,8 @@ struct QNetwork {
     constexpr std::size_t maxPortNum() const;
 
     constexpr bool hasHomogeneousMultiplicities() const;
+    constexpr bool hasHomogeneousInPorts() const;
+    constexpr bool hasHomogeneousOutPorts() const;
     constexpr bool hasHomogeneousPorts() const;
     constexpr bool hasHomogeneousBatchSize() const;
 
@@ -165,22 +167,37 @@ constexpr std::size_t QNetwork<workers, channels>::maxPortNum() const {
 }
 
 template<std::size_t workers, std::size_t channels>
-constexpr bool QNetwork<workers, channels>::hasHomogeneousPorts() const {
+constexpr bool QNetwork<workers, channels>::hasHomogeneousInPorts() const {
     if (numPorts_.size() == 0) {
         return true;
     }
-    std::size_t ports = numPorts_[0];
+    const std::size_t ports = numPorts_[0];
     for (std::size_t i = 0U; i < numPorts_.size(); ++i) {
         if (ports != numPorts_[i]) {
             return false;
         }
     }
+    return true;
+}
+
+template<std::size_t workers, std::size_t channels>
+constexpr bool QNetwork<workers, channels>::hasHomogeneousOutPorts() const {
+    if (vertexPointer_.size() <= 1U) {
+        return true;
+    }
+    const std::size_t ports = vertexPointer_[1U] - vertexPointer_[0U];
     for (std::size_t i = 0U; i < vertexPointer_.size() - 1; ++i) {
         if (ports != vertexPointer_[i + 1] - vertexPointer_[i]) {
             return false;
         }
     }
     return true;
+}
+
+template<std::size_t workers, std::size_t channels>
+constexpr bool QNetwork<workers, channels>::hasHomogeneousPorts() const {
+    bool returnValue = hasHomogeneousInPorts() && hasHomogeneousOutPorts();
+    return returnValue;
 }
 
 template<std::size_t workers, std::size_t channels>
