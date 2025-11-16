@@ -80,6 +80,21 @@ constexpr std::array<std::size_t, tableSize> EarliestDeadlineFirstTable(const st
     return table;
 };
 
+template<std::size_t after, std::size_t before>
+constexpr std::array<std::size_t, after> extendTable(const std::array<std::size_t, before> &table) {
+    static_assert(after >= before);
+    
+    std::array<std::size_t, after> longTable;
+    for (std::size_t i = 0U; i < table.size(); ++i) {
+        longTable[i] = table[i];
+    }
+    for (std::size_t i = table.size(); i < longTable.size(); ++i) {
+        longTable[i] = std::numeric_limits<std::size_t>::max();
+    }
+
+    return longTable;
+}
+
 #define EARLIEST_DEADLINE_FIRST_TABLE(frequencies) (spapq::tables::EarliestDeadlineFirstTable<frequencies.size(), spapq::tables::sumArray<frequencies.size()>(frequencies)>(frequencies))
 #define REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(frequencies) (EARLIEST_DEADLINE_FIRST_TABLE(spapq::tables::reducedIntegerArray<frequencies.size()>(frequencies)))
 

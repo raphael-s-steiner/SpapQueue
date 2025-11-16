@@ -207,3 +207,61 @@ TEST(DiscrepancyTablesTest, QNetworkTableFrequency2) {
         EXPECT_TRUE(val);
     }
 }
+
+TEST(DiscrepancyTablesTest, TableExpansion) {
+    constexpr std::size_t extendedSize = 17U;
+
+    static constexpr std::array<std::size_t, extendedSize> extArr1 = tables::extendTable<extendedSize>(testArr1);
+    for (std::size_t i = 0U; i < extArr1.size(); ++i) {
+        if (i < testArr1.size()) {
+            EXPECT_EQ(extArr1[i], testArr1[i]);
+        } else {
+            EXPECT_EQ(extArr1[i], std::numeric_limits<std::size_t>::max());
+        }
+    }
+
+    static constexpr std::array<std::size_t, extendedSize> extArr2 = tables::extendTable<extendedSize>(testArr2);
+    for (std::size_t i = 0U; i < extArr2.size(); ++i) {
+        if (i < testArr2.size()) {
+            EXPECT_EQ(extArr2[i], testArr2[i]);
+        } else {
+            EXPECT_EQ(extArr2[i], std::numeric_limits<std::size_t>::max());
+        }
+    }
+
+    static constexpr std::array<std::size_t, extendedSize> extArr3 = tables::extendTable<extendedSize>(testArr3);
+    for (std::size_t i = 0U; i < extArr3.size(); ++i) {
+        if (i < testArr3.size()) {
+            EXPECT_EQ(extArr3[i], testArr3[i]);
+        } else {
+            EXPECT_EQ(extArr3[i], std::numeric_limits<std::size_t>::max());
+        }
+    }
+
+    static constexpr std::array<std::size_t, extendedSize> extArr4 = tables::extendTable<extendedSize>(testArr4);
+    for (std::size_t i = 0U; i < extArr4.size(); ++i) {
+        if (i < testArr4.size()) {
+            EXPECT_EQ(extArr4[i], testArr4[i]);
+        } else {
+            EXPECT_EQ(extArr4[i], std::numeric_limits<std::size_t>::max());
+        }
+    }
+
+    static constexpr std::array<std::size_t, extendedSize> extArr5 = tables::extendTable<extendedSize>(testArr5);
+    for (std::size_t i = 0U; i < extArr5.size(); ++i) {
+        if (i < testArr5.size()) {
+            EXPECT_EQ(extArr5[i], testArr5[i]);
+        } else {
+            EXPECT_EQ(extArr5[i], std::numeric_limits<std::size_t>::max());
+        }
+    }
+
+    static constexpr std::array<std::size_t, extendedSize> extArr6 = tables::extendTable<extendedSize>(testArr6);
+    for (std::size_t i = 0U; i < extArr6.size(); ++i) {
+        if (i < testArr6.size()) {
+            EXPECT_EQ(extArr6[i], testArr6[i]);
+        } else {
+            EXPECT_EQ(extArr6[i], std::numeric_limits<std::size_t>::max());
+        }
+    }
+}
