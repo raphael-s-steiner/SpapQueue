@@ -55,12 +55,8 @@ class RingBuffer {
         [[nodiscard("Pop may fail when queue is empty")]] inline bool pop(T &out) noexcept;
         [[nodiscard("Push may fail when queue is full")]] inline bool push(const T &value) noexcept;
         [[nodiscard("Push may fail when queue is full")]] inline bool push(T &&value) noexcept;
-
-        template<class InputIt, typename RetT = bool>
-        [[nodiscard("Push may fail when queue is full")]] inline std::enable_if_t<(sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U)), RetT> push(InputIt first, InputIt last) noexcept;
-
-        template<class InputIt, typename RetT = bool>
-        [[nodiscard("Push may fail when queue is full")]] inline std::enable_if_t<not ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U))), RetT> push(InputIt first, InputIt last) noexcept;
+        template<class InputIt>
+        [[nodiscard("Push may fail when queue is full")]] inline bool push(InputIt first, InputIt last) noexcept;
 
         // assertions
         static_assert(N > 0U, "No trivial RingBuffers allowed!");
@@ -82,7 +78,7 @@ inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
         advanceTail();
     }
     return result;
-};
+}
 
 template<typename T, std::size_t N>
 inline bool RingBuffer<T, N>::pop(T &out) noexcept {
@@ -93,7 +89,7 @@ inline bool RingBuffer<T, N>::pop(T &out) noexcept {
         advanceTail();
     }
     return hasData;
-};
+}
 
 template<typename T, std::size_t N>
 inline bool RingBuffer<T, N>::push(const T &value) noexcept {
@@ -105,7 +101,7 @@ inline bool RingBuffer<T, N>::push(const T &value) noexcept {
         advanceHead();
     }
     return nonFull;
-};
+}
 
 template<typename T, std::size_t N>
 inline bool RingBuffer<T, N>::push(T &&value) noexcept {
@@ -117,41 +113,22 @@ inline bool RingBuffer<T, N>::push(T &&value) noexcept {
         advanceHead();
     }
     return nonFull;
-};
+}
 
 template<typename T, std::size_t N>
-template<class InputIt, typename RetT>
-inline std::enable_if_t<(sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U)), RetT> RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
-    static_assert(std::is_same_v<RetT, bool>);
-
+template<class InputIt>
+inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
     const std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
     std::size_t head = headCounter_.load(std::memory_order_relaxed);
-    
-    const std::size_t diff = head - N + numElements;
-    const bool enoughSpace = (cachedTailCounter_ >= diff) || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) >= diff);
-    
-    if (enoughSpace) {
-        while (first != last) {
-            data_[head % N] = *first;
-            ++head;
-            ++first;
-        }
-        advanceHead(numElements);
+
+    bool enoughSpace;
+    if constexpr ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U))) {
+        const std::size_t diff = head - N + numElements;
+        enoughSpace = (cachedTailCounter_ >= diff) || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) >= diff);    
+    } else {
+        const std::size_t diff = N - numElements;
+        enoughSpace = ((head - cachedTailCounter_ <= diff) || ((head - (cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire))) <= diff));
     }
-    return enoughSpace;
-};
-
-
-template<typename T, std::size_t N>
-template<class InputIt, typename RetT>
-inline std::enable_if_t<not ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U))), RetT>  RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
-    static_assert(std::is_same_v<RetT, bool>);
-    
-    const std::size_t numElements = static_cast<std::size_t>( std::distance(first, last) );
-    std::size_t head = headCounter_.load(std::memory_order_relaxed);
-    
-    const std::size_t diff = N - numElements;
-    const bool enoughSpace = ((head - cachedTailCounter_ <= diff) || ((head - (cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire))) <= diff));
 
     if (enoughSpace) {
         while (first != last) {
@@ -162,7 +139,6 @@ inline std::enable_if_t<not ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_
         advanceHead(numElements);
     }
     return enoughSpace;
-};
-
+}
 
 } // end namespace spapq
