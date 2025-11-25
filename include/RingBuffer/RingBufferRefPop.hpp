@@ -3,7 +3,6 @@
 #include <array>
 #include <atomic>
 #include <limits>
-#include <optional>
 #include <type_traits>
 
 #include "Configuration/config.hpp"
