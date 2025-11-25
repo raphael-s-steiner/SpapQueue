@@ -3,6 +3,7 @@
 #include <thread>
 
 #include "RingBuffer/RingBuffer.hpp"
+#include "RingBuffer/RingBufferRefPop.hpp"
 
 using namespace spapq;
 

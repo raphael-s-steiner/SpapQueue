@@ -1,6 +1,7 @@
 #include <benchmark/benchmark.h>
 
 #include "RingBuffer/RingBuffer.hpp"
+#include "RingBuffer/RingBufferRefPop.hpp"
 
 using namespace spapq;
 
@@ -127,7 +128,7 @@ static void BM_RingBuffer_2Threads_optional(benchmark::State& state) {
 }
 BENCHMARK(BM_RingBuffer_2Threads_optional)->Arg(numItems)->Threads(2)->UseRealTime();
 
-RingBuffer<std::size_t, capacity> *channel_reference;
+RingBufferRefPop<std::size_t, capacity> *channel_reference;
 std::atomic_flag start_reference;
 std::atomic_flag end_reference;
 
@@ -137,7 +138,7 @@ static void BM_RingBuffer_2Threads_reference(benchmark::State& state) {
 
     const bool producer = state.thread_index() & 1;
 
-    RingBuffer<std::size_t, capacity> chan_opt;
+    RingBufferRefPop<std::size_t, capacity> chan_opt;
     if (producer) {
         start_reference.wait(false ,std::memory_order_acquire);
     } else {
