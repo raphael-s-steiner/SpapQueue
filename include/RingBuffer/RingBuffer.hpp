@@ -50,6 +50,7 @@ class RingBuffer {
         inline std::size_t occupancy() const noexcept { return headCounter_.load(std::memory_order_acquire) - tailCounter_.load(std::memory_order_acquire); };
         
         inline std::optional<T> pop() noexcept;
+        [[nodiscard("Pop may fail when queue is empty")]] inline bool pop(T &out) noexcept;
         [[nodiscard("Push may fail when queue is full")]] inline bool push(const T &value) noexcept;
         [[nodiscard("Push may fail when queue is full")]] inline bool push(T &&value) noexcept;
         template<class InputIt>
@@ -77,6 +78,19 @@ inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
         advanceTail();
     }
     return result;
+}
+
+template<typename T, std::size_t N>
+inline bool RingBuffer<T, N>::pop(T &out) noexcept {
+    const std::size_t tail = tailCounter_.load(std::memory_order_relaxed);
+    const bool hasData = (cachedHeadCounter_ != tail) || ((cachedHeadCounter_ = headCounter_.load(std::memory_order_acquire)) != tail);
+    if (hasData) {
+        const std::size_t pos = tail % N;
+        out = std::move(data_[pos]);
+        data_[pos].~T();
+        advanceTail();
+    }
+    return hasData;
 }
 
 template<typename T, std::size_t N>
