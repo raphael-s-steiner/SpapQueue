@@ -17,9 +17,11 @@ endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Configuring for Debug build. Debug symbols enabled.")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(STATUS "Configuring for Release build. Optimization -O3 and -DNDEBUG enabled.")
+elseif(CMAKE_BUILD_TYPE STREQUAL "ReleaseNative")
     message(STATUS "Configuring for Release build. Optimization -O3, -DNDEBUG enabled, and -march=native.")
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    message(STATUS "Configuring for Release with Debug Info build. Optimization -O3, debug symbols enabled, and -march=native.")
+    message(STATUS "Configuring for Release with Debug Info build. Optimization -O2 and debug symbols enabled.")
 else()
     message(STATUS "Build type '${CMAKE_BUILD_TYPE}' not recognised.")
 endif()
@@ -51,8 +53,9 @@ target_compile_options(ProjectExecutableFlags INTERFACE ${COMMON_CXX_WARNING_FLA
 # Set build-type specific compile options
 target_compile_options(ProjectExecutableFlags INTERFACE
     $<$<CONFIG:DEBUG>:-g>
-    $<$<CONFIG:RELEASE>:-O3;-DNDEBUG;-march=native>
-    $<$<CONFIG:RELWITHDEBINFO>:-O3;-march=native;-g>
+    $<$<CONFIG:RELEASE>:-O3;-DNDEBUG>
+    $<$<CONFIG:RELEASENATIVE>:-O3;-DNDEBUG;-march=native>
+    $<$<CONFIG:RELWITHDEBINFO>:-O2;-g>
 )
 
 # --- Library Definition ---
