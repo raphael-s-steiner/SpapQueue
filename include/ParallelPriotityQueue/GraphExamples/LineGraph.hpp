@@ -6,16 +6,17 @@
 
 namespace spapq {
 
-template<std::size_t workers, std::size_t channels>
+template <std::size_t workers, std::size_t channels>
 constexpr std::size_t lineGraphNumEdges(const QNetwork<workers, channels> &qNetwork) {
     std::size_t count = 0;
     for (std::size_t i = 0; i < workers; ++i) {
-        count += (qNetwork.numPorts_[i] * (qNetwork.vertexPointer_[i + 1] - qNetwork.vertexPointer_[i]));
+        count += (qNetwork.numPorts_[i]
+                  * (qNetwork.vertexPointer_[i + 1] - qNetwork.vertexPointer_[i]));
     }
     return count;
 }
 
-template<std::size_t workers, std::size_t channels, std::size_t outNumEdges>
+template <std::size_t workers, std::size_t channels, std::size_t outNumEdges>
 consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, channels> &qNetwork) {
     assert(outNumEdges == lineGraphNumEdges(qNetwork));
 
@@ -28,9 +29,12 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
     vertPointer[0] = outEdgeCount;
     for (std::size_t edge = 0U; edge < qNetwork.numChannels_; ++edge) {
         const std::size_t vertexJoint = qNetwork.edgeTargets_[edge];
-        for (std::size_t tgtEdge = qNetwork.vertexPointer_[vertexJoint]; tgtEdge < qNetwork.vertexPointer_[vertexJoint + 1]; ++tgtEdge) {
+        for (std::size_t tgtEdge = qNetwork.vertexPointer_[vertexJoint];
+             tgtEdge < qNetwork.vertexPointer_[vertexJoint + 1];
+             ++tgtEdge) {
             edgeTargets[outEdgeCount] = tgtEdge;
-            multiplicities[outEdgeCount] = qNetwork.multiplicities_[edge] * qNetwork.multiplicities_[tgtEdge];
+            multiplicities[outEdgeCount]
+                = qNetwork.multiplicities_[edge] * qNetwork.multiplicities_[tgtEdge];
             batchSize[outEdgeCount] = qNetwork.batchSize_[edge];
             ++outEdgeCount;
         }
@@ -40,6 +44,9 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
     return QNetwork<channels, outNumEdges>(vertPointer, edgeTargets, multiplicities, batchSize);
 }
 
-#define LINE_GRAPH(qNetwork) (spapq::lineGraph<qNetwork.numWorkers_, qNetwork.numChannels_, spapq::lineGraphNumEdges(qNetwork)>(qNetwork))
+#define LINE_GRAPH(qNetwork)                                         \
+    (spapq::lineGraph<qNetwork.numWorkers_,                          \
+                      qNetwork.numChannels_,                         \
+                      spapq::lineGraphNumEdges(qNetwork)>(qNetwork))
 
-} // end namespace spapq
+}    // end namespace spapq

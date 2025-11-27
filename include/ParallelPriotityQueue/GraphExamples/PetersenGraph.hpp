@@ -20,4 +20,4 @@ static constexpr QNetwork<10, 30> PETERSEN_GRAPH(
     }
 );
 
-} // end namespace spapq
+}    // end namespace spapq

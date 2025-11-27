@@ -1,6 +1,6 @@
 ---
 Language:        Cpp
-AccessModifierOffset: -1
+AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: Right
 AlignConsecutiveAssignments:
@@ -98,7 +98,7 @@ BraceWrapping:
   AfterEnum:       false
   AfterExternBlock: false
   AfterFunction:   false
-  AfterNamespace:  true
+  AfterNamespace:  false
   AfterObjCDeclaration: false
   AfterStruct:     false
   AfterUnion:      false
