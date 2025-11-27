@@ -88,7 +88,7 @@ AlwaysBreakBeforeMultilineStrings: false
 AttributeMacros:
   - __capability
 BinPackArguments: false
-BinPackLongBracedList: true
+# BinPackLongBracedList: true
 BinPackParameters: OnePerLine
 BitFieldColonSpacing: Both
 BraceWrapping:
@@ -113,23 +113,23 @@ BraceWrapping:
 BreakAdjacentStringLiterals: true
 BreakAfterAttributes: Leave
 BreakAfterJavaFieldAnnotations: false
-BreakAfterOpenBracketBracedList: true
-BreakAfterOpenBracketFunction: true
-BreakAfterOpenBracketIf: true
-BreakAfterOpenBracketLoop: true
-BreakAfterOpenBracketSwitch: true
+# BreakAfterOpenBracketBracedList: true
+# BreakAfterOpenBracketFunction: true
+# BreakAfterOpenBracketIf: true
+# BreakAfterOpenBracketLoop: true
+# BreakAfterOpenBracketSwitch: true
 BreakAfterReturnType: ExceptShortType
 BreakArrays:     false
 BreakBeforeBinaryOperators: All
 BreakBeforeBraces: Custom
-BreakBeforeCloseBracketBracedList: true
-BreakBeforeCloseBracketFunction: true
-BreakBeforeCloseBracketIf: true
-BreakBeforeCloseBracketLoop: true
-BreakBeforeCloseBracketSwitch: true
+# BreakBeforeCloseBracketBracedList: true
+# BreakBeforeCloseBracketFunction: true
+# BreakBeforeCloseBracketIf: true
+# BreakBeforeCloseBracketLoop: true
+# BreakBeforeCloseBracketSwitch: true
 BreakBeforeConceptDeclarations: Always
 BreakBeforeInlineASMColon: OnlyMultiline
-BreakBeforeTemplateCloser: true
+# BreakBeforeTemplateCloser: true
 BreakBeforeTernaryOperators: false
 BreakBinaryOperations: RespectPrecedence
 BreakConstructorInitializers: AfterColon
@@ -142,7 +142,7 @@ CommentPragmas:  '^ IWYU pragma:'
 CompactNamespaces: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
-Cpp11BracedListStyle: Block
+Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 DisableFormat:   false
 EmptyLineAfterAccessModifier: Never
