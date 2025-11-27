@@ -98,7 +98,7 @@ BraceWrapping:
   AfterEnum:       false
   AfterExternBlock: false
   AfterFunction:   false
-  AfterNamespace:  false
+  AfterNamespace:  true
   AfterObjCDeclaration: false
   AfterStruct:     false
   AfterUnion:      false
@@ -107,23 +107,34 @@ BraceWrapping:
   BeforeLambdaBody: false
   BeforeWhile:     false
   IndentBraces:    false
-  SplitEmptyFunction: true
-  SplitEmptyRecord: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
   SplitEmptyNamespace: true
 BreakAdjacentStringLiterals: true
 BreakAfterAttributes: Leave
 BreakAfterJavaFieldAnnotations: false
-BreakAfterReturnType: None
-BreakArrays:     true
+BreakAfterOpenBracketBracedList: true
+BreakAfterOpenBracketFunction: true
+BreakAfterOpenBracketIf: true
+BreakAfterOpenBracketLoop: true
+BreakAfterOpenBracketSwitch: true
+BreakAfterReturnType: ExceptShortType
+BreakArrays:     false
 BreakBeforeBinaryOperators: All
+BreakBeforeBraces: Custom
+BreakBeforeCloseBracketBracedList: true
+BreakBeforeCloseBracketFunction: true
+BreakBeforeCloseBracketIf: true
+BreakBeforeCloseBracketLoop: true
+BreakBeforeCloseBracketSwitch: true
 BreakBeforeConceptDeclarations: Always
-BreakBeforeBraces: Attach
 BreakBeforeInlineASMColon: OnlyMultiline
-BreakBeforeTernaryOperators: true
-BreakBinaryOperations: Never
-BreakConstructorInitializers: BeforeColon
+BreakBeforeTemplateCloser: true
+BreakBeforeTernaryOperators: false
+BreakBinaryOperations: RespectPrecedence
+BreakConstructorInitializers: AfterColon
 BreakFunctionDefinitionParameters: false
-BreakInheritanceList: BeforeColon
+BreakInheritanceList: AfterColon
 BreakStringLiterals: true
 BreakTemplateDeclarations: Yes
 ColumnLimit:     80
@@ -131,8 +142,8 @@ CommentPragmas:  '^ IWYU pragma:'
 CompactNamespaces: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
-Cpp11BracedListStyle: true
-DerivePointerAlignment: true
+Cpp11BracedListStyle: Block
+DerivePointerAlignment: false
 DisableFormat:   false
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
