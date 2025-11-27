@@ -179,15 +179,15 @@ IndentAccessModifiers: false
 IndentCaseBlocks: false
 IndentCaseLabels: true
 IndentExportBlock: true
-IndentExternBlock: AfterExternBlock
+IndentExternBlock: Indent
 IndentGotoLabels: true
-IndentPPDirectives: None
+IndentPPDirectives: AfterHash
 IndentRequiresClause: true
 IndentWidth:     4
 IndentWrappedFunctionNames: false
-InsertBraces:    false
-InsertNewlineAtEOF: false
-InsertTrailingCommas: None
+InsertBraces:    true
+InsertNewlineAtEOF: true
+InsertTrailingCommas: true
 IntegerLiteralSeparator:
   Binary:          0
   BinaryMinDigits: 0
