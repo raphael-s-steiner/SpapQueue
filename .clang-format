@@ -187,7 +187,7 @@ IndentWidth:     4
 IndentWrappedFunctionNames: false
 InsertBraces:    true
 InsertNewlineAtEOF: true
-InsertTrailingCommas: true
+InsertTrailingCommas: Wrapped
 IntegerLiteralSeparator:
   Binary:          0
   BinaryMinDigits: 0
@@ -276,7 +276,7 @@ SortJavaStaticImport: Before
 SortUsingDeclarations: Lexicographic
 SpaceAfterCStyleCast: true
 SpaceAfterLogicalNot: false
-SpaceAfterOperatorKeyword: false
+# SpaceAfterOperatorKeyword: false
 SpaceAfterTemplateKeyword: true
 SpaceAroundPointerQualifiers: Default
 SpaceBeforeAssignmentOperators: true
@@ -292,7 +292,7 @@ SpaceBeforeParensOptions:
   AfterFunctionDefinitionName: false
   AfterFunctionDeclarationName: false
   AfterIfMacros:   true
-  AfterNot: true
+  # AfterNot: true
   AfterOverloadedOperator: false
   AfterPlacementOperator: true
   AfterRequiresInClause: true
