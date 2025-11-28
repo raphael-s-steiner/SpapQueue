@@ -15,8 +15,7 @@ static constexpr std::array<std::size_t, 5U> testArr6 = {6U, 12U, 15U, 39U, 45U}
 template <std::size_t N, std::size_t tableSize>
 constexpr bool validTable(const std::array<std::size_t, tableSize> &table,
                           const std::array<std::size_t, N> &frequencies) {
-    std::size_t sum
-        = std::accumulate(frequencies.cbegin(), frequencies.cend(), static_cast<std::size_t>(0U));
+    std::size_t sum = std::accumulate(frequencies.cbegin(), frequencies.cend(), static_cast<std::size_t>(0U));
     if (sum % tableSize != 0U) { return false; }
     const std::size_t ratio = sum / tableSize;
 
@@ -42,8 +41,7 @@ constexpr bool satisfiesDiscrepancyInequality(const std::array<std::size_t, tabl
     assert(validTable(table, frequencies));
 
     const std::size_t ratio
-        = std::accumulate(frequencies.cbegin(), frequencies.cend(), static_cast<std::size_t>(0U))
-          / tableSize;
+        = std::accumulate(frequencies.cbegin(), frequencies.cend(), static_cast<std::size_t>(0U)) / tableSize;
 
     std::array<std::size_t, N> numAllocs;
     for (std::size_t &val : numAllocs) { val = 0U; }
@@ -62,8 +60,7 @@ constexpr bool satisfiesDiscrepancyInequality(const std::array<std::size_t, tabl
                     return false;
                 }
             } else {
-                if ((numAllocs[s] != expectedOccurrences)
-                    & (numAllocs[s] != expectedOccurrences + 1U)) {
+                if ((numAllocs[s] != expectedOccurrences) & (numAllocs[s] != expectedOccurrences + 1U)) {
                     return false;
                 }
             }
@@ -142,27 +139,19 @@ TEST(DiscrepancyTablesTest, QNetworkTableFrequency1) {
 
     std::size_t worker = 0U;
     for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
-        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1];
-             ++j) {
-            EXPECT_EQ(tableFreq0[i - graph.vertexPointer_[worker]]
-                          * graph.batchSize_[i]
-                          * graph.multiplicities_[j],
-                      tableFreq0[j - graph.vertexPointer_[worker]]
-                          * graph.batchSize_[j]
-                          * graph.multiplicities_[i]);
+        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
+            EXPECT_EQ(
+                tableFreq0[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
+                tableFreq0[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
         }
     }
 
     worker = 1U;
     for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
-        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1];
-             ++j) {
-            EXPECT_EQ(tableFreq1[i - graph.vertexPointer_[worker]]
-                          * graph.batchSize_[i]
-                          * graph.multiplicities_[j],
-                      tableFreq1[j - graph.vertexPointer_[worker]]
-                          * graph.batchSize_[j]
-                          * graph.multiplicities_[i]);
+        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
+            EXPECT_EQ(
+                tableFreq1[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
+                tableFreq1[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
         }
     }
 
@@ -174,18 +163,13 @@ TEST(DiscrepancyTablesTest, QNetworkTableFrequency1) {
 }
 
 TEST(DiscrepancyTablesTest, QNetworkTableFrequency2) {
-    constexpr auto graph = QNetwork<4, 8>({0, 2, 4, 6, 8},
-                                          {0, 1, 1, 2, 2, 3, 3, 0},
-                                          {2, 1, 1, 2, 3, 2, 3, 2},
-                                          {1, 2, 1, 2, 2, 3, 6, 9});
+    constexpr auto graph = QNetwork<4, 8>(
+        {0, 2, 4, 6, 8}, {0, 1, 1, 2, 2, 3, 3, 0}, {2, 1, 1, 2, 3, 2, 3, 2}, {1, 2, 1, 2, 2, 3, 6, 9});
 
     for (std::size_t worker = 0U; worker < graph.numWorkers_; ++worker) {
         const auto tableFreq = tables::qNetworkTableFrequencies<4, 8, 2>(graph, worker);
-        for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1];
-             ++i) {
-            for (std::size_t j = graph.vertexPointer_[worker] + 1;
-                 j < graph.vertexPointer_[worker + 1];
-                 ++j) {
+        for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
+            for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
                 EXPECT_EQ(tableFreq[i - graph.vertexPointer_[worker]]
                               * graph.batchSize_[i]
                               * graph.multiplicities_[j],

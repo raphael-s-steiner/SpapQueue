@@ -43,8 +43,7 @@ TEST(QNetworkTest, Ports1) {
     std::vector<std::vector<std::size_t>> inGraph(netw.numWorkers_);
 
     for (std::size_t src = 0; src < netw.numWorkers_; ++src) {
-        for (std::size_t tgtPtr = netw.vertexPointer_[src]; tgtPtr < netw.vertexPointer_[src + 1];
-             ++tgtPtr) {
+        for (std::size_t tgtPtr = netw.vertexPointer_[src]; tgtPtr < netw.vertexPointer_[src + 1]; ++tgtPtr) {
             const std::size_t tgt = netw.edgeTargets_[tgtPtr];
             outGraph[src].push_back(tgt);
             inGraph[tgt].push_back(src);
@@ -61,8 +60,7 @@ TEST(QNetworkTest, Ports1) {
     }
 
     for (std::size_t src = 0; src < netw.numWorkers_; ++src) {
-        for (std::size_t tgtPtr = netw.vertexPointer_[src]; tgtPtr < netw.vertexPointer_[src + 1];
-             ++tgtPtr) {
+        for (std::size_t tgtPtr = netw.vertexPointer_[src]; tgtPtr < netw.vertexPointer_[src + 1]; ++tgtPtr) {
             const std::size_t tgt = netw.edgeTargets_[tgtPtr];
             const std::size_t port = netw.targetPort_[tgtPtr];
             EXPECT_GE(port, 0U);
@@ -85,8 +83,7 @@ TEST(QNetworkTest, Ports2) {
     std::vector<std::vector<std::size_t>> inGraph(netw.numWorkers_);
 
     for (std::size_t src = 0; src < netw.numWorkers_; ++src) {
-        for (std::size_t tgtPtr = netw.vertexPointer_[src]; tgtPtr < netw.vertexPointer_[src + 1];
-             ++tgtPtr) {
+        for (std::size_t tgtPtr = netw.vertexPointer_[src]; tgtPtr < netw.vertexPointer_[src + 1]; ++tgtPtr) {
             const std::size_t tgt = netw.edgeTargets_[tgtPtr];
             outGraph[src].push_back(tgt);
             inGraph[tgt].push_back(src);
@@ -103,8 +100,7 @@ TEST(QNetworkTest, Ports2) {
     }
 
     for (std::size_t src = 0; src < netw.numWorkers_; ++src) {
-        for (std::size_t tgtPtr = netw.vertexPointer_[src]; tgtPtr < netw.vertexPointer_[src + 1];
-             ++tgtPtr) {
+        for (std::size_t tgtPtr = netw.vertexPointer_[src]; tgtPtr < netw.vertexPointer_[src + 1]; ++tgtPtr) {
             const std::size_t tgt = netw.edgeTargets_[tgtPtr];
             const std::size_t port = netw.targetPort_[tgtPtr];
             EXPECT_GE(port, 0U);
@@ -158,8 +154,7 @@ TEST(QNetworkTest, LineGraph) {
     EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()).isValidQNetwork());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())).isValidQNetwork());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()))).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()))))
-                    .isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())))).isValidQNetwork());
 
     EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()).isValidQNetwork());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>())).isValidQNetwork());

@@ -27,10 +27,7 @@ constexpr std::array<std::size_t, workerOutChannels> qNetworkTableFrequencies(
     return reducedIntegerArray<frequencies.size()>(frequencies);
 }
 
-template <std::size_t networkWorkers,
-          std::size_t networkChannels,
-          std::size_t workerOutChannels,
-          std::size_t tableLength>
+template <std::size_t networkWorkers, std::size_t networkChannels, std::size_t workerOutChannels, std::size_t tableLength>
 constexpr std::array<std::size_t, tableLength> qNetworkTable(
     const QNetwork<networkWorkers, networkChannels> &netw, const std::size_t worker) {
     assert(netw.isValidQNetwork());
@@ -39,8 +36,7 @@ constexpr std::array<std::size_t, tableLength> qNetworkTable(
     assert(tableLength == sumArray(qNetworkTableFrequencies(netw, worker)));
 
     const std::array<std::size_t, workerOutChannels> frequencies
-        = qNetworkTableFrequencies<networkWorkers, networkChannels, workerOutChannels>(netw,
-                                                                                       worker);
+        = qNetworkTableFrequencies<networkWorkers, networkChannels, workerOutChannels>(netw, worker);
 
     auto table = EarliestDeadlineFirstTable<workerOutChannels, tableLength>(frequencies);
 

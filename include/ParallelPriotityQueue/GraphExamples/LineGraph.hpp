@@ -10,8 +10,7 @@ template <std::size_t workers, std::size_t channels>
 constexpr std::size_t lineGraphNumEdges(const QNetwork<workers, channels> &qNetwork) {
     std::size_t count = 0;
     for (std::size_t i = 0; i < workers; ++i) {
-        count += (qNetwork.numPorts_[i]
-                  * (qNetwork.vertexPointer_[i + 1] - qNetwork.vertexPointer_[i]));
+        count += (qNetwork.numPorts_[i] * (qNetwork.vertexPointer_[i + 1] - qNetwork.vertexPointer_[i]));
     }
     return count;
 }
@@ -33,8 +32,7 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
              tgtEdge < qNetwork.vertexPointer_[vertexJoint + 1];
              ++tgtEdge) {
             edgeTargets[outEdgeCount] = tgtEdge;
-            multiplicities[outEdgeCount]
-                = qNetwork.multiplicities_[edge] * qNetwork.multiplicities_[tgtEdge];
+            multiplicities[outEdgeCount] = qNetwork.multiplicities_[edge] * qNetwork.multiplicities_[tgtEdge];
             batchSize[outEdgeCount] = qNetwork.batchSize_[edge];
             ++outEdgeCount;
         }
@@ -44,9 +42,8 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
     return QNetwork<channels, outNumEdges>(vertPointer, edgeTargets, multiplicities, batchSize);
 }
 
-#define LINE_GRAPH(qNetwork)                                         \
-    (spapq::lineGraph<qNetwork.numWorkers_,                          \
-                      qNetwork.numChannels_,                         \
-                      spapq::lineGraphNumEdges(qNetwork)>(qNetwork))
+#define LINE_GRAPH(qNetwork)                                                                            \
+    (spapq::lineGraph<qNetwork.numWorkers_, qNetwork.numChannels_, spapq::lineGraphNumEdges(qNetwork)>( \
+        qNetwork))
 
 }    // end namespace spapq

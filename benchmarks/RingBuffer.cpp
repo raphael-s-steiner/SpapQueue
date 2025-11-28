@@ -15,15 +15,13 @@ static void BM_RingBuffer_1Threads_alternating(benchmark::State &state) {
     RingBuffer<std::size_t, capacity> channel;
 
     std::vector<std::size_t> values(N);
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        values[i] = static_cast<std::size_t>(std::rand());
-    }
+    for (std::size_t i = 0; i < values.size(); ++i) { values[i] = static_cast<std::size_t>(std::rand()); }
 
     for (auto _ : state) {
         std::optional<std::size_t> popVal(std::nullopt);
         for (std::size_t i = 0U; i < values.size(); ++i) {
             while (not channel.push(values[i])) { }
-            while (not(popVal = channel.pop())) { }
+            while (not (popVal = channel.pop())) { }
         }
         benchmark::DoNotOptimize(popVal);
         benchmark::ClobberMemory();
@@ -41,9 +39,7 @@ static void BM_RingBuffer_1Threads_random(benchmark::State &state) {
     RingBuffer<std::size_t, capacity> channel;
 
     std::vector<std::size_t> values(N);
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        values[i] = static_cast<std::size_t>(std::rand());
-    }
+    for (std::size_t i = 0; i < values.size(); ++i) { values[i] = static_cast<std::size_t>(std::rand()); }
 
     for (auto _ : state) {
         std::optional<std::size_t> popVal(std::nullopt);
@@ -95,9 +91,7 @@ static void BM_RingBuffer_2Threads_optional(benchmark::State &state) {
     }
 
     std::vector<std::size_t> values(N);
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        values[i] = static_cast<std::size_t>(std::rand());
-    }
+    for (std::size_t i = 0; i < values.size(); ++i) { values[i] = static_cast<std::size_t>(std::rand()); }
 
     for (auto _ : state) {
         if (producer) {
@@ -107,7 +101,7 @@ static void BM_RingBuffer_2Threads_optional(benchmark::State &state) {
         } else {
             std::optional<std::size_t> popVal(std::nullopt);
             for (std::size_t i = 0U; i < values.size(); ++i) {
-                while (not(popVal = channel_optional->pop())) { }
+                while (not (popVal = channel_optional->pop())) { }
             }
             benchmark::DoNotOptimize(popVal);
         }
@@ -146,9 +140,7 @@ static void BM_RingBuffer_2Threads_reference(benchmark::State &state) {
     }
 
     std::vector<std::size_t> values(N);
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        values[i] = static_cast<std::size_t>(std::rand());
-    }
+    for (std::size_t i = 0; i < values.size(); ++i) { values[i] = static_cast<std::size_t>(std::rand()); }
 
     for (auto _ : state) {
         if (producer) {

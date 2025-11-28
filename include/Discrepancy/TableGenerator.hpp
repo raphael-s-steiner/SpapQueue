@@ -26,11 +26,8 @@ constexpr std::size_t sumArray(const std::array<std::size_t, N> arr) {
     return std::accumulate(arr.cbegin(), arr.cend(), static_cast<std::size_t>(0U));
 };
 
-constexpr std::size_t findEarliestdeadline(std::size_t lower,
-                                           std::size_t upper,
-                                           std::size_t frequency,
-                                           std::size_t tableSize,
-                                           std::size_t lbVal) {
+constexpr std::size_t findEarliestdeadline(
+    std::size_t lower, std::size_t upper, std::size_t frequency, std::size_t tableSize, std::size_t lbVal) {
     assert(((frequency * upper) / tableSize) >= lbVal);
     assert((lower == 0U) || (((frequency * (lower - 1U)) / tableSize) < lbVal));
 
@@ -50,15 +47,12 @@ constexpr std::size_t findEarliestdeadline(std::size_t lower,
 template <std::size_t M, std::size_t tableSize>
 constexpr std::array<std::size_t, tableSize> EarliestDeadlineFirstTable(
     const std::array<std::size_t, M> frequencies) {
-    static_assert(
-        tableSize <= (std::numeric_limits<std::size_t>::max() >> ((sizeof(std::size_t) * 4U) + 1U)),
-        "May overflow if this condition is not met!");
-    assert(
-        tableSize
-        == std::accumulate(frequencies.cbegin(), frequencies.cend(), static_cast<std::size_t>(0U)));
-    assert(std::all_of(frequencies.cbegin(), frequencies.cend(), [](const std::size_t &freq) {
-        return (freq != 0U);
-    }));
+    static_assert(tableSize <= (std::numeric_limits<std::size_t>::max() >> ((sizeof(std::size_t) * 4U) + 1U)),
+                  "May overflow if this condition is not met!");
+    assert(tableSize
+           == std::accumulate(frequencies.cbegin(), frequencies.cend(), static_cast<std::size_t>(0U)));
+    assert(std::all_of(
+        frequencies.cbegin(), frequencies.cend(), [](const std::size_t &freq) { return (freq != 0U); }));
 
     std::array<std::size_t, tableSize> table;
 
@@ -72,8 +66,7 @@ constexpr std::array<std::size_t, tableSize> EarliestDeadlineFirstTable(
         for (std::size_t s = 0U; s < numAllocs.size(); ++s) {
             if (numAllocs[s] != ((i * frequencies[s]) / tableSize)) { continue; }
             if (u == limit || ((frequencies[s] * u) / tableSize) >= numAllocs[s] + 1) {
-                std::size_t u_prime
-                    = findEarliestdeadline(i, u, frequencies[s], tableSize, numAllocs[s] + 1);
+                std::size_t u_prime = findEarliestdeadline(i, u, frequencies[s], tableSize, numAllocs[s] + 1);
                 if (u_prime <= u) {
                     table[i] = s;
                     u = u_prime;
@@ -99,13 +92,12 @@ constexpr std::array<std::size_t, after> extendTable(const std::array<std::size_
     return longTable;
 }
 
-#define EARLIEST_DEADLINE_FIRST_TABLE(frequencies)                                          \
-    (spapq::tables::EarliestDeadlineFirstTable<frequencies.size(),                          \
-                                               spapq::tables::sumArray<frequencies.size()>( \
-                                                   frequencies)>(frequencies))
-#define REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(frequencies)                    \
-    (EARLIEST_DEADLINE_FIRST_TABLE(                                           \
-        spapq::tables::reducedIntegerArray<frequencies.size()>(frequencies)))
+#define EARLIEST_DEADLINE_FIRST_TABLE(frequencies)                                                        \
+    (spapq::tables::EarliestDeadlineFirstTable<frequencies.size(),                                        \
+                                               spapq::tables::sumArray<frequencies.size()>(frequencies)>( \
+        frequencies))
+#define REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(frequencies)                                               \
+    (EARLIEST_DEADLINE_FIRST_TABLE(spapq::tables::reducedIntegerArray<frequencies.size()>(frequencies)))
 
 }    // end namespace tables
 }    // end namespace spapq

@@ -250,7 +250,7 @@ TEST(RingBufferTest, Multithread4) {
     std::jthread consumer([&channel, &values]() {
         for (std::size_t i = 0U; i < values.size(); ++i) {
             std::optional<long> popVal(std::nullopt);
-            while (not(popVal = channel.pop())) { }
+            while (not (popVal = channel.pop())) { }
             EXPECT_LE(0U, channel.occupancy());
             EXPECT_LE(channel.occupancy(), channel.getCapacity());
             EXPECT_EQ(popVal.value(), values[i]);

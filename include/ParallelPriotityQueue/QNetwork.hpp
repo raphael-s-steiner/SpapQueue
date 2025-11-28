@@ -87,10 +87,7 @@ struct QNetwork {
 
     constexpr QNetwork(std::array<std::size_t, workers + 1> vertexPointer,
                        std::array<std::size_t, channels> edgeTargets) :
-        numWorkers_(workers),
-        numChannels_(channels),
-        vertexPointer_(vertexPointer),
-        edgeTargets_(edgeTargets) {
+        numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets) {
         setDefaultMultiplicities();
         setDefaultBatchSize();
         setDefaultBufferSize();
@@ -133,21 +130,19 @@ constexpr bool QNetwork<workers, channels>::isValidQNetwork() const {
 
     if (numChannels_ == 0) { return false; }
 
-    if (not std::all_of(multiplicities_.cbegin(),
-                        multiplicities_.cend(),
-                        [](const std::size_t &mul) { return mul > 0U; })) {
-        return false;
-    }
-
-    if (not std::all_of(batchSize_.cbegin(), batchSize_.cend(), [](const std::size_t &batch) {
-            return batch > 0U;
+    if (not std::all_of(multiplicities_.cbegin(), multiplicities_.cend(), [](const std::size_t &mul) {
+            return mul > 0U;
         })) {
         return false;
     }
 
-    if (not std::all_of(numPorts_.cbegin(), numPorts_.cend(), [](const std::size_t &ports) {
-            return ports > 0U;
-        })) {
+    if (not std::all_of(
+            batchSize_.cbegin(), batchSize_.cend(), [](const std::size_t &batch) { return batch > 0U; })) {
+        return false;
+    }
+
+    if (not std::all_of(
+            numPorts_.cbegin(), numPorts_.cend(), [](const std::size_t &ports) { return ports > 0U; })) {
         return false;
     }
 
