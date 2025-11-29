@@ -249,4 +249,9 @@ TEST(QNetworkTest, SelfPush) {
             EXPECT_FALSE(netw7.edgeTargets_[edge] == netw7.numWorkers_);
         }
     }
+
+    constexpr QNetwork<3, 6> netw({0,3,5,6}, {0,3,1, 3,2, 0});
+    EXPECT_EQ(netw.numPorts_[0], 3);
+    EXPECT_EQ(netw.numPorts_[1], 2);
+    EXPECT_EQ(netw.numPorts_[2], 1);
 }
