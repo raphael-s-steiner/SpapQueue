@@ -32,7 +32,7 @@ endmacro()
 _add_test( RingBuffer )
 _add_test( QNetwork )
 _add_test( DiscrepancyTables )
-# _add_test( SpapQueue )
+_add_test( SpapQueue )
 
 
 # Custom target to compile all the tests
