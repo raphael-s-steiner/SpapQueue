@@ -28,44 +28,25 @@ class RingBuffer {
     char padding_[CACHE_LINE_SIZE - sizeof(std::size_t)];
 
   protected:
-    inline std::size_t getTailPosition() const noexcept {
-        return tailCounter_.load(std::memory_order_relaxed) % N;
-    };
+    inline std::size_t getTailPosition() const noexcept;
+    inline std::size_t getHeadPosition() const noexcept;
 
-    inline std::size_t getHeadPosition() const noexcept {
-        return headCounter_.load(std::memory_order_relaxed) % N;
-    };
-
-    inline void advanceTail(std::size_t n = 1U) noexcept {
-        tailCounter_.fetch_add(n, std::memory_order_release);
-    };
-
-    inline void advanceHead(std::size_t n = 1U) noexcept {
-        headCounter_.fetch_add(n, std::memory_order_release);
-    };
+    inline void advanceTail(std::size_t n = 1U) noexcept;
+    inline void advanceHead(std::size_t n = 1U) noexcept;
 
   public:
     RingBuffer() = default;
-    RingBuffer(const RingBuffer &other) = default;
-    RingBuffer(RingBuffer &&other) = default;
-    RingBuffer &operator=(const RingBuffer &other) = default;
-    RingBuffer &operator=(RingBuffer &&other) = default;
+    RingBuffer(const RingBuffer &other) = delete;
+    RingBuffer(RingBuffer &&other) = delete;
+    RingBuffer &operator=(const RingBuffer &other) = delete;
+    RingBuffer &operator=(RingBuffer &&other) = delete;
     ~RingBuffer() = default;
 
     inline constexpr std::size_t getCapacity() const noexcept { return N; };
 
-    inline bool isEmpty() const noexcept {
-        return tailCounter_.load(std::memory_order_relaxed) == headCounter_.load(std::memory_order_acquire);
-    };
-
-    inline bool isFull() const noexcept {
-        return tailCounter_.load(std::memory_order_acquire) + N
-               == headCounter_.load(std::memory_order_relaxed);
-    };
-
-    inline std::size_t occupancy() const noexcept {
-        return headCounter_.load(std::memory_order_acquire) - tailCounter_.load(std::memory_order_acquire);
-    };
+    inline bool isEmpty() const noexcept;
+    inline bool isFull() const noexcept;
+    inline std::size_t occupancy() const noexcept;
 
     inline std::optional<T> pop() noexcept;
     [[nodiscard("Pop may fail when queue is empty")]] inline bool pop(T &out) noexcept;
@@ -87,6 +68,41 @@ class RingBuffer {
     static_assert(sizeof(std::size_t) >= 8 || (((std::numeric_limits<std::size_t>::max() - N + 1U) % N == 0U)),
                   "Modulo operations need to be consistent or number of operations need to be "
                   "smaller than max value of std::size_t!");
+};
+
+template <typename T, std::size_t N>
+inline std::size_t RingBuffer<T, N>::getTailPosition() const noexcept {
+    return tailCounter_.load(std::memory_order_relaxed) % N;
+};
+
+template <typename T, std::size_t N>
+inline std::size_t RingBuffer<T, N>::getHeadPosition() const noexcept {
+    return headCounter_.load(std::memory_order_relaxed) % N;
+};
+
+template <typename T, std::size_t N>
+inline void RingBuffer<T, N>::advanceTail(std::size_t n) noexcept {
+    tailCounter_.fetch_add(n, std::memory_order_release);
+};
+
+template <typename T, std::size_t N>
+inline void RingBuffer<T, N>::advanceHead(std::size_t n) noexcept {
+    headCounter_.fetch_add(n, std::memory_order_release);
+};
+
+template <typename T, std::size_t N>
+inline bool RingBuffer<T, N>::isEmpty() const noexcept {
+    return tailCounter_.load(std::memory_order_relaxed) == headCounter_.load(std::memory_order_acquire);
+};
+
+template <typename T, std::size_t N>
+inline bool RingBuffer<T, N>::isFull() const noexcept {
+    return tailCounter_.load(std::memory_order_acquire) + N == headCounter_.load(std::memory_order_relaxed);
+};
+
+template <typename T, std::size_t N>
+inline std::size_t RingBuffer<T, N>::occupancy() const noexcept {
+    return headCounter_.load(std::memory_order_acquire) - tailCounter_.load(std::memory_order_acquire);
 };
 
 template <typename T, std::size_t N>
