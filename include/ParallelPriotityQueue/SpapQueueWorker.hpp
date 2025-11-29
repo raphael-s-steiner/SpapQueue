@@ -132,8 +132,7 @@ inline bool SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource<nu
         const std::size_t batch = netw.batchSize_[*channelPointer_];
 
         assert(batch <= std::distance(outBuffer_.begin(), bufferPointer_));
-        const typename std::array<T, netw.maxBatchSize()>::iterator itBegin = bufferPointer_;
-        std::prev(itBegin, batch);
+        const typename std::array<T, netw.maxBatchSize()>::iterator itBegin = std::prev(bufferPointer_, batch);
 
         successfulPush = globalQueue_.pushInternal(itBegin, bufferPointer_, targetWorker, port);
         if (successfulPush) { bufferPointer_ = itBegin; }
