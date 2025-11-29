@@ -29,22 +29,14 @@ class SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource {
     inline void pushOutBufferSelf();
 
     inline void enqueueInChannels();
-    virtual inline void processElement(T &&val) = 0;
+    inline void processElement(T &&val);
 
-    [[nodiscard("Push may fail when queue is full")]] inline bool push(const T &val, std::size_t port) {
-        return inPorts_[port].push(val);
-    };
-
-    [[nodiscard("Push may fail when queue is full")]] inline bool push(T &&val, std::size_t port) {
-        return inPorts_[port].push(std::move(val));
-    };
-
+    [[nodiscard("Push may fail when queue is full")]] inline bool push(const T &val, std::size_t port);
+    [[nodiscard("Push may fail when queue is full")]] inline bool push(T &&val, std::size_t port);
     template <class InputIt>
     [[nodiscard("Push may fail when queue is full")]] inline bool push(InputIt first,
                                                                        InputIt last,
-                                                                       std::size_t port) {
-        return inPorts_[port].push(first, last);
-    }
+                                                                       std::size_t port);
 
   protected:
     inline void enqueueGlobal(const T &val);
@@ -66,6 +58,28 @@ class SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource {
 
     inline void run();
 };
+
+template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
+template <std::size_t numPorts, std::size_t tableLength>
+inline bool SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource<numPorts, tableLength>::push(
+    const T &val, std::size_t port) {
+    return inPorts_[port].push(val);
+};
+
+template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
+template <std::size_t numPorts, std::size_t tableLength>
+inline bool SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource<numPorts, tableLength>::push(
+    T &&val, std::size_t port) {
+    return inPorts_[port].push(std::move(val));
+};
+
+template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
+template <std::size_t numPorts, std::size_t tableLength>
+template <class InputIt>
+inline bool SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource<numPorts, tableLength>::push(
+    InputIt first, InputIt last, std::size_t port) {
+    return inPorts_[port].push(first, last);
+}
 
 template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
 template <std::size_t numPorts, std::size_t tableLength>
