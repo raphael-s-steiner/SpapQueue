@@ -66,7 +66,7 @@ constexpr SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource<numP
     bufferPointer_ = outBuffer_.begin();
     channelPointer_ = channelIndices_.cbegin();
     channelTableEndPointer_(std::next(channelIndices_.cbegin(), channelIndicesLength));
-};
+}
 
 template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
 template <std::size_t numPorts, std::size_t tableLength>
@@ -79,14 +79,14 @@ template <std::size_t numPorts, std::size_t tableLength>
 inline bool SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource<numPorts, tableLength>::push(
     const T &val, std::size_t port) {
     return inPorts_[port].push(val);
-};
+}
 
 template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
 template <std::size_t numPorts, std::size_t tableLength>
 inline bool SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource<numPorts, tableLength>::push(
     T &&val, std::size_t port) {
     return inPorts_[port].push(std::move(val));
-};
+}
 
 template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
 template <std::size_t numPorts, std::size_t tableLength>
