@@ -24,7 +24,8 @@ constexpr std::array<std::size_t, workerOutChannels> qNetworkTableFrequencies(
         frequencies[index] = netw.multiplicities_[i] * (batchSizeLCM / netw.batchSize_[i]);
     }
 
-    return reducedIntegerArray<frequencies.size()>(frequencies);
+    auto ret = reducedIntegerArray<frequencies.size()>(frequencies);
+    return ret;
 }
 
 template <std::size_t networkWorkers, std::size_t networkChannels, std::size_t workerOutChannels, std::size_t tableLength>

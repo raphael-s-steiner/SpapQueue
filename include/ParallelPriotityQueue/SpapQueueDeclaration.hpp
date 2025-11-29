@@ -38,16 +38,16 @@ class SpapQueue {
     alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> globalCount_{0U};
     std::atomic_flag initSync;
 
-    // void initQueue();
-    // void pushUnsafe(const T &val, const std::size_t workerId = 0U);
-    // void pushUnsafe(T &&val, const std::size_t workerId = 0U);
+    void initQueue();
+    void pushUnsafe(const T &val, const std::size_t workerId = 0U);
+    void pushUnsafe(T &&val, const std::size_t workerId = 0U);
 
-    // void processQueue() {
-    //     initSynch.test_and_set(std::memory_order_release);
-    //     initSynch.notify_all();
-    // };
+    void processQueue() {
+        initSync.test_and_set(std::memory_order_release);
+        initSync.notify_all();
+    };
 
-    // void waitProcessFinish();
+    void waitProcessFinish();
 
     template <std::size_t tupleSize, std::enable_if_t<not netw.hasHomogeneousInPorts(), bool> = true>
     [[nodiscard("Push may fail when queue is full")]] inline bool pushInternalHelper(

@@ -4,11 +4,11 @@
 
 namespace spapq {
 
-// template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
-// void SpapQueue<T, workers, channels, netw, LocalQType>::waitProcessFinish() {
-//     for (auto &thread : workers_) { thread.join(); }
-//     initSync.clear();
-// }
+template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
+void SpapQueue<T, workers, channels, netw, LocalQType>::waitProcessFinish() {
+    for (auto &thread : workers_) { thread.join(); }
+    initSync.clear();
+}
 
 template <typename T, std::size_t workers, std::size_t channels, QNetwork<workers, channels> netw, typename LocalQType>
 template <std::size_t tupleSize, std::enable_if_t<not netw.hasHomogeneousInPorts(), bool>>

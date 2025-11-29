@@ -216,3 +216,37 @@ TEST(QNetworkTest, PortNumbers) {
     EXPECT_TRUE(netw3.hasHomogeneousOutPorts());
     EXPECT_FALSE(netw3.hasHomogeneousPorts());
 }
+
+TEST(QNetworkTest, SelfPush) {
+    constexpr QNetwork<1, 1> netw1 = FULLY_CONNECTED_GRAPH<1>();
+    for (std::size_t i = 0U; i < netw1.numWorkers_; ++i) {
+        EXPECT_EQ(netw1.edgeTargets_[netw1.vertexPointer_[i]], netw1.numWorkers_);
+        for (std::size_t edge = netw1.vertexPointer_[i] + 1U; edge < netw1.vertexPointer_[i + 1U]; ++edge) {
+            EXPECT_FALSE(netw1.edgeTargets_[edge] == netw1.numWorkers_);
+        }
+    }
+
+    constexpr QNetwork<2, 4> netw2 = FULLY_CONNECTED_GRAPH<2>();
+    for (std::size_t i = 0U; i < netw2.numWorkers_; ++i) {
+        EXPECT_EQ(netw2.edgeTargets_[netw2.vertexPointer_[i]], netw2.numWorkers_);
+        for (std::size_t edge = netw2.vertexPointer_[i] + 1U; edge < netw2.vertexPointer_[i + 1U]; ++edge) {
+            EXPECT_FALSE(netw2.edgeTargets_[edge] == netw2.numWorkers_);
+        }
+    }
+
+    constexpr QNetwork<4, 16> netw4 = FULLY_CONNECTED_GRAPH<4>();
+    for (std::size_t i = 0U; i < netw4.numWorkers_; ++i) {
+        EXPECT_EQ(netw4.edgeTargets_[netw4.vertexPointer_[i]], netw4.numWorkers_);
+        for (std::size_t edge = netw4.vertexPointer_[i] + 1U; edge < netw4.vertexPointer_[i + 1U]; ++edge) {
+            EXPECT_FALSE(netw4.edgeTargets_[edge] == netw4.numWorkers_);
+        }
+    }
+
+    constexpr QNetwork<7, 49> netw7 = FULLY_CONNECTED_GRAPH<7>();
+    for (std::size_t i = 0U; i < netw7.numWorkers_; ++i) {
+        EXPECT_EQ(netw7.edgeTargets_[netw7.vertexPointer_[i]], netw7.numWorkers_);
+        for (std::size_t edge = netw7.vertexPointer_[i] + 1U; edge < netw7.vertexPointer_[i + 1U]; ++edge) {
+            EXPECT_FALSE(netw7.edgeTargets_[edge] == netw7.numWorkers_);
+        }
+    }
+}

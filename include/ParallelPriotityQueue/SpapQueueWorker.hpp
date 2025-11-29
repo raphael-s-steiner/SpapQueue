@@ -15,11 +15,10 @@ class SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource {
     friend class SpapQueue<T, workers, channels, netw, LocalQType>;
 
   private:
-    const std::size_t workerId_;
     SpapQueue<T, workers, channels, netw, LocalQType> &globalQueue_;
     std::array<T, netw.maxBatchSize()>::iterator bufferPointer_;
     std::array<std::size_t, tableLength>::const_iterator channelPointer_;
-    // const std::array<std::size_t, tableLength>::const_iterator channelTableEndPointer_;
+    const std::array<std::size_t, tableLength>::const_iterator channelTableEndPointer_;
     std::array<T, netw.maxBatchSize()> outBuffer_;
     const std::array<std::size_t, tableLength> channelIndices_;
     std::array<RingBuffer<T, netw.bufferSize_>, numPorts> inPorts_;
@@ -42,13 +41,13 @@ class SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource {
     inline void enqueueGlobal(const T &val);
 
   public:
-    WorkerResource(std::size_t workerId,
-                   SpapQueue<T, workers, channels, netw, LocalQType> &globalQueue,
-                   const std::array<std::size_t, tableLength> channelIndices) :
-        workerId_(workerId),
+    WorkerResource(SpapQueue<T, workers, channels, netw, LocalQType> &globalQueue,
+                   const std::array<std::size_t, tableLength> channelIndices,
+                   std::array<std::size_t, tableLength>::const_iterator channelTableEndPointer) :
         globalQueue_(globalQueue),
         bufferPointer_(outBuffer_.begin()),
         channelPointer_(channelIndices_.begin()),
+        channelTableEndPointer_(channelTableEndPointer),
         channelIndices_(std::move(channelIndices)) { };
     WorkerResource(const WorkerResource &other) = delete;
     WorkerResource(WorkerResource &&other) = delete;
@@ -109,7 +108,7 @@ inline bool SpapQueue<T, workers, channels, netw, LocalQType>::WorkerResource<nu
     bool successfulPush = false;
 
     const std::size_t targetWorker = netw.edgeTargets_[*channelPointer_];
-    if (targetWorker == workerId_) {
+    if (targetWorker == netw.numWorkers_) {    // netw.numWorkers_ is reserved for self-push
         pushOutBufferSelf();
         successfulPush = true;
     } else {
