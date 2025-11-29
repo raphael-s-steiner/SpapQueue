@@ -6,7 +6,6 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 #include "Discrepancy/QNetworkTables.hpp"
 #include "Discrepancy/TableGenerator.hpp"
