@@ -82,10 +82,10 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() {
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf() {
-    constexpr bool hasBatchPush
-        = requires (LocalQType &q,
-                    std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator first,
-                    std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator last) { q.push(first, last); };
+    constexpr bool hasBatchPush = requires (
+        LocalQType &q,
+        std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator first,
+        std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator last) { q.push(first, last); };
 
     if constexpr (hasBatchPush) {
         queue_.push(outBuffer_.begin(), bufferPointer_);

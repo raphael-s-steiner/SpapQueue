@@ -12,6 +12,9 @@
 
 namespace spapq {
 
+template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+class WorkerResource;
+
 template <typename T,
           std::size_t workers,
           std::size_t channels,
@@ -20,6 +23,9 @@ template <typename T,
           typename LocalQType = std::priority_queue<T>>
 class SpapQueue {
     using ThisQType = SpapQueue<T, workers, channels, netw, WorkerTemplate, LocalQType>;
+
+    template <typename, typename, std::size_t>
+    friend class WorkerTemplate;
 
   public:
     using value_type = T;
