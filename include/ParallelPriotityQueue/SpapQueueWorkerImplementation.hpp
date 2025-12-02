@@ -54,25 +54,24 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(con
         ++channelPointer_;
         if (channelPointer_ == channelTableEndPointer_) { channelPointer_ = channelIndices_.cbegin(); }
     }
-    if (maxAttempts == 0U) [[unlikely]] { pushOutBufferSelf(); }
+    if (maxAttempts == 0U) [[unlikely]] { pushOutBufferSelf(outBuffer_.begin()); }
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() {
     bool successfulPush = false;
 
+    const std::size_t batch = GlobalQType::netw_.batchSize_[*channelPointer_];
+    assert(batch <= std::distance(outBuffer_.begin(), bufferPointer_));
+    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBegin
+        = std::prev(bufferPointer_, batch);
+
     const std::size_t targetWorker = GlobalQType::netw_.edgeTargets_[*channelPointer_];
     if (targetWorker == GlobalQType::netw_.numWorkers_) {    // netw.numWorkers_ is reserved for self-push
-        pushOutBufferSelf();
+        pushOutBufferSelf(itBegin);
         successfulPush = true;
     } else {
         const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
-        const std::size_t batch = GlobalQType::netw_.batchSize_[*channelPointer_];
-
-        assert(batch <= std::distance(outBuffer_.begin(), bufferPointer_));
-        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBegin
-            = std::prev(bufferPointer_, batch);
-
         successfulPush = globalQueue_.pushInternal(itBegin, bufferPointer_, targetWorker, port);
         if (successfulPush) { bufferPointer_ = itBegin; }
     }
@@ -81,18 +80,21 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() {
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf() {
-    constexpr bool hasBatchPush = requires (
-        LocalQType &q,
-        std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator first,
-        std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator last) { q.push(first, last); };
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf(
+    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) {
+    constexpr bool hasBatchPush
+        = requires (LocalQType &q,
+                    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator first,
+                    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator last) {
+              q.push(first, last);
+          };
 
     if constexpr (hasBatchPush) {
-        queue_.push(outBuffer_.begin(), bufferPointer_);
+        queue_.push(fromPointer, bufferPointer_);
     } else {
-        for (auto it = outBuffer_.begin(); it != bufferPointer_; ++it) { queue_.push(*it); }
+        for (auto it = fromPointer; it != bufferPointer_; ++it) { queue_.push(*it); }
     }
-    bufferPointer_ = outBuffer_.begin();
+    bufferPointer_ = fromPointer;
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
@@ -117,7 +119,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run() {
             globalQueue_.globalCount_.fetch_sub(1U, std::memory_order_release);
         }
         enqueueInChannels();
-        pushOutBufferSelf();
+        pushOutBufferSelf(outBuffer_.begin());
     }
 }
 

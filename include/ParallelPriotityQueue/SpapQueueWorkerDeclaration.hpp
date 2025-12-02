@@ -24,16 +24,18 @@ class WorkerResource {
 
   private:
     GlobalQType &globalQueue_;
-    std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator bufferPointer_;
-    std::array<std::size_t, maxTableSize(GlobalQType::netw_)>::const_iterator channelPointer_;
-    const std::array<std::size_t, maxTableSize(GlobalQType::netw_)>::const_iterator channelTableEndPointer_;
+    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator bufferPointer_;
+    typename std::array<std::size_t, maxTableSize(GlobalQType::netw_)>::const_iterator channelPointer_;
+    const typename std::array<std::size_t, maxTableSize(GlobalQType::netw_)>::const_iterator
+        channelTableEndPointer_;
     std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
     const std::array<std::size_t, maxTableSize(GlobalQType::netw_)> channelIndices_;
     std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
     LocalQType queue_;
 
     [[nodiscard("Push may fail when queue is full")]] inline bool pushOutBuffer();
-    inline void pushOutBufferSelf();
+    inline void pushOutBufferSelf(
+        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer);
 
     inline void enqueueInChannels();
     inline void processElement(const value_type &val) = 0;

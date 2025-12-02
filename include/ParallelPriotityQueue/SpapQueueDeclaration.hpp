@@ -15,6 +15,20 @@ namespace spapq {
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 class WorkerResource;
 
+template <template <class, class, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType, std::size_t N>
+constexpr bool isDerivedWorkerResource() {
+    static_assert(N <= GlobalQType::netw_.numWorkers_);
+
+    if constexpr (N == 0U) {
+        return true;
+    } else {
+        constexpr bool val
+            = std::is_base_of<WorkerResource<GlobalQType, LocalQType, GlobalQType::netw_.numPorts_[N - 1]>,
+                              WorkerTemplate<GlobalQType, LocalQType, GlobalQType::netw_.numPorts_[N - 1]>>::value;
+        return val && isDerivedWorkerResource<WorkerTemplate, GlobalQType, LocalQType, N - 1>;
+    }
+}
+
 template <typename T,
           std::size_t workers,
           std::size_t channels,
@@ -82,6 +96,8 @@ class SpapQueue {
     static_assert(netw.isValidQNetwork(), "The QNetwork needs to be valid!");
     static_assert(std::is_same_v<value_type, typename LocalQType::value_type>,
                   "The local queue type needs to have matching value_type!");
+    static_assert(isDerivedWorkerResource<WorkerTemplate, ThisQType, LocalQType, netw.numWorkers_>(),
+                  "WorkerTemplate must be derived from WorkerResource.");
 };
 
 template <typename T,
