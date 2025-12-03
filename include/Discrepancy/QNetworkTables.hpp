@@ -34,7 +34,9 @@ constexpr std::array<std::size_t, tableLength> qNetworkTable(
     assert(netw.isValidQNetwork());
     assert(worker < workers);
     assert(workerOutChannels == netw.vertexPointer_[worker + 1] - netw.vertexPointer_[worker]);
-    assert(tableLength == sumArray(qNetworkTableFrequencies(netw, worker)));
+    assert(tableLength
+           == sumArray(
+               qNetworkTableFrequencies<networkWorkers, networkChannels, workerOutChannels>(netw, worker)));
 
     const std::array<std::size_t, workerOutChannels> frequencies
         = qNetworkTableFrequencies<networkWorkers, networkChannels, workerOutChannels>(netw, worker);
@@ -46,15 +48,29 @@ constexpr std::array<std::size_t, tableLength> qNetworkTable(
     return table;
 }
 
-template <std::size_t networkWorkers, std::size_t networkChannels>
-constexpr std::size_t maxTableSize(const QNetwork<networkWorkers, networkChannels> &netw) {
-    std::size_t maxVal = 0U;
+template <std::size_t networkWorkers,
+          std::size_t networkChannels,
+          QNetwork<networkWorkers, networkChannels> netw,
+          std::size_t N>
+constexpr std::size_t maxTableSizeHelper() {
+    static_assert(N <= networkWorkers);
 
-    for (std::size_t i = 0U; i < netw.numWorkers_; ++i) {
-        maxVal = std::max(maxVal, sumArray(qNetworkTableFrequencies(netw, i)));
+    if constexpr (N == 0) {
+        return 0U;
+    } else {
+        std::size_t retVal
+            = std::max(sumArray(qNetworkTableFrequencies<networkWorkers,
+                                                         networkChannels,
+                                                         netw.vertexPointer_[N] - netw.vertexPointer_[N - 1]>(
+                           netw, N - 1)),
+                       maxTableSizeHelper<networkWorkers, networkChannels, netw, N - 1>());
+        return retVal;
     }
+}
 
-    return maxVal;
+template <std::size_t networkWorkers, std::size_t networkChannels, QNetwork<networkWorkers, networkChannels> netw>
+constexpr std::size_t maxTableSize() {
+    return maxTableSizeHelper<networkWorkers, networkChannels, netw, networkWorkers>();
 }
 
 }    // end namespace tables

@@ -137,6 +137,9 @@ TEST(DiscrepancyTablesTest, QNetworkTableFrequency1) {
     EXPECT_EQ(tableFreq1[0], 1U);
     EXPECT_EQ(tableFreq1[1], 1U);
 
+    std::size_t maxTable = tables::maxTableSize<2, 4, graph>();
+    EXPECT_EQ(maxTable, 5U);
+
     std::size_t worker = 0U;
     for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
         for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {

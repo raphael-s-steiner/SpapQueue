@@ -21,7 +21,11 @@ template <typename T,
           QNetwork<workers, channels> netw,
           template <class, class, std::size_t> class WorkerTemplate,
           typename LocalQType>
-template <std::size_t tupleSize, std::enable_if_t<not netw.hasHomogeneousInPorts(), bool>>
+template <std::size_t tupleSize,
+          std::size_t workersT,
+          std::size_t channelsT,
+          QNetwork<workers, channels> netwT,
+          typename std::enable_if_t<not netwT.hasHomogeneousInPorts(), bool>>
 inline bool SpapQueue<T, workers, channels, netw, WorkerTemplate, LocalQType>::pushInternalHelper(
     const T &val, const std::size_t workerId, const std::size_t port) {
     static_assert(0 < tupleSize && tupleSize <= netw.numWorkers_);
@@ -48,7 +52,11 @@ template <typename T,
           QNetwork<workers, channels> netw,
           template <class, class, std::size_t> class WorkerTemplate,
           typename LocalQType>
-template <std::size_t tupleSize, std::enable_if_t<not netw.hasHomogeneousInPorts(), bool>>
+template <std::size_t tupleSize,
+          std::size_t workersT,
+          std::size_t channelsT,
+          QNetwork<workers, channels> netwT,
+          std::enable_if_t<not netwT.hasHomogeneousInPorts(), bool>>
 inline bool SpapQueue<T, workers, channels, netw, WorkerTemplate, LocalQType>::pushInternalHelper(
     T &&val, const std::size_t workerId, const std::size_t port) {
     static_assert(0 < tupleSize && tupleSize <= netw.numWorkers_);
@@ -75,7 +83,12 @@ template <typename T,
           QNetwork<workers, channels> netw,
           template <class, class, std::size_t> class WorkerTemplate,
           typename LocalQType>
-template <std::size_t tupleSize, class InputIt, std::enable_if_t<not netw.hasHomogeneousInPorts(), bool>>
+template <std::size_t tupleSize,
+          class InputIt,
+          std::size_t workersT,
+          std::size_t channelsT,
+          QNetwork<workers, channels> netwT,
+          std::enable_if_t<not netwT.hasHomogeneousInPorts(), bool>>
 inline bool SpapQueue<T, workers, channels, netw, WorkerTemplate, LocalQType>::pushInternalHelper(
     InputIt first, InputIt last, const std::size_t workerId, const std::size_t port) {
     static_assert(0 < tupleSize && tupleSize <= netw.numWorkers_);

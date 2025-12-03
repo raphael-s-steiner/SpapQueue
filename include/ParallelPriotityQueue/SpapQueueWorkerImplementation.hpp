@@ -9,7 +9,10 @@ template <std::size_t channelIndicesLength>
 constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
     GlobalQType &globalQueue, const std::array<std::size_t, channelIndicesLength> &channelIndices) :
     globalQueue_(globalQueue),
-    channelIndices_(extendTable<maxTableSize(GlobalQType::netw_), channelIndicesLength>(channelIndices)) {
+    channelIndices_(extendTable<tables::maxTableSize<GlobalQType::netw_.numWorkers_,
+                                                     GlobalQType::netw_.numChannels_,
+                                                     GlobalQType::netw_>(),
+                                channelIndicesLength>(channelIndices)) {
     bufferPointer_ = outBuffer_.begin();
     channelPointer_ = channelIndices_.cbegin();
     channelTableEndPointer_(std::next(channelIndices_.cbegin(), channelIndicesLength));

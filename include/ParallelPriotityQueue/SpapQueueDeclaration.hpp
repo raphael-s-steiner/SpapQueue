@@ -15,6 +15,32 @@ namespace spapq {
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 class WorkerResource;
 
+template <template <class, class, std::size_t> class WorkerTemplate,
+          class GlobalQType,
+          class LocalQType,
+          std::size_t workers,
+          std::size_t channels,
+          QNetwork<workers, channels> netw,
+          std::size_t N>
+struct WorkerCollectiveHelper {
+    static_assert(N <= netw.numWorkers_);
+    template <typename... Args>
+    using type =
+        typename WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, workers, channels, netw, N - 1>::
+            template type<WorkerTemplate<GlobalQType, LocalQType, netw.numPorts_[N - 1]> *, Args...>;
+};
+
+template <template <class, class, std::size_t> class WorkerTemplate,
+          class GlobalQType,
+          class LocalQType,
+          std::size_t workers,
+          std::size_t channels,
+          QNetwork<workers, channels> netw>
+struct WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, workers, channels, netw, 0> {
+    template <typename... Args>
+    using type = std::tuple<Args...>;
+};
+
 template <template <class, class, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType, std::size_t N>
 constexpr bool isDerivedWorkerResource() {
     static_assert(N <= GlobalQType::netw_.numWorkers_);
@@ -44,13 +70,12 @@ class SpapQueue {
   public:
     using value_type = T;
 
-    template <std::size_t N>
-    struct WorkerCollectiveHelper;
-
-    using WorkerCollective
-        = std::conditional_t<netw.hasHomogeneousInPorts(),
-                             std::array<WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[0U]> *, netw.numWorkers_>,
-                             typename WorkerCollectiveHelper<netw.numWorkers_>::template partialType<>>;
+    using WorkerCollective = std::conditional_t<
+        netw.hasHomogeneousInPorts(),
+        std::array<WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[0U]> *, netw.numWorkers_>,
+        typename WorkerCollectiveHelper<WorkerTemplate, ThisQType, LocalQType, workers, channels, netw, netw.numWorkers_>::
+            template type<>
+    >;
 
     static constexpr QNetwork<workers, channels> netw_{netw};
 
@@ -71,19 +96,35 @@ class SpapQueue {
 
     void waitProcessFinish();
 
-    template <std::size_t tupleSize, std::enable_if_t<not netw.hasHomogeneousInPorts(), bool> = true>
+    template <std::size_t tupleSize,
+              std::size_t workersT = workers,
+              std::size_t channelsT = channels,
+              QNetwork<workers, channels> netwT = netw,
+              typename std::enable_if_t<not netwT.hasHomogeneousInPorts(), bool> = true>
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternalHelper(
         const value_type &val, const std::size_t workerId, const std::size_t port);
-    template <std::size_t tupleSize, std::enable_if_t<not netw.hasHomogeneousInPorts(), bool> = true>
+
+    template <std::size_t tupleSize,
+              std::size_t workersT = workers,
+              std::size_t channelsT = channels,
+              QNetwork<workers, channels> netwT = netw,
+              std::enable_if_t<not netwT.hasHomogeneousInPorts(), bool> = true>
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternalHelper(
         value_type &&val, const std::size_t workerId, const std::size_t port);
-    template <std::size_t tupleSize, class InputIt, std::enable_if_t<not netw.hasHomogeneousInPorts(), bool> = true>
+
+    template <std::size_t tupleSize,
+              class InputIt,
+              std::size_t workersT = workers,
+              std::size_t channelsT = channels,
+              QNetwork<workers, channels> netwT = netw,
+              std::enable_if_t<not netwT.hasHomogeneousInPorts(), bool> = true>
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternalHelper(
         InputIt first, InputIt last, const std::size_t workerId, const std::size_t port);
 
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternal(const value_type &val,
                                                                                 const std::size_t workerId,
                                                                                 const std::size_t port);
+
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternal(value_type &&val,
                                                                                 const std::size_t workerId,
                                                                                 const std::size_t port);
@@ -98,24 +139,6 @@ class SpapQueue {
                   "The local queue type needs to have matching value_type!");
     static_assert(isDerivedWorkerResource<WorkerTemplate, ThisQType, LocalQType, netw.numWorkers_>(),
                   "WorkerTemplate must be derived from WorkerResource.");
-};
-
-template <typename T,
-          std::size_t workers,
-          std::size_t channels,
-          QNetwork<workers, channels> netw,
-          template <class, class, std::size_t> class WorkerTemplate,
-          typename LocalQType>
-template <std::size_t N>
-struct SpapQueue<T, workers, channels, netw, WorkerTemplate, LocalQType>::WorkerCollectiveHelper {
-    static_assert(N <= netw.numWorkers_);
-    template <typename... Args>
-    using partialType = std::conditional_t<
-        N == 0,
-        std::tuple<Args...>,
-        typename WorkerCollectiveHelper<N - 1>::
-            template partialType<WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N - 1]> *, Args...>
-    >;
 };
 
 }    // end namespace spapq

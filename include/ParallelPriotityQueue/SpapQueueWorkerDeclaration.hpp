@@ -25,11 +25,20 @@ class WorkerResource {
   private:
     GlobalQType &globalQueue_;
     typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator bufferPointer_;
-    typename std::array<std::size_t, maxTableSize(GlobalQType::netw_)>::const_iterator channelPointer_;
-    const typename std::array<std::size_t, maxTableSize(GlobalQType::netw_)>::const_iterator
-        channelTableEndPointer_;
+    typename std::array<
+        std::size_t,
+        tables::maxTableSize<GlobalQType::netw_.numWorkers_, GlobalQType::netw_.numChannels_, GlobalQType::netw_>()
+    >::const_iterator channelPointer_;
+    const typename std::array<
+        std::size_t,
+        tables::maxTableSize<GlobalQType::netw_.numWorkers_, GlobalQType::netw_.numChannels_, GlobalQType::netw_>()
+    >::const_iterator channelTableEndPointer_;
     std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
-    const std::array<std::size_t, maxTableSize(GlobalQType::netw_)> channelIndices_;
+    const std::array<
+        std::size_t,
+        tables::maxTableSize<GlobalQType::netw_.numWorkers_, GlobalQType::netw_.numChannels_, GlobalQType::netw_>()
+    >
+        channelIndices_;
     std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
     LocalQType queue_;
 
@@ -38,7 +47,7 @@ class WorkerResource {
         const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer);
 
     inline void enqueueInChannels();
-    inline void processElement(const value_type &val) = 0;
+    virtual void processElement(const value_type &val) = 0;
 
     [[nodiscard("Push may fail when queue is full")]] inline bool push(const value_type &val,
                                                                        std::size_t port);
@@ -48,21 +57,22 @@ class WorkerResource {
                                                                        InputIt last,
                                                                        std::size_t port);
 
+    inline void run();
+
   protected:
     inline void enqueueGlobal(const value_type &val);
 
-  public:
     template <std::size_t channelIndicesLength>
     constexpr WorkerResource(GlobalQType &globalQueue,
                              const std::array<std::size_t, channelIndicesLength> &channelIndices);
     constexpr WorkerResource(GlobalQType &globalQueue, std::size_t workerId);
+
+  public:
     WorkerResource(const WorkerResource &other) = delete;
     WorkerResource(WorkerResource &&other) = delete;
     WorkerResource &operator=(const WorkerResource &other) = delete;
     WorkerResource &operator=(WorkerResource &&other) = delete;
-    ~WorkerResource() = default;
-
-    inline void run();
+    virtual ~WorkerResource() = default;
 };
 
 }    // end namespace spapq
