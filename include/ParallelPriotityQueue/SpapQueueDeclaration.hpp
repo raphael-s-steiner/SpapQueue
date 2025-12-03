@@ -89,35 +89,26 @@ class SpapQueue {
     void pushUnsafe(const value_type &val, const std::size_t workerId = 0U);
     void pushUnsafe(value_type &&val, const std::size_t workerId = 0U);
 
-    void processQueue() {
-        initSync.test_and_set(std::memory_order_release);
-        initSync.notify_all();
-    };
+    void processQueue();
 
     void waitProcessFinish();
 
     template <std::size_t tupleSize,
-              std::size_t workersT = workers,
-              std::size_t channelsT = channels,
-              QNetwork<workers, channels> netwT = netw,
-              typename std::enable_if_t<not netwT.hasHomogeneousInPorts(), bool> = true>
+              bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
+              std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternalHelper(
         const value_type &val, const std::size_t workerId, const std::size_t port);
 
     template <std::size_t tupleSize,
-              std::size_t workersT = workers,
-              std::size_t channelsT = channels,
-              QNetwork<workers, channels> netwT = netw,
-              std::enable_if_t<not netwT.hasHomogeneousInPorts(), bool> = true>
+              bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
+              std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternalHelper(
         value_type &&val, const std::size_t workerId, const std::size_t port);
 
     template <std::size_t tupleSize,
               class InputIt,
-              std::size_t workersT = workers,
-              std::size_t channelsT = channels,
-              QNetwork<workers, channels> netwT = netw,
-              std::enable_if_t<not netwT.hasHomogeneousInPorts(), bool> = true>
+              bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
+              std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternalHelper(
         InputIt first, InputIt last, const std::size_t workerId, const std::size_t port);
 
@@ -128,6 +119,7 @@ class SpapQueue {
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternal(value_type &&val,
                                                                                 const std::size_t workerId,
                                                                                 const std::size_t port);
+
     template <class InputIt>
     [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternal(InputIt first,
                                                                                 InputIt last,
