@@ -1,8 +1,120 @@
 #pragma once
 
-#include "SpapQueueWorkerDeclaration.hpp"
+#include <iterator>
+
+#include "Discrepancy/QNetworkTables.hpp"
+#include "Discrepancy/TableGenerator.hpp"
+#include "RingBuffer/RingBuffer.hpp"
 
 namespace spapq {
+
+template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+class WorkerResource {
+    template <typename, typename, std::size_t>
+    friend class WorkerResource;
+    template <typename,
+              std::size_t workers,
+              std::size_t channels,
+              QNetwork<workers, channels>,
+              template <class, class, std::size_t> class,
+              typename>
+    friend class SpapQueue;
+
+  public:
+    using value_type = GlobalQType::value_type;
+
+  private:
+    GlobalQType &globalQueue_;
+    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator bufferPointer_;
+    typename std::array<
+        std::size_t,
+        tables::maxTableSize<GlobalQType::netw_.numWorkers_, GlobalQType::netw_.numChannels_, GlobalQType::netw_>()
+    >::const_iterator channelPointer_;
+    const typename std::array<
+        std::size_t,
+        tables::maxTableSize<GlobalQType::netw_.numWorkers_, GlobalQType::netw_.numChannels_, GlobalQType::netw_>()
+    >::const_iterator channelTableEndPointer_;
+    std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
+    const std::array<
+        std::size_t,
+        tables::maxTableSize<GlobalQType::netw_.numWorkers_, GlobalQType::netw_.numChannels_, GlobalQType::netw_>()
+    >
+        channelIndices_;
+    std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
+    LocalQType queue_;
+
+    [[nodiscard("Push may fail when queue is full")]] inline bool pushOutBuffer();
+    inline void pushOutBufferSelf(
+        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer);
+
+    inline void enqueueInChannels();
+    virtual void processElement(const value_type &val) = 0;
+
+    [[nodiscard("Push may fail when queue is full")]] inline bool push(const value_type &val,
+                                                                       std::size_t port);
+    [[nodiscard("Push may fail when queue is full")]] inline bool push(value_type &&val, std::size_t port);
+    template <class InputIt>
+    [[nodiscard("Push may fail when queue is full")]] inline bool push(InputIt first,
+                                                                       InputIt last,
+                                                                       std::size_t port);
+
+    inline void run();
+
+  protected:
+    inline void enqueueGlobal(const value_type &val);
+
+    template <std::size_t channelIndicesLength>
+    constexpr WorkerResource(GlobalQType &globalQueue,
+                             const std::array<std::size_t, channelIndicesLength> &channelIndices);
+    constexpr WorkerResource(GlobalQType &globalQueue, std::size_t workerId);
+
+  public:
+    WorkerResource(const WorkerResource &other) = delete;
+    WorkerResource(WorkerResource &&other) = delete;
+    WorkerResource &operator=(const WorkerResource &other) = delete;
+    WorkerResource &operator=(WorkerResource &&other) = delete;
+    virtual ~WorkerResource() = default;
+};
+
+template <template <class, class, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType, std::size_t N>
+constexpr bool isDerivedWorkerResource() {
+    static_assert(N <= GlobalQType::netw_.numWorkers_);
+
+    if constexpr (N == 0U) {
+        return true;
+    } else {
+        constexpr bool val
+            = std::is_base_of<WorkerResource<GlobalQType, LocalQType, GlobalQType::netw_.numPorts_[N - 1]>,
+                              WorkerTemplate<GlobalQType, LocalQType, GlobalQType::netw_.numPorts_[N - 1]>>::value;
+        return val && isDerivedWorkerResource<WorkerTemplate, GlobalQType, LocalQType, N - 1>;
+    }
+}
+
+template <template <class, class, std::size_t> class WorkerTemplate,
+          class GlobalQType,
+          class LocalQType,
+          std::size_t workers,
+          std::size_t channels,
+          QNetwork<workers, channels> netw,
+          std::size_t N>
+struct WorkerCollectiveHelper {
+    static_assert(N <= netw.numWorkers_);
+    template <typename... Args>
+    using type =
+        typename WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, workers, channels, netw, N - 1>::
+            template type<WorkerTemplate<GlobalQType, LocalQType, netw.numPorts_[N - 1]> *, Args...>;
+};
+
+template <template <class, class, std::size_t> class WorkerTemplate,
+          class GlobalQType,
+          class LocalQType,
+          std::size_t workers,
+          std::size_t channels,
+          QNetwork<workers, channels> netw>
+struct WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, workers, channels, netw, 0> {
+    template <typename... Args>
+    using type = std::tuple<Args...>;
+};
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 template <std::size_t channelIndicesLength>

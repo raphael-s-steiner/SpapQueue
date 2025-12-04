@@ -10,7 +10,7 @@ template <std::size_t networkWorkers, std::size_t networkChannels, std::size_t w
 constexpr std::array<std::size_t, workerOutChannels> qNetworkTableFrequencies(
     const QNetwork<networkWorkers, networkChannels> &netw, const std::size_t worker) {
     assert(netw.isValidQNetwork());
-    assert(worker < workers);
+    assert(worker < networkWorkers);
     assert(workerOutChannels == netw.vertexPointer_[worker + 1] - netw.vertexPointer_[worker]);
 
     std::size_t batchSizeLCM = 1;
@@ -32,7 +32,7 @@ template <std::size_t networkWorkers, std::size_t networkChannels, std::size_t w
 constexpr std::array<std::size_t, tableLength> qNetworkTable(
     const QNetwork<networkWorkers, networkChannels> &netw, const std::size_t worker) {
     assert(netw.isValidQNetwork());
-    assert(worker < workers);
+    assert(worker < networkWorkers);
     assert(workerOutChannels == netw.vertexPointer_[worker + 1] - netw.vertexPointer_[worker]);
     assert(tableLength
            == sumArray(
