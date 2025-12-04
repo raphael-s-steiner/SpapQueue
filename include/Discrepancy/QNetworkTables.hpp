@@ -48,29 +48,26 @@ constexpr std::array<std::size_t, tableLength> qNetworkTable(
     return table;
 }
 
-template <std::size_t networkWorkers,
-          std::size_t networkChannels,
-          QNetwork<networkWorkers, networkChannels> netw,
-          std::size_t N>
+template <QNetwork netw, std::size_t N>
 constexpr std::size_t maxTableSizeHelper() {
-    static_assert(N <= networkWorkers);
+    static_assert(N <= netw.numWorkers_);
 
     if constexpr (N == 0) {
         return 0U;
     } else {
         std::size_t retVal
-            = std::max(sumArray(qNetworkTableFrequencies<networkWorkers,
-                                                         networkChannels,
+            = std::max(sumArray(qNetworkTableFrequencies<netw.numWorkers_,
+                                                         netw.numChannels_,
                                                          netw.vertexPointer_[N] - netw.vertexPointer_[N - 1]>(
                            netw, N - 1)),
-                       maxTableSizeHelper<networkWorkers, networkChannels, netw, N - 1>());
+                       maxTableSizeHelper<netw, N - 1>());
         return retVal;
     }
 }
 
-template <std::size_t networkWorkers, std::size_t networkChannels, QNetwork<networkWorkers, networkChannels> netw>
+template <QNetwork netw>
 constexpr std::size_t maxTableSize() {
-    return maxTableSizeHelper<networkWorkers, networkChannels, netw, networkWorkers>();
+    return maxTableSizeHelper<netw, netw.numWorkers_>();
 }
 
 }    // end namespace tables

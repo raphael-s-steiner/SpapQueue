@@ -12,12 +12,7 @@ template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 class WorkerResource {
     template <typename, typename, std::size_t>
     friend class WorkerResource;
-    template <typename,
-              std::size_t workers,
-              std::size_t channels,
-              QNetwork<workers, channels>,
-              template <class, class, std::size_t> class,
-              typename>
+    template <typename, QNetwork, template <class, class, std::size_t> class, typename>
     friend class SpapQueue;
 
   public:
@@ -26,20 +21,11 @@ class WorkerResource {
   private:
     GlobalQType &globalQueue_;
     typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator bufferPointer_;
-    typename std::array<
-        std::size_t,
-        tables::maxTableSize<GlobalQType::netw_.numWorkers_, GlobalQType::netw_.numChannels_, GlobalQType::netw_>()
-    >::const_iterator channelPointer_;
-    const typename std::array<
-        std::size_t,
-        tables::maxTableSize<GlobalQType::netw_.numWorkers_, GlobalQType::netw_.numChannels_, GlobalQType::netw_>()
-    >::const_iterator channelTableEndPointer_;
+    typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator channelPointer_;
+    const typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
+        channelTableEndPointer_;
     std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
-    const std::array<
-        std::size_t,
-        tables::maxTableSize<GlobalQType::netw_.numWorkers_, GlobalQType::netw_.numChannels_, GlobalQType::netw_>()
-    >
-        channelIndices_;
+    const std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()> channelIndices_;
     std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
     LocalQType queue_;
 
@@ -93,25 +79,17 @@ constexpr bool isDerivedWorkerResource() {
 template <template <class, class, std::size_t> class WorkerTemplate,
           class GlobalQType,
           class LocalQType,
-          std::size_t workers,
-          std::size_t channels,
-          QNetwork<workers, channels> netw,
+          QNetwork netw,
           std::size_t N>
 struct WorkerCollectiveHelper {
     static_assert(N <= netw.numWorkers_);
     template <typename... Args>
-    using type =
-        typename WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, workers, channels, netw, N - 1>::
-            template type<WorkerTemplate<GlobalQType, LocalQType, netw.numPorts_[N - 1]> *, Args...>;
+    using type = typename WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, netw, N - 1>::
+        template type<WorkerTemplate<GlobalQType, LocalQType, netw.numPorts_[N - 1]> *, Args...>;
 };
 
-template <template <class, class, std::size_t> class WorkerTemplate,
-          class GlobalQType,
-          class LocalQType,
-          std::size_t workers,
-          std::size_t channels,
-          QNetwork<workers, channels> netw>
-struct WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, workers, channels, netw, 0> {
+template <template <class, class, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType, QNetwork netw>
+struct WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, netw, 0> {
     template <typename... Args>
     using type = std::tuple<Args...>;
 };
@@ -121,10 +99,8 @@ template <std::size_t channelIndicesLength>
 constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
     GlobalQType &globalQueue, const std::array<std::size_t, channelIndicesLength> &channelIndices) :
     globalQueue_(globalQueue),
-    channelIndices_(extendTable<tables::maxTableSize<GlobalQType::netw_.numWorkers_,
-                                                     GlobalQType::netw_.numChannels_,
-                                                     GlobalQType::netw_>(),
-                                channelIndicesLength>(channelIndices)) {
+    channelIndices_(
+        extendTable<tables::maxTableSize<GlobalQType::netw_>(), channelIndicesLength>(channelIndices)) {
     bufferPointer_ = outBuffer_.begin();
     channelPointer_ = channelIndices_.cbegin();
     channelTableEndPointer_(std::next(channelIndices_.cbegin(), channelIndicesLength));

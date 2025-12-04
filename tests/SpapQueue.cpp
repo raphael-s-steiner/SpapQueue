@@ -17,12 +17,7 @@ template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 class DivisorWorker : WorkerResource<GlobalQType, LocalQType, numPorts> {
     template <typename, typename, std::size_t>
     friend class DivisorWorker;
-    template <typename,
-              std::size_t workers,
-              std::size_t channels,
-              QNetwork<workers, channels>,
-              template <class, class, std::size_t> class,
-              typename>
+    template <typename, QNetwork, template <class, class, std::size_t> class, typename>
     friend class SpapQueue;
 
     using value_type = WorkerResource<GlobalQType, DivisorLocalQueueType, numPorts>::value_type;
@@ -59,11 +54,11 @@ std::vector<std::size_t> computeAnswerDivisors(std::size_t N) {
 TEST(SpapQueueTest, Constructors1) {
     constexpr QNetwork<1, 1> netw = FULLY_CONNECTED_GRAPH<1U>();
 
-    SpapQueue<std::size_t, netw.numWorkers_, netw.numChannels_, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
 }
 
 TEST(SpapQueueTest, Constructors2) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
 
-    SpapQueue<std::size_t, netw.numWorkers_, netw.numChannels_, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
 }
