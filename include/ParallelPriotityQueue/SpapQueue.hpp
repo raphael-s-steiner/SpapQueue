@@ -13,10 +13,7 @@
 
 namespace spapq {
 
-template <typename T,
-          QNetwork netw,
-          template <class, class, std::size_t> class WorkerTemplate,
-          typename LocalQType = std::priority_queue<T>>
+template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 class SpapQueue {
     using ThisQType = SpapQueue<T, netw, WorkerTemplate, LocalQType>;
 
