@@ -78,6 +78,9 @@ class SpapQueue {
                                                                                 const std::size_t workerId,
                                                                                 const std::size_t port);
 
+    template <std::size_t N>
+    void setWorkerResource(WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]> *workerResource);
+
     static_assert(netw.isValidQNetwork(), "The QNetwork needs to be valid!");
     static_assert(std::is_same_v<value_type, typename LocalQType::value_type>,
                   "The local queue type needs to have matching value_type!");
@@ -208,6 +211,18 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushInternal(InputIt
         return workerResources_[workerId]->push(first, last, port);
     } else {
         return pushInternalHelper<netw.numWorkers_, InputIt>(first, last, workerId, port);
+    }
+}
+
+template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
+template <std::size_t N>
+void SpapQueue<T, netw, WorkerTemplate, LocalQType>::setWorkerResource(
+    WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]> *workerResource) {
+    static_assert(N < netw.numWorkers_);
+    if constexpr (netw.hasHomogeneousInPorts()) {
+        workerResources_[N] = workerResource;
+    } else {
+        std::get<N>(workerResources_) = workerResource;
     }
 }
 
