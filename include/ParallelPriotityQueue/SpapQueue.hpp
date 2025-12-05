@@ -1,5 +1,6 @@
 #pragma once
 
+#include <barrier>
 #include <memory>
 #include <queue>
 #include <thread>
@@ -35,7 +36,9 @@ class SpapQueue {
         std::array<std::jthread, netw.numWorkers_> workers_;    // TODO does not need to be aligned
     alignas(CACHE_LINE_SIZE) WorkerCollective workerResources_;
     alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> globalCount_{0U};
-    std::atomic_flag initSync;
+    std::atomic_flag startSignal;
+    std::barrier<> allocateSignal{netw.numWorkers_ + 1};
+    std::barrier<> safeToDeallocateSignal{netw.numWorkers_};
 
     void initQueue();
     void pushUnsafe(const value_type &val, const std::size_t workerId = 0U);
@@ -79,7 +82,7 @@ class SpapQueue {
                                                                                 const std::size_t port);
 
     template <std::size_t N>
-    void setWorkerResource(WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]> *workerResource);
+    void threadWork();
 
     static_assert(netw.isValidQNetwork(), "The QNetwork needs to be valid!");
     static_assert(std::is_same_v<value_type, typename LocalQType::value_type>,
@@ -93,13 +96,13 @@ class SpapQueue {
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::waitProcessFinish() {
     for (auto &thread : workers_) { thread.join(); }
-    initSync.clear();
+    startSignal.clear();
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::processQueue() {
-    initSync.test_and_set(std::memory_order_release);
-    initSync.notify_all();
+    startSignal.test_and_set(std::memory_order_release);
+    startSignal.notify_all();
 };
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
@@ -216,13 +219,36 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushInternal(InputIt
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 template <std::size_t N>
-void SpapQueue<T, netw, WorkerTemplate, LocalQType>::setWorkerResource(
-    WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]> *workerResource) {
+void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork() {
     static_assert(N < netw.numWorkers_);
+
+    // init resource
+    WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]> resource(*this, N);
+
+    // set reference
     if constexpr (netw.hasHomogeneousInPorts()) {
-        workerResources_[N] = workerResource;
+        workerResources_[N] = &resource;
     } else {
-        std::get<N>(workerResources_) = workerResource;
+        std::get<N>(workerResources_) = &resource;
+    }
+
+    // signal reference set
+    allocateSignal.arrive_and_wait();
+
+    // awaiting unsafe enqueuing and global starting signal
+    startSignal.wait(false, std::memory_order_acquire);
+
+    // run
+    resource.run();
+
+    // signal and await process finished
+    safeToDeallocateSignal.arrive_and_wait();
+
+    // unset reference
+    if constexpr (netw.hasHomogeneousInPorts()) {
+        workerResources_[N] = nullptr;
+    } else {
+        std::get<N>(workerResources_) = nullptr;
     }
 }
 
