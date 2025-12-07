@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
-#include <set>
 
 namespace spapq {
 
@@ -49,82 +48,25 @@ struct QNetwork {
                        std::array<std::size_t, channels> multiplicities,
                        std::array<std::size_t, channels> batchSize,
                        std::size_t bufferSize,
-                       std::size_t maxPushAttempts) :
-        numWorkers_(workers),
-        numChannels_(channels),
-        bufferSize_(bufferSize),
-        maxPushAttempts_(maxPushAttempts),
-        vertexPointer_(vertexPointer),
-        logicalCore_(logicalCore),
-        edgeTargets_(edgeTargets),
-        multiplicities_(multiplicities),
-        batchSize_(batchSize) {
-        assignTargetPorts();
-        changeToSelfPushLabels();
-    };
+                       std::size_t maxPushAttempts);
 
     constexpr QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
                        std::array<std::size_t, channels> edgeTargets,
                        std::array<std::size_t, workers> logicalCore,
                        std::array<std::size_t, channels> multiplicities,
-                       std::array<std::size_t, channels> batchSize) :
-        numWorkers_(workers),
-        numChannels_(channels),
-        vertexPointer_(vertexPointer),
-        logicalCore_(logicalCore),
-        edgeTargets_(edgeTargets),
-        multiplicities_(multiplicities),
-        batchSize_(batchSize) {
-        setDefaultBufferSize();
-        setDefaultMaxPushAttempts();
-        assignTargetPorts();
-        changeToSelfPushLabels();
-    };
+                       std::array<std::size_t, channels> batchSize);
 
     constexpr QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
                        std::array<std::size_t, channels> edgeTargets,
                        std::array<std::size_t, workers> logicalCore,
-                       std::array<std::size_t, channels> multiplicities) :
-        numWorkers_(workers),
-        numChannels_(channels),
-        vertexPointer_(vertexPointer),
-        logicalCore_(logicalCore),
-        edgeTargets_(edgeTargets),
-        multiplicities_(multiplicities) {
-        setDefaultBatchSize();
-        setDefaultBufferSize();
-        setDefaultMaxPushAttempts();
-        assignTargetPorts();
-        changeToSelfPushLabels();
-    };
+                       std::array<std::size_t, channels> multiplicities);
 
     constexpr QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
                        std::array<std::size_t, channels> edgeTargets,
-                       std::array<std::size_t, workers> logicalCore) :
-        numWorkers_(workers),
-        numChannels_(channels),
-        vertexPointer_(vertexPointer),
-        logicalCore_(logicalCore),
-        edgeTargets_(edgeTargets) {
-        setDefaultMultiplicities();
-        setDefaultBatchSize();
-        setDefaultBufferSize();
-        setDefaultMaxPushAttempts();
-        assignTargetPorts();
-        changeToSelfPushLabels();
-    };
+                       std::array<std::size_t, workers> logicalCore);
 
     constexpr QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
-                       std::array<std::size_t, channels> edgeTargets) :
-        numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets) {
-        setDefaultLogicalCores();
-        setDefaultMultiplicities();
-        setDefaultBatchSize();
-        setDefaultBufferSize();
-        setDefaultMaxPushAttempts();
-        assignTargetPorts();
-        changeToSelfPushLabels();
-    };
+                       std::array<std::size_t, channels> edgeTargets);
 };
 
 template <std::size_t workers, std::size_t channels>
@@ -308,17 +250,102 @@ constexpr void QNetwork<workers, channels>::setDefaultLogicalCores() {
 
 template <std::size_t workers, std::size_t channels>
 constexpr bool QNetwork<workers, channels>::hasSeparateLogicalCores() const {
-    std::set<std::size_t> occupiedLogicalCores;
+    std::array<std::size_t, workers> logicalCoresCopy = logicalCore_;
+    std::sort(logicalCoresCopy.begin(), logicalCoresCopy.end());
 
-    for (const std::size_t &logCore : logicalCore_) {
-        if (occupiedLogicalCores.find(logCore) == occupiedLogicalCores.end()) {
-            occupiedLogicalCores.emplace(logCore);
-        } else {
-            return false;
-        }
+    for (std::size_t i = 0U; i < logicalCoresCopy.size() - 1U; ++i) {
+        if (logicalCoresCopy[i] == logicalCoresCopy[i + 1]) { return false; }
     }
 
     return true;
 }
+
+template <std::size_t workers, std::size_t channels>
+constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
+                                                std::array<std::size_t, channels> edgeTargets,
+                                                std::array<std::size_t, workers> logicalCore,
+                                                std::array<std::size_t, channels> multiplicities,
+                                                std::array<std::size_t, channels> batchSize,
+                                                std::size_t bufferSize,
+                                                std::size_t maxPushAttempts) :
+    numWorkers_(workers),
+    numChannels_(channels),
+    bufferSize_(bufferSize),
+    maxPushAttempts_(maxPushAttempts),
+    vertexPointer_(vertexPointer),
+    logicalCore_(logicalCore),
+    edgeTargets_(edgeTargets),
+    multiplicities_(multiplicities),
+    batchSize_(batchSize) {
+    assignTargetPorts();
+    changeToSelfPushLabels();
+};
+
+template <std::size_t workers, std::size_t channels>
+constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
+                                                std::array<std::size_t, channels> edgeTargets,
+                                                std::array<std::size_t, workers> logicalCore,
+                                                std::array<std::size_t, channels> multiplicities,
+                                                std::array<std::size_t, channels> batchSize) :
+    numWorkers_(workers),
+    numChannels_(channels),
+    vertexPointer_(vertexPointer),
+    logicalCore_(logicalCore),
+    edgeTargets_(edgeTargets),
+    multiplicities_(multiplicities),
+    batchSize_(batchSize) {
+    setDefaultBufferSize();
+    setDefaultMaxPushAttempts();
+    assignTargetPorts();
+    changeToSelfPushLabels();
+};
+
+template <std::size_t workers, std::size_t channels>
+constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
+                                                std::array<std::size_t, channels> edgeTargets,
+                                                std::array<std::size_t, workers> logicalCore,
+                                                std::array<std::size_t, channels> multiplicities) :
+    numWorkers_(workers),
+    numChannels_(channels),
+    vertexPointer_(vertexPointer),
+    logicalCore_(logicalCore),
+    edgeTargets_(edgeTargets),
+    multiplicities_(multiplicities) {
+    setDefaultBatchSize();
+    setDefaultBufferSize();
+    setDefaultMaxPushAttempts();
+    assignTargetPorts();
+    changeToSelfPushLabels();
+};
+
+template <std::size_t workers, std::size_t channels>
+constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
+                                                std::array<std::size_t, channels> edgeTargets,
+                                                std::array<std::size_t, workers> logicalCore) :
+    numWorkers_(workers),
+    numChannels_(channels),
+    vertexPointer_(vertexPointer),
+    logicalCore_(logicalCore),
+    edgeTargets_(edgeTargets) {
+    setDefaultMultiplicities();
+    setDefaultBatchSize();
+    setDefaultBufferSize();
+    setDefaultMaxPushAttempts();
+    assignTargetPorts();
+    changeToSelfPushLabels();
+};
+
+template <std::size_t workers, std::size_t channels>
+constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
+                                                std::array<std::size_t, channels> edgeTargets) :
+    numWorkers_(workers), numChannels_(channels), vertexPointer_(vertexPointer), edgeTargets_(edgeTargets) {
+    setDefaultLogicalCores();
+    setDefaultMultiplicities();
+    setDefaultBatchSize();
+    setDefaultBufferSize();
+    setDefaultMaxPushAttempts();
+    assignTargetPorts();
+    changeToSelfPushLabels();
+};
 
 }    // end namespace spapq
