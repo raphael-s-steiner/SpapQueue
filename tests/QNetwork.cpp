@@ -11,10 +11,12 @@
 using namespace spapq;
 
 TEST(QNetworkTest, Constructors1) {
-    constexpr QNetwork<4, 4> netw({0, 1, 2, 3, 4}, {1, 2, 3, 0}, {10, 9, 8, 7}, {1, 2, 3, 4});
+    constexpr QNetwork<4, 4> netw(
+        {0, 1, 2, 3, 4}, {1, 2, 3, 0}, {11, 12, 13, 14}, {10, 9, 8, 7}, {1, 2, 3, 4});
     EXPECT_EQ(netw.numWorkers_, 4);
     EXPECT_EQ(netw.numChannels_, 4);
     for (std::size_t i = 0; i < 5; ++i) { EXPECT_EQ(netw.vertexPointer_[i], i); }
+    for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.logicalCore_[i], i + 11U); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.edgeTargets_[i], (i + 1) % 4); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.multiplicities_[i], 10U - i); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.batchSize_[i], (i + 1)); }
@@ -23,6 +25,7 @@ TEST(QNetworkTest, Constructors1) {
     EXPECT_TRUE(netw.hasHomogeneousInPorts());
     EXPECT_TRUE(netw.hasHomogeneousOutPorts());
     EXPECT_TRUE(netw.hasHomogeneousPorts());
+    EXPECT_TRUE(netw.hasSeparateLogicalCores());
     EXPECT_EQ(netw.maxPortNum(), 1U);
     EXPECT_EQ(netw.bufferSize_, 16U);
 }
@@ -32,13 +35,16 @@ TEST(QNetworkTest, Constructors2) {
     EXPECT_EQ(netw.numWorkers_, 4);
     EXPECT_EQ(netw.numChannels_, 4);
     for (std::size_t i = 0; i < 5; ++i) { EXPECT_EQ(netw.vertexPointer_[i], i); }
+    for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.logicalCore_[i], i); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.edgeTargets_[i], (i + 1) % 4); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.multiplicities_[i], 1); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.batchSize_[i], 1); }
+
+    EXPECT_TRUE(netw.hasSeparateLogicalCores());
 }
 
 TEST(QNetworkTest, Ports1) {
-    constexpr QNetwork<4, 4> netw({0, 1, 2, 3, 4}, {1, 2, 3, 0});
+    constexpr QNetwork<4, 4> netw({0, 1, 2, 3, 4}, {1, 2, 3, 0}, {10, 0, 3, 10});
     std::vector<std::vector<std::size_t>> outGraph(netw.numWorkers_);
     std::vector<std::vector<std::size_t>> inGraph(netw.numWorkers_);
 
@@ -75,6 +81,7 @@ TEST(QNetworkTest, Ports1) {
     }
 
     EXPECT_TRUE(netw.isValidQNetwork());
+    EXPECT_FALSE(netw.hasSeparateLogicalCores());
 }
 
 TEST(QNetworkTest, Ports2) {
@@ -115,6 +122,7 @@ TEST(QNetworkTest, Ports2) {
     }
 
     EXPECT_TRUE(netw.isValidQNetwork());
+    EXPECT_TRUE(netw.hasSeparateLogicalCores());
 }
 
 TEST(QNetworkTest, Validity) {
@@ -128,6 +136,7 @@ TEST(QNetworkTest, Validity) {
     EXPECT_TRUE(FULLY_CONNECTED_GRAPH<12>().isValidQNetwork());
     constexpr QNetwork<8, 64> netw = FULLY_CONNECTED_GRAPH<8>();
     EXPECT_TRUE(netw.isValidQNetwork());
+    EXPECT_TRUE(netw.hasSeparateLogicalCores());
 }
 
 TEST(QNetworkTest, LineGraphNumEdges) {
@@ -146,24 +155,38 @@ TEST(QNetworkTest, LineGraphNumEdges) {
 }
 
 TEST(QNetworkTest, LineGraph) {
-    constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {1, 1, 1, 1}, {1, 2, 1, 2});
+    constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {0, 1}, {1, 1, 1, 1}, {1, 2, 1, 2});
     EXPECT_TRUE(graph.isValidQNetwork());
+    EXPECT_TRUE(graph.hasSeparateLogicalCores());
     EXPECT_TRUE(LINE_GRAPH(graph).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(graph).hasSeparateLogicalCores());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(graph)).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(graph)).hasSeparateLogicalCores());
 
     EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()).hasSeparateLogicalCores());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())).hasSeparateLogicalCores());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()))).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()))).hasSeparateLogicalCores());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())))).isValidQNetwork());
+    EXPECT_TRUE(
+        LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())))).hasSeparateLogicalCores());
 
     EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()).hasSeparateLogicalCores());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>())).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>())).hasSeparateLogicalCores());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()))).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()))).hasSeparateLogicalCores());
 
     EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>()).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>()).hasSeparateLogicalCores());
     EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>())).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>())).hasSeparateLogicalCores());
 
     EXPECT_TRUE(LINE_GRAPH(PETERSEN_GRAPH).isValidQNetwork());
+    EXPECT_TRUE(LINE_GRAPH(PETERSEN_GRAPH).hasSeparateLogicalCores());
 }
 
 TEST(QNetworkTest, PortNumbers) {
@@ -250,7 +273,7 @@ TEST(QNetworkTest, SelfPush) {
         }
     }
 
-    constexpr QNetwork<3, 6> netw({0,3,5,6}, {0,3,1, 3,2, 0});
+    constexpr QNetwork<3, 6> netw({0, 3, 5, 6}, {0, 3, 1, 3, 2, 0});
     EXPECT_EQ(netw.numPorts_[0], 3);
     EXPECT_EQ(netw.numPorts_[1], 2);
     EXPECT_EQ(netw.numPorts_[2], 1);

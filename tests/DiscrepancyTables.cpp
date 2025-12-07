@@ -123,7 +123,7 @@ TEST(DiscrepancyTablesTest, ReducedEarliestDeadlineFirst) {
 }
 
 TEST(DiscrepancyTablesTest, QNetworkTableFrequency1) {
-    constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {2, 1, 1, 2}, {1, 2, 1, 2});
+    constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {0, 1}, {2, 1, 1, 2}, {1, 2, 1, 2});
 
     constexpr auto tableFreq0 = tables::qNetworkTableFrequencies<2, 4, 2>(graph, 0);
     constexpr auto tableFreq1 = tables::qNetworkTableFrequencies<2, 4, 2>(graph, 1);
@@ -167,7 +167,7 @@ TEST(DiscrepancyTablesTest, QNetworkTableFrequency1) {
 
 TEST(DiscrepancyTablesTest, QNetworkTableFrequency2) {
     constexpr auto graph = QNetwork<4, 8>(
-        {0, 2, 4, 6, 8}, {0, 1, 1, 2, 2, 3, 3, 0}, {2, 1, 1, 2, 3, 2, 3, 2}, {1, 2, 1, 2, 2, 3, 6, 9});
+        {0, 2, 4, 6, 8}, {0, 1, 1, 2, 2, 3, 3, 0}, {0, 1, 2, 3}, {2, 1, 1, 2, 3, 2, 3, 2}, {1, 2, 1, 2, 2, 3, 6, 9});
 
     for (std::size_t worker = 0U; worker < graph.numWorkers_; ++worker) {
         const auto tableFreq = tables::qNetworkTableFrequencies<4, 8, 2>(graph, worker);

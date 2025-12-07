@@ -20,9 +20,12 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
     assert(outNumEdges == lineGraphNumEdges(qNetwork));
 
     std::array<std::size_t, channels + 1U> vertPointer;
+    std::array<std::size_t, channels> logicalCore;
     std::array<std::size_t, outNumEdges> edgeTargets;
     std::array<std::size_t, outNumEdges> multiplicities;
     std::array<std::size_t, outNumEdges> batchSize;
+
+    const std::size_t maxNumInPorts = qNetwork.maxPortNum();
 
     std::size_t outEdgeCount = 0U;
     vertPointer[0] = outEdgeCount;
@@ -31,6 +34,10 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
              ++edge) {
             const std::size_t vertexJoint
                 = qNetwork.edgeTargets_[edge] == qNetwork.numWorkers_ ? worker : qNetwork.edgeTargets_[edge];
+
+            logicalCore[edge]
+                = maxNumInPorts * qNetwork.logicalCore_[vertexJoint] + qNetwork.targetPort_[edge];
+
             for (std::size_t tgtEdge = qNetwork.vertexPointer_[vertexJoint];
                  tgtEdge < qNetwork.vertexPointer_[vertexJoint + 1U];
                  ++tgtEdge) {
@@ -44,7 +51,8 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
         }
     }
 
-    auto ret = QNetwork<channels, outNumEdges>(vertPointer, edgeTargets, multiplicities, batchSize);
+    auto ret
+        = QNetwork<channels, outNumEdges>(vertPointer, edgeTargets, logicalCore, multiplicities, batchSize);
     return ret;
 }
 
