@@ -66,6 +66,11 @@ target_include_directories(SPAPQueue INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
+# Using and linking pthreads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(SPAPQueue INTERFACE Threads::Threads)
+
 # --- Build Tests Configuration ---
 # Option to control whether tests are built.
 option(BUILD_TESTS "Build tests for the project" ON)

@@ -1,8 +1,13 @@
 #pragma once
 
+#include <pthread.h>
+
 #include <barrier>
+#include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <queue>
+#include <string>
 #include <thread>
 #include <tuple>
 #include <type_traits>
@@ -39,6 +44,7 @@ class SpapQueue {
     std::atomic_flag startSignal;
     std::barrier<> allocateSignal{netw.numWorkers_ + 1};
     std::barrier<> safeToDeallocateSignal{netw.numWorkers_};
+    bool queueActive_{false};
 
     void initQueue();
     void pushUnsafe(const value_type &val, const std::size_t workerId = 0U);
@@ -89,14 +95,30 @@ class SpapQueue {
                   "The local queue type needs to have matching value_type!");
     static_assert(isDerivedWorkerResource<WorkerTemplate, ThisQType, LocalQType, netw.numWorkers_>(),
                   "WorkerTemplate must be derived from WorkerResource.");
+    static_assert(netw.hasSeparateLogicalCores(), "Workers should be on separate logical Cores.");
 };
 
 // Implementation Details
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::waitProcessFinish() {
-    for (auto &thread : workers_) { thread.join(); }
-    startSignal.clear();
+    for (auto &thread : workers_) {
+        if (thread.joinable()) { thread.join(); }
+    }
+    startSignal.clear(std::memory_order_release);
+    queueActive_ = false;
+}
+
+template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
+void SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue() {
+    assert(not queueActive_);
+    queueActive_ = true;
+
+    [this]<std::size_t... I>(std::index_sequence<I...>) {
+        ((workers_[I] = std::jthread(threadWork<I>)), ...);
+    }(std::make_index_sequence<netw.numWorkers_>{});
+
+    allocateSignal.arrive_and_wait();
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
@@ -221,6 +243,28 @@ template <typename T, QNetwork netw, template <class, class, std::size_t> class 
 template <std::size_t N>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork() {
     static_assert(N < netw.numWorkers_);
+
+    // pinning thread
+    pthread_t self = pthread_self();
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    const std::size_t logicalCore = netw.logicalCore_[N];
+    CPU_SET(logicalCore, &cpuset);
+
+    // TODO need a map QWorker to core
+
+    int rc = pthread_setaffinity_np(self, sizeof(cpu_set_t), &cpuset);
+    if (rc != 0) {
+        const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
+                                         + std::to_string(rc)
+                                         + ".\nFailed to pin worker thread number "
+                                         + std::to_string(N)
+                                         + " to logical core "
+                                         + std::to_string(logicalCore)
+                                         + ".\n";
+        std::cerr << errorMessage;
+        std::exit(EXIT_FAILURE);
+    }
 
     // init resource
     WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]> resource(*this, N);

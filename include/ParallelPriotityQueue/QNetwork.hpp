@@ -155,6 +155,7 @@ void QNetwork<workers, channels>::printQNetwork() const {
     std::cout << "\nQNetwork\n";
     for (std::size_t i = 0U; i < numWorkers_; ++i) {
         std::cout << "Worker: " << i << "\n";
+        std::cout << "Core:   " << logicalCore_[i] << "\n";
 
         std::cout << "Target: ";
         for (std::size_t j = vertexPointer_[i]; j < vertexPointer_[i + 1U]; ++j) {
