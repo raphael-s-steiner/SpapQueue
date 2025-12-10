@@ -6,21 +6,23 @@
 namespace spapq {
 namespace tables {
 
-template <std::size_t networkWorkers, std::size_t networkChannels, std::size_t workerOutChannels>
-constexpr std::array<std::size_t, workerOutChannels> qNetworkTableFrequencies(
-    const QNetwork<networkWorkers, networkChannels> &netw, const std::size_t worker) {
-    assert(netw.isValidQNetwork());
-    assert(worker < networkWorkers);
-    assert(workerOutChannels == netw.vertexPointer_[worker + 1] - netw.vertexPointer_[worker]);
+template <QNetwork netw, std::size_t workerId>
+constexpr std::array<std::size_t, netw.vertexPointer_[workerId + 1] - netw.vertexPointer_[workerId]>
+qNetworkTableFrequencies() {
+    static_assert(netw.isValidQNetwork());
+    static_assert(workerId < netw.numWorkers_);
+
+    constexpr std::size_t workerOutChannels
+        = netw.vertexPointer_[workerId + 1] - netw.vertexPointer_[workerId];
 
     std::size_t batchSizeLCM = 1;
-    for (std::size_t i = netw.vertexPointer_[worker]; i < netw.vertexPointer_[worker + 1]; ++i) {
+    for (std::size_t i = netw.vertexPointer_[workerId]; i < netw.vertexPointer_[workerId + 1]; ++i) {
         batchSizeLCM = std::lcm(batchSizeLCM, netw.batchSize_[i]);
     }
 
     std::array<std::size_t, workerOutChannels> frequencies;
-    for (std::size_t i = netw.vertexPointer_[worker]; i < netw.vertexPointer_[worker + 1]; ++i) {
-        const std::size_t index = i - netw.vertexPointer_[worker];
+    for (std::size_t i = netw.vertexPointer_[workerId]; i < netw.vertexPointer_[workerId + 1]; ++i) {
+        const std::size_t index = i - netw.vertexPointer_[workerId];
         frequencies[index] = netw.multiplicities_[i] * (batchSizeLCM / netw.batchSize_[i]);
     }
 
@@ -28,22 +30,27 @@ constexpr std::array<std::size_t, workerOutChannels> qNetworkTableFrequencies(
     return ret;
 }
 
-template <std::size_t networkWorkers, std::size_t networkChannels, std::size_t workerOutChannels, std::size_t tableLength>
-constexpr std::array<std::size_t, tableLength> qNetworkTable(
-    const QNetwork<networkWorkers, networkChannels> &netw, const std::size_t worker) {
-    assert(netw.isValidQNetwork());
-    assert(worker < networkWorkers);
-    assert(workerOutChannels == netw.vertexPointer_[worker + 1] - netw.vertexPointer_[worker]);
-    assert(tableLength
-           == sumArray(
-               qNetworkTableFrequencies<networkWorkers, networkChannels, workerOutChannels>(netw, worker)));
+template <QNetwork netw, std::size_t workerId>
+constexpr std::size_t qNetworkTableSize() {
+    static_assert(workerId < netw.numWorkers_);
+    std::size_t retVal = sumArray(qNetworkTableFrequencies<netw, workerId>());
+    return retVal;
+}
 
-    const std::array<std::size_t, workerOutChannels> frequencies
-        = qNetworkTableFrequencies<networkWorkers, networkChannels, workerOutChannels>(netw, worker);
+template <QNetwork netw, std::size_t workerId>
+constexpr std::array<std::size_t, qNetworkTableSize<netw, workerId>()> qNetworkTable() {
+    static_assert(netw.isValidQNetwork());
+    static_assert(workerId < netw.numWorkers_);
+
+    constexpr std::size_t tableLength = qNetworkTableSize<netw, workerId>();
+    constexpr std::size_t workerOutChannels
+        = netw.vertexPointer_[workerId + 1] - netw.vertexPointer_[workerId];
+
+    const std::array<std::size_t, workerOutChannels> frequencies = qNetworkTableFrequencies<netw, workerId>();
 
     auto table = EarliestDeadlineFirstTable<workerOutChannels, tableLength>(frequencies);
 
-    for (std::size_t &val : table) { val += netw.vertexPointer_[worker]; }
+    for (std::size_t &val : table) { val += netw.vertexPointer_[workerId]; }
 
     return table;
 }
@@ -55,12 +62,7 @@ constexpr std::size_t maxTableSizeHelper() {
     if constexpr (N == 0) {
         return 0U;
     } else {
-        std::size_t retVal
-            = std::max(sumArray(qNetworkTableFrequencies<netw.numWorkers_,
-                                                         netw.numChannels_,
-                                                         netw.vertexPointer_[N] - netw.vertexPointer_[N - 1]>(
-                           netw, N - 1)),
-                       maxTableSizeHelper<netw, N - 1>());
+        std::size_t retVal = std::max(qNetworkTableSize<netw, N - 1>(), maxTableSizeHelper<netw, N - 1>());
         return retVal;
     }
 }

@@ -14,7 +14,7 @@ using DivisorLocalQueueType
 constexpr std::size_t divisorTestMaxSize = 100000;
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-class DivisorWorker : WorkerResource<GlobalQType, LocalQType, numPorts> {
+class DivisorWorker : public WorkerResource<GlobalQType, LocalQType, numPorts> {
     template <typename, typename, std::size_t>
     friend class DivisorWorker;
     template <typename, QNetwork, template <class, class, std::size_t> class, typename>
@@ -24,10 +24,21 @@ class DivisorWorker : WorkerResource<GlobalQType, LocalQType, numPorts> {
 
   protected:
     inline void processElement(const value_type &val) override {
-        for (value_type i = 2 * val; i < divisorTestMaxSize; i += val) { enqueueGlobal(i); }
+        for (value_type i = 2 * val; i < divisorTestMaxSize; i += val) { this->enqueueGlobal(i); }
     }
 
   public:
+    template <std::size_t channelIndicesLength>
+    constexpr DivisorWorker(GlobalQType &globalQueue,
+                            const std::array<std::size_t, channelIndicesLength> &channelIndices) :
+        WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices){};
+
+    template <std::size_t workerId>
+    static constexpr DivisorWorker<GlobalQType, LocalQType, numPorts> QNetworkWorkerResource(
+        GlobalQType &globalQueue) {
+        return DivisorWorker(globalQueue, tables::qNetworkTable<GlobalQType::netw_, workerId>());
+    }
+
     DivisorWorker(const DivisorWorker &other) = delete;
     DivisorWorker(DivisorWorker &&other) = delete;
     DivisorWorker &operator=(const DivisorWorker &other) = delete;
@@ -61,4 +72,22 @@ TEST(SpapQueueTest, Constructors2) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+}
+
+TEST(SpapQueueTest, EmptyQueue1) {
+    constexpr QNetwork<1, 1> netw = FULLY_CONNECTED_GRAPH<1U>();
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    globalQ.initQueue();
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+}
+
+TEST(SpapQueueTest, EmptyQueue2) {
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    globalQ.initQueue();
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
 }

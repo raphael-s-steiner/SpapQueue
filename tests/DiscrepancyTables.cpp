@@ -125,8 +125,8 @@ TEST(DiscrepancyTablesTest, ReducedEarliestDeadlineFirst) {
 TEST(DiscrepancyTablesTest, QNetworkTableFrequency1) {
     constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {0, 1}, {2, 1, 1, 2}, {1, 2, 1, 2});
 
-    constexpr auto tableFreq0 = tables::qNetworkTableFrequencies<2, 4, 2>(graph, 0);
-    constexpr auto tableFreq1 = tables::qNetworkTableFrequencies<2, 4, 2>(graph, 1);
+    constexpr auto tableFreq0 = tables::qNetworkTableFrequencies<graph, 0>();
+    constexpr auto tableFreq1 = tables::qNetworkTableFrequencies<graph, 1>();
 
     EXPECT_EQ(tableFreq0.size(), 2U);
     EXPECT_EQ(tableFreq1.size(), 2U);
@@ -158,51 +158,80 @@ TEST(DiscrepancyTablesTest, QNetworkTableFrequency1) {
         }
     }
 
-    const auto table0 = tables::qNetworkTable<2, 4, 2, 5>(graph, 0U);
-    const auto table1 = tables::qNetworkTable<2, 4, 2, 2>(graph, 1U);
+    const auto table0 = tables::qNetworkTable<graph, 0>();
+    const auto table1 = tables::qNetworkTable<graph, 1>();
 
     for (const std::size_t &val : table0) { EXPECT_TRUE(val == 0U || val == 1U); }
     for (const std::size_t &val : table1) { EXPECT_TRUE(val == 2U || val == 3U); }
 }
 
 TEST(DiscrepancyTablesTest, QNetworkTableFrequency2) {
-    constexpr auto graph = QNetwork<4, 8>(
-        {0, 2, 4, 6, 8}, {0, 1, 1, 2, 2, 3, 3, 0}, {0, 1, 2, 3}, {2, 1, 1, 2, 3, 2, 3, 2}, {1, 2, 1, 2, 2, 3, 6, 9});
+    constexpr auto graph = QNetwork<4, 8>({0, 2, 4, 6, 8},
+                                          {0, 1, 1, 2, 2, 3, 3, 0},
+                                          {0, 1, 2, 3},
+                                          {2, 1, 1, 2, 3, 2, 3, 2},
+                                          {1, 2, 1, 2, 2, 3, 6, 9});
 
-    for (std::size_t worker = 0U; worker < graph.numWorkers_; ++worker) {
-        const auto tableFreq = tables::qNetworkTableFrequencies<4, 8, 2>(graph, worker);
-        for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
-            for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
-                EXPECT_EQ(tableFreq[i - graph.vertexPointer_[worker]]
-                              * graph.batchSize_[i]
-                              * graph.multiplicities_[j],
-                          tableFreq[j - graph.vertexPointer_[worker]]
-                              * graph.batchSize_[j]
-                              * graph.multiplicities_[i]);
-            }
+    std::size_t worker = 0U;
+    auto tableFreq = tables::qNetworkTableFrequencies<graph, 0>();
+    for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
+        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
+            EXPECT_EQ(
+                tableFreq[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
+                tableFreq[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
+        }
+    }
+
+    worker = 1U;
+    tableFreq = tables::qNetworkTableFrequencies<graph, 1>();
+    for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
+        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
+            EXPECT_EQ(
+                tableFreq[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
+                tableFreq[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
+        }
+    }
+
+    worker = 2U;
+    tableFreq = tables::qNetworkTableFrequencies<graph, 2>();
+    for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
+        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
+            EXPECT_EQ(
+                tableFreq[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
+                tableFreq[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
+        }
+    }
+
+    worker = 3U;
+    tableFreq = tables::qNetworkTableFrequencies<graph, 3>();
+    for (std::size_t i = graph.vertexPointer_[worker]; i < graph.vertexPointer_[worker + 1]; ++i) {
+        for (std::size_t j = graph.vertexPointer_[worker] + 1; j < graph.vertexPointer_[worker + 1]; ++j) {
+            EXPECT_EQ(
+                tableFreq[i - graph.vertexPointer_[worker]] * graph.batchSize_[i] * graph.multiplicities_[j],
+                tableFreq[j - graph.vertexPointer_[worker]] * graph.batchSize_[j] * graph.multiplicities_[i]);
         }
     }
 
     std::array<bool, 8> foundChannel = {false, false, false, false, false, false, false, false};
-    const auto table0 = tables::qNetworkTable<4, 8, 2, 5>(graph, 0U);
+    const auto table0 = tables::qNetworkTable<graph, 0>();
     for (const std::size_t &val : table0) {
         EXPECT_TRUE(val == 0U || val == 1U);
         foundChannel[val] = true;
     }
 
-    const auto table1 = tables::qNetworkTable<4, 8, 2, 2>(graph, 1U);
+    const auto table1 = tables::qNetworkTable<graph, 1>();
     for (const std::size_t &val : table1) {
         EXPECT_TRUE(val == 2U || val == 3U);
         foundChannel[val] = true;
     }
 
-    const auto table2 = tables::qNetworkTable<4, 8, 2, 13>(graph, 2U);
+    const auto table2 = tables::qNetworkTable<graph, 2>();
     for (const std::size_t &val : table2) {
         EXPECT_TRUE(val == 4U || val == 5U);
         foundChannel[val] = true;
     }
 
-    const auto table3 = tables::qNetworkTable<4, 8, 2, 13>(graph, 3U);
+    const auto table3 = tables::qNetworkTable<graph, 3>();
     for (const std::size_t &val : table3) {
         EXPECT_TRUE(val == 6U || val == 7U);
         foundChannel[val] = true;

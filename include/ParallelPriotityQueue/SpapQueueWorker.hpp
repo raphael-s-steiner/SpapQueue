@@ -19,13 +19,15 @@ class WorkerResource {
     using value_type = GlobalQType::value_type;
 
   private:
-    GlobalQType &globalQueue_;
+    const std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()> channelIndices_;
+    std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
+
+    alignas(CACHE_LINE_SIZE) GlobalQType &globalQueue_;
     typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator bufferPointer_;
     typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator channelPointer_;
     const typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
         channelTableEndPointer_;
-    const std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()> channelIndices_;
-    std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
+
     std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
     LocalQType queue_;
 
@@ -47,12 +49,14 @@ class WorkerResource {
     inline void run();
 
   protected:
+    void testDummy() { };
     inline void enqueueGlobal(const value_type &val);
 
     template <std::size_t channelIndicesLength>
     constexpr WorkerResource(GlobalQType &globalQueue,
                              const std::array<std::size_t, channelIndicesLength> &channelIndices);
-    constexpr WorkerResource(GlobalQType &globalQueue, std::size_t workerId);
+    // template <std::size_t workerId>
+    // static constexpr WorkerResource<GlobalQType, LocalQType, numPorts> QNetworkWorkerResource(GlobalQType &globalQueue);
 
   public:
     WorkerResource(const WorkerResource &other) = delete;
@@ -98,18 +102,19 @@ template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 template <std::size_t channelIndicesLength>
 constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
     GlobalQType &globalQueue, const std::array<std::size_t, channelIndicesLength> &channelIndices) :
-    globalQueue_(globalQueue),
     channelIndices_(
-        extendTable<tables::maxTableSize<GlobalQType::netw_>(), channelIndicesLength>(channelIndices)) {
-    bufferPointer_ = outBuffer_.begin();
-    channelPointer_ = channelIndices_.cbegin();
-    channelTableEndPointer_(std::next(channelIndices_.cbegin(), channelIndicesLength));
-}
+        tables::extendTable<tables::maxTableSize<GlobalQType::netw_>(), channelIndicesLength>(channelIndices)),
+    globalQueue_(globalQueue),
+    bufferPointer_(outBuffer_.begin()),
+    channelPointer_(channelIndices_.cbegin()),
+    channelTableEndPointer_(std::next(channelIndices_.cbegin(), channelIndicesLength)) { }
 
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(GlobalQType &globalQueue,
-                                                                            std::size_t workerId) :
-    WorkerResource(globalQueue, qNetworkTable(GlobalQType::netw_, workerId)){};
+// template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+// template <std::size_t workerId>
+// constexpr WorkerResource<GlobalQType, LocalQType, numPorts>
+// WorkerResource<GlobalQType, LocalQType, numPorts>::QNetworkWorkerResource(GlobalQType &globalQueue) {
+//     return WorkerResource(globalQueue, tables::qNetworkTable<GlobalQType::netw_, workerId>());
+// }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(const value_type &val, std::size_t port) {
@@ -138,7 +143,8 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(con
     ++bufferPointer_;
 
     std::size_t maxAttempts = GlobalQType::netw_.maxPushAttempts_;
-    while (std::distance(outBuffer_.begin(), bufferPointer_) >= GlobalQType::netw_.batchSize_[*channelPointer_]
+    while (static_cast<std::size_t>(std::distance(outBuffer_.begin(), bufferPointer_))
+               >= GlobalQType::netw_.batchSize_[*channelPointer_]
            && maxAttempts > 0U) {
         if (not pushOutBuffer()) { --maxAttempts; }
 
@@ -153,9 +159,11 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() {
     bool successfulPush = false;
 
     const std::size_t batch = GlobalQType::netw_.batchSize_[*channelPointer_];
-    assert(batch <= std::distance(outBuffer_.begin(), bufferPointer_));
-    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBegin
-        = std::prev(bufferPointer_, batch);
+    assert(batch <= static_cast<std::size_t>(std::distance(outBuffer_.begin(), bufferPointer_)));
+    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBegin = std::prev(
+        bufferPointer_,
+        static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+            batch));
 
     const std::size_t targetWorker = GlobalQType::netw_.edgeTargets_[*channelPointer_];
     if (targetWorker == GlobalQType::netw_.numWorkers_) {    // netw.numWorkers_ is reserved for self-push
@@ -164,8 +172,8 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() {
     } else {
         const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
         successfulPush = globalQueue_.pushInternal(itBegin, bufferPointer_, targetWorker, port);
-        if (successfulPush) { bufferPointer_ = itBegin; }
     }
+    if (successfulPush) { bufferPointer_ = itBegin; }
 
     return successfulPush;
 }
@@ -190,7 +198,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueInChannels() {
-    for (const auto &portRingBuffer : inPorts_) {
+    for (auto &portRingBuffer : inPorts_) {
         std::optional<value_type> data = portRingBuffer.pop();
         while (data.has_value()) {
             queue_.push(data.value());
