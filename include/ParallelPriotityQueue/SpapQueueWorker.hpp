@@ -24,8 +24,8 @@ class WorkerResource {
     typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator channelPointer_;
     const typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
         channelTableEndPointer_;
-    std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
     const std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()> channelIndices_;
+    std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
     std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
     LocalQType queue_;
 
