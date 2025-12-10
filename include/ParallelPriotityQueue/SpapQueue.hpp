@@ -118,11 +118,9 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue() {
     assert(not queueActive_);
     queueActive_ = true;
 
-    // [this]<std::size_t... I>(std::index_sequence<I...>) {
-    //     ((workers_[I] = std::jthread(threadWork<I>)), ...);
-    // }(std::make_index_sequence<netw.numWorkers_>{});
-
-    workers_[0] = std::jthread(&ThisQType::threadWork<0>, this);
+    [this]<std::size_t... I>(std::index_sequence<I...>) {
+        ((workers_[I] = std::jthread(&ThisQType::threadWork<I>, this)), ...);
+    }(std::make_index_sequence<netw.numWorkers_>{});
 
     allocateSignal_.arrive_and_wait();
 }
