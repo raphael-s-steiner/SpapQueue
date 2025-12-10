@@ -282,15 +282,29 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork() {
     }
 
     // signal reference set
+#ifdef SPAPQ_DEBUG
+    std::cout << "Worker "
+                     + std::to_string(N)
+                     + " built local queue and waits until all allocations have been made.\n";
+#endif
     allocateSignal_.arrive_and_wait();
 
     // awaiting unsafe enqueuing and global starting signal
+#ifdef SPAPQ_DEBUG
+    std::cout << "Worker " + std::to_string(N) + " is waiting for starting signal.\n";
+#endif
     startSignal_.wait(false, std::memory_order_acquire);
 
     // run
+#ifdef SPAPQ_DEBUG
+    std::cout << "Worker " + std::to_string(N) + " begins running the queue.\n";
+#endif
     resource.run();
 
     // signal and await process finished
+#ifdef SPAPQ_DEBUG
+    std::cout << "Worker " + std::to_string(N) + " has finished and waits for other workers.\n";
+#endif
     safeToDeallocateSignal_.arrive_and_wait();
 
     // unset reference
@@ -299,6 +313,9 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork() {
     } else {
         std::get<N>(workerResources_) = nullptr;
     }
+#ifdef SPAPQ_DEBUG
+    std::cout << "Worker " + std::to_string(N) + " deleted reference to local queue.\n";
+#endif
 }
 
 // template <typename T,

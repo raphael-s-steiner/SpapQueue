@@ -61,6 +61,11 @@ target_compile_options(ProjectExecutableFlags INTERFACE
 # --- Library Definition ---
 add_library(SPAPQueue INTERFACE)
 
+# Setting Environment Variable for Debugging
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(SPAPQueue INTERFACE SPAPQ_DEBUG)
+endif()
+
 target_include_directories(SPAPQueue INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>

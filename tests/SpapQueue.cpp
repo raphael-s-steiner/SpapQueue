@@ -69,6 +69,12 @@ TEST(SpapQueueTest, Constructors1) {
 }
 
 TEST(SpapQueueTest, Constructors2) {
+    constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+}
+
+TEST(SpapQueueTest, Constructors3) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
@@ -84,6 +90,15 @@ TEST(SpapQueueTest, EmptyQueue1) {
 }
 
 TEST(SpapQueueTest, EmptyQueue2) {
+    constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    globalQ.initQueue();
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+}
+
+TEST(SpapQueueTest, EmptyQueue3) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
