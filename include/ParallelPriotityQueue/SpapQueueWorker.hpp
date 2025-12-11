@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iterator>
+#include <stop_token>
 
 #include "Discrepancy/QNetworkTables.hpp"
 #include "Discrepancy/TableGenerator.hpp"
@@ -46,17 +47,14 @@ class WorkerResource {
                                                                        InputIt last,
                                                                        std::size_t port);
 
-    inline void run();
+    inline void run(std::stop_token stoken);
 
   protected:
-    void testDummy() { };
     inline void enqueueGlobal(const value_type &val);
 
     template <std::size_t channelIndicesLength>
     constexpr WorkerResource(GlobalQType &globalQueue,
                              const std::array<std::size_t, channelIndicesLength> &channelIndices);
-    // template <std::size_t workerId>
-    // static constexpr WorkerResource<GlobalQType, LocalQType, numPorts> QNetworkWorkerResource(GlobalQType &globalQueue);
 
   public:
     WorkerResource(const WorkerResource &other) = delete;
@@ -108,13 +106,6 @@ constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
     bufferPointer_(outBuffer_.begin()),
     channelPointer_(channelIndices_.cbegin()),
     channelTableEndPointer_(std::next(channelIndices_.cbegin(), channelIndicesLength)) { }
-
-// template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-// template <std::size_t workerId>
-// constexpr WorkerResource<GlobalQType, LocalQType, numPorts>
-// WorkerResource<GlobalQType, LocalQType, numPorts>::QNetworkWorkerResource(GlobalQType &globalQueue) {
-//     return WorkerResource(globalQueue, tables::qNetworkTable<GlobalQType::netw_, workerId>());
-// }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(const value_type &val, std::size_t port) {
@@ -208,9 +199,16 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueInChannels
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run() {
-    while (globalQueue_.globalCount_.load(std::memory_order_acquire) > 0) {
-        while (not queue_.empty()) [[likely]] {
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_token stoken) {
+    std::size_t cntr = 0;
+    while (globalQueue_.globalCount_.load(std::memory_order_acquire) > 0 && (not stoken.stop_requested())) {
+        while ((not queue_.empty())) [[likely]] {
+            if (cntr == 128U) {
+                cntr = 0U;
+                if (stoken.stop_requested()) [[unlikely]] { break; }
+            }
+            ++cntr;
+
             enqueueInChannels();
             const value_type &val = queue_.top();
             processElement(val);

@@ -33,12 +33,6 @@ class DivisorWorker : public WorkerResource<GlobalQType, LocalQType, numPorts> {
                             const std::array<std::size_t, channelIndicesLength> &channelIndices) :
         WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices){};
 
-    template <std::size_t workerId>
-    static constexpr DivisorWorker<GlobalQType, LocalQType, numPorts> QNetworkWorkerResource(
-        GlobalQType &globalQueue) {
-        return DivisorWorker(globalQueue, tables::qNetworkTable<GlobalQType::netw_, workerId>());
-    }
-
     DivisorWorker(const DivisorWorker &other) = delete;
     DivisorWorker(DivisorWorker &&other) = delete;
     DivisorWorker &operator=(const DivisorWorker &other) = delete;
