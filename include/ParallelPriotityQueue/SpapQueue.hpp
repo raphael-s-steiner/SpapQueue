@@ -34,6 +34,7 @@ class SpapQueue {
     void initQueue();
     void processQueue();
     void waitProcessFinish();
+    void requestStop();
 
     void pushUnsafe(const value_type &val, const std::size_t workerId = 0U);
     void pushUnsafe(value_type &&val, const std::size_t workerId = 0U);
@@ -117,16 +118,17 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::waitProcessFinish() {
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue() {
     if (queueActive_) {
-        std::cerr << "SpapQueue is already active and cannot be initiated again!";
-    } else {
-        queueActive_ = true;
-
-        [this]<std::size_t... I>(std::index_sequence<I...>) {
-            ((workers_[I] = std::jthread(std::bind_front(&ThisQType::threadWork<I>, this))), ...);
-        }(std::make_index_sequence<netw.numWorkers_>{});
-
-        allocateSignal_.arrive_and_wait();
+        std::cerr << "SpapQueue is already active and cannot be initiated again!\n";
+        return;
     }
+
+    queueActive_ = true;
+
+    [this]<std::size_t... I>(std::index_sequence<I...>) {
+        ((workers_[I] = std::jthread(std::bind_front(&ThisQType::threadWork<I>, this))), ...);
+    }(std::make_index_sequence<netw.numWorkers_>{});
+
+    allocateSignal_.arrive_and_wait();
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
@@ -318,6 +320,17 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token 
 #ifdef SPAPQ_DEBUG
     std::cout << "Worker " + std::to_string(N) + " deleted reference to local queue.\n";
 #endif
+}
+
+template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
+void SpapQueue<T, netw, WorkerTemplate, LocalQType>::requestStop() {
+    if (not queueActive_) {
+        std::cerr << "SpapQueue is not active!\n";
+        return;
+    }
+
+    startSignal_.test_and_set(std::memory_order_relaxed);
+    for (const auto &workerThread : workers_) { workerThread.request_stop(); }
 }
 
 // template <typename T,
