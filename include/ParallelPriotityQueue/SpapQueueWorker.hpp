@@ -168,8 +168,8 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() {
     } else {
         const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
         successfulPush = globalQueue_.pushInternal(itBegin, bufferPointer_, targetWorker, port);
+        if (successfulPush) { bufferPointer_ = itBegin; }
     }
-    if (successfulPush) { bufferPointer_ = itBegin; }
 
     return successfulPush;
 }

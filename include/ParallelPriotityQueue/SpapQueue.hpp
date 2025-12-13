@@ -39,6 +39,8 @@ class SpapQueue final {
     inline void pushUnsafe(const value_type &val, const std::size_t workerId = 0U);
     inline void pushUnsafe(value_type &&val, const std::size_t workerId = 0U);
 
+    // TODO pushSafe
+
     SpapQueue() = default;
     SpapQueue(const SpapQueue &other) = delete;
     SpapQueue(SpapQueue &&other) = delete;
