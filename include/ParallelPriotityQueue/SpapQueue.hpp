@@ -21,7 +21,7 @@
 namespace spapq {
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
-class SpapQueue {
+class SpapQueue final {
     template <typename, typename, std::size_t>
     friend class WorkerTemplate;
     template <typename, typename, std::size_t>
@@ -38,6 +38,13 @@ class SpapQueue {
 
     void pushUnsafe(const value_type &val, const std::size_t workerId = 0U);
     void pushUnsafe(value_type &&val, const std::size_t workerId = 0U);
+
+    SpapQueue() = default;
+    SpapQueue(const SpapQueue &other) = delete;
+    SpapQueue(SpapQueue &&other) = delete;
+    SpapQueue &operator=(const SpapQueue &other) = delete;
+    SpapQueue &operator=(SpapQueue &&other) = delete;
+    ~SpapQueue();
 
   private:
     using ThisQType = SpapQueue<T, netw, WorkerTemplate, LocalQType>;
@@ -324,13 +331,17 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token 
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::requestStop() {
-    if (not queueActive_.load(std::memory_order_acquire)) {
-        std::cerr << "SpapQueue is not active!\n";
-        return;
-    }
+    if (not queueActive_.load(std::memory_order_acquire)) { return; }
 
     startSignal_.test_and_set(std::memory_order_relaxed);
-    for (const auto &workerThread : workers_) { workerThread.request_stop(); }
+    for (auto &workerThread : workers_) { workerThread.request_stop(); }
+}
+
+template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
+SpapQueue<T, netw, WorkerTemplate, LocalQType>::~SpapQueue() {
+    queueActive_.store(true, std::memory_order_relaxed);    // Such that nobody else can start the queue
+    requestStop();    // Required because worker threads can be stuck awaiting start signal
+    // Deconstructor of jthread automatically (calls request_stop and) joins the worker threads
 }
 
 // template <typename T,
