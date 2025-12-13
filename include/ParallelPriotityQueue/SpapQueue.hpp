@@ -281,6 +281,16 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token 
         std::exit(EXIT_FAILURE);
     }
 
+#ifdef SPAPQ_DEBUG
+    std::cout << "Worker "
+                     + std::to_string(N)
+                     + " spawned on core "
+                     + std::to_string(sched_getcpu())
+                     + " with thread "
+                     + std::to_string(std::hash<std::thread::id>()(std::this_thread::get_id()))
+                     + "\n";
+#endif
+
     // init resource
     WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]> resource
         = WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]>(*this, tables::qNetworkTable<netw, N>());
