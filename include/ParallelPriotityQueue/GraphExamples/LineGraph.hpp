@@ -51,9 +51,14 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
         }
     }
 
-    auto ret
-        = QNetwork<channels, outNumEdges>(vertPointer, edgeTargets, logicalCore, multiplicities, batchSize);
-    return ret;
+    return QNetwork<channels, outNumEdges>(vertPointer,
+                                           edgeTargets,
+                                           logicalCore,
+                                           multiplicities,
+                                           batchSize,
+                                           qNetwork.enqueueFrequency_,
+                                           qNetwork.bufferSize_,
+                                           qNetwork.maxPushAttempts_);
 }
 
 #define LINE_GRAPH(qNetwork)                                                                            \
