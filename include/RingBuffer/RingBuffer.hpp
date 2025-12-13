@@ -49,17 +49,17 @@ class RingBuffer {
     inline std::size_t occupancy() const noexcept;
 
     inline std::optional<T> pop() noexcept;
-    [[nodiscard("Pop may fail when queue is empty")]] inline bool pop(T &out) noexcept;
-    [[nodiscard("Push may fail when queue is full")]] inline bool push(const T &value) noexcept;
-    [[nodiscard("Push may fail when queue is full")]] inline bool push(T &&value) noexcept;
+    [[nodiscard("Pop may fail when queue is empty.\n")]] inline bool pop(T &out) noexcept;
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(const T &value) noexcept;
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(T &&value) noexcept;
     template <class InputIt>
-    [[nodiscard("Push may fail when queue is full")]] inline bool push(InputIt first, InputIt last) noexcept;
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(InputIt first, InputIt last) noexcept;
 
     // assertions
-    static_assert(N > 0U, "No trivial RingBuffers allowed!");
+    static_assert(N > 0U, "No trivial RingBuffers allowed!\n");
     static_assert(N < std::numeric_limits<std::size_t>::max(),
-                  "Needed to differentiate empty from full RingBuffer.");
-    static_assert(std::atomic<std::size_t>::is_always_lock_free, "Want atomic to be lock free.");
+                  "Needed to differentiate empty from full RingBuffer.\n");
+    static_assert(std::atomic<std::size_t>::is_always_lock_free, "Want atomic to be lock free.\n");
 
     // overflow protection
     // can be commented out if number of inserts will be less than the maximum value of std::size_t
@@ -67,7 +67,7 @@ class RingBuffer {
     // <= max value of std::size_t
     static_assert(sizeof(std::size_t) >= 8 || (((std::numeric_limits<std::size_t>::max() - N + 1U) % N == 0U)),
                   "Modulo operations need to be consistent or number of operations need to be "
-                  "smaller than max value of std::size_t!");
+                  "smaller than max value of std::size_t!\n");
 };
 
 template <typename T, std::size_t N>

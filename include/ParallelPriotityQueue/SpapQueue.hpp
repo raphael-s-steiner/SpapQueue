@@ -31,7 +31,7 @@ class SpapQueue {
     using value_type = T;
     static constexpr QNetwork<netw.numWorkers_, netw.numChannels_> netw_{netw};
 
-    void initQueue();
+    bool initQueue();
     void processQueue();
     void waitProcessFinish();
     void requestStop();
@@ -51,7 +51,7 @@ class SpapQueue {
     alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> globalCount_{0U};
     alignas(CACHE_LINE_SIZE) WorkerCollective workerResources_;
 
-    bool queueActive_{false};
+    std::atomic<bool> queueActive_{false};
     std::atomic_flag startSignal_;
     std::barrier<> allocateSignal_{netw.numWorkers_ + 1};
     std::barrier<> safeToDeallocateSignal_{netw.numWorkers_};
@@ -61,47 +61,47 @@ class SpapQueue {
     template <std::size_t N>
     void threadWork(std::stop_token stoken);
 
-    // [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternal(const value_type &val,
+    // [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushInternal(const value_type &val,
     //                                                                             const std::size_t workerId,
     //                                                                             const std::size_t port);
 
-    // [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternal(value_type &&val,
+    // [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushInternal(value_type &&val,
     //                                                                             const std::size_t workerId,
     //                                                                             const std::size_t port);
 
     template <class InputIt>
-    [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternal(InputIt first,
-                                                                                InputIt last,
-                                                                                const std::size_t workerId,
-                                                                                const std::size_t port);
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushInternal(InputIt first,
+                                                                                  InputIt last,
+                                                                                  const std::size_t workerId,
+                                                                                  const std::size_t port);
 
     // Helper Functions
     // template <std::size_t tupleSize,
     //           bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
     //           std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
-    // [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternalHelper(
+    // [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushInternalHelper(
     //     const value_type &val, const std::size_t workerId, const std::size_t port);
 
     // template <std::size_t tupleSize,
     //           bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
     //           std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
-    // [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternalHelper(
+    // [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushInternalHelper(
     //     value_type &&val, const std::size_t workerId, const std::size_t port);
 
     template <std::size_t tupleSize,
               class InputIt,
               bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
               std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
-    [[nodiscard("Push may fail when queue is full.")]] inline bool pushInternalHelper(
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushInternalHelper(
         InputIt first, InputIt last, const std::size_t workerId, const std::size_t port);
 
     // Static asserts
-    static_assert(netw.isValidQNetwork(), "The QNetwork needs to be valid!");
+    static_assert(netw.isValidQNetwork(), "The QNetwork needs to be valid!\n");
     static_assert(std::is_same_v<value_type, typename LocalQType::value_type>,
-                  "The local queue type needs to have matching value_type!");
+                  "The local queue type needs to have matching value_type!\n");
     static_assert(isDerivedWorkerResource<WorkerTemplate, ThisQType, LocalQType, netw.numWorkers_>(),
-                  "WorkerTemplate must be derived from WorkerResource.");
-    static_assert(netw.hasSeparateLogicalCores(), "Workers should be on separate logical Cores.");
+                  "WorkerTemplate must be derived from WorkerResource.\n");
+    static_assert(netw.hasSeparateLogicalCores(), "Workers should be on separate logical Cores.\n");
 };
 
 // Implementation Details
@@ -111,24 +111,24 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::waitProcessFinish() {
     for (auto &thread : workers_) {
         if (thread.joinable()) { thread.join(); }
     }
-    startSignal_.clear(std::memory_order_release);
-    queueActive_ = false;
+    globalCount_.store(0U, std::memory_order_relaxed);    // In case a stop was requested
+    startSignal_.clear(std::memory_order_relaxed);
+    queueActive_.store(false, std::memory_order_release);
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
-void SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue() {
-    if (queueActive_) {
+bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue() {
+    if (queueActive_.exchange(true, std::memory_order_acq_rel)) {
         std::cerr << "SpapQueue is already active and cannot be initiated again!\n";
-        return;
+        return false;
     }
-
-    queueActive_ = true;
 
     [this]<std::size_t... I>(std::index_sequence<I...>) {
         ((workers_[I] = std::jthread(std::bind_front(&ThisQType::threadWork<I>, this))), ...);
     }(std::make_index_sequence<netw.numWorkers_>{});
 
     allocateSignal_.arrive_and_wait();
+    return true;
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
@@ -324,7 +324,7 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token 
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::requestStop() {
-    if (not queueActive_) {
+    if (not queueActive_.load(std::memory_order_acquire)) {
         std::cerr << "SpapQueue is not active!\n";
         return;
     }

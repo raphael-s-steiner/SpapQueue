@@ -32,18 +32,18 @@ class WorkerResource {
     std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
     LocalQType queue_;
 
-    [[nodiscard("Push may fail when queue is full")]] inline bool pushOutBuffer();
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushOutBuffer();
     inline void pushOutBufferSelf(
         const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer);
 
     inline void enqueueInChannels();
     virtual void processElement(const value_type &val) = 0;
 
-    [[nodiscard("Push may fail when queue is full")]] inline bool push(const value_type &val,
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(const value_type &val,
                                                                        std::size_t port);
-    [[nodiscard("Push may fail when queue is full")]] inline bool push(value_type &&val, std::size_t port);
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(value_type &&val, std::size_t port);
     template <class InputIt>
-    [[nodiscard("Push may fail when queue is full")]] inline bool push(InputIt first,
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(InputIt first,
                                                                        InputIt last,
                                                                        std::size_t port);
 
