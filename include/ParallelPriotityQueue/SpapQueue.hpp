@@ -272,9 +272,9 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token 
     if (rc != 0) {
         const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
                                          + std::to_string(rc)
-                                         + ".\nFailed to pin worker thread number "
+                                         + ".\nFailed to pin worker number "
                                          + std::to_string(N)
-                                         + " to logical core "
+                                         + "'s thread to logical core "
                                          + std::to_string(logicalCore)
                                          + ".\n";
         std::cerr << errorMessage;
