@@ -81,6 +81,8 @@ constexpr bool isDerivedWorkerResource() {
     }
 }
 
+// Implementation details
+
 template <template <class, class, std::size_t> class WorkerTemplate,
           class GlobalQType,
           class LocalQType,

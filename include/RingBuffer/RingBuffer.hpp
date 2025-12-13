@@ -53,7 +53,8 @@ class RingBuffer {
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(const T &value) noexcept;
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(T &&value) noexcept;
     template <class InputIt>
-    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(InputIt first, InputIt last) noexcept;
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(InputIt first,
+                                                                          InputIt last) noexcept;
 
     // assertions
     static_assert(N > 0U, "No trivial RingBuffers allowed!\n");
@@ -69,6 +70,8 @@ class RingBuffer {
                   "Modulo operations need to be consistent or number of operations need to be "
                   "smaller than max value of std::size_t!\n");
 };
+
+// Implementation details
 
 template <typename T, std::size_t N>
 inline std::size_t RingBuffer<T, N>::getTailPosition() const noexcept {

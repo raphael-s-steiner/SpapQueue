@@ -306,7 +306,7 @@ inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushUnsafeHelper(val
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushUnsafe(const value_type &val,
-                                                                const std::size_t workerId) {
+                                                                       const std::size_t workerId) {
     if constexpr (netw.hasHomogeneousInPorts()) {
         workerResources_[workerId]->push(val);
     } else {
@@ -315,7 +315,8 @@ inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushUnsafe(const val
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
-inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushUnsafe(value_type &&val, const std::size_t workerId) {
+inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushUnsafe(value_type &&val,
+                                                                       const std::size_t workerId) {
     if constexpr (netw.hasHomogeneousInPorts()) {
         workerResources_[workerId]->push(std::move(val));
     } else {
