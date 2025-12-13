@@ -209,6 +209,8 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_tok
             }
             ++cntr;
 
+            // TODO how often to enqueue in channels -- make parameter
+
             enqueueInChannels();
             const value_type &val = queue_.top();
             processElement(val);

@@ -78,7 +78,8 @@ TEST(SpapQueueTest, EmptyQueue1) {
     constexpr QNetwork<1, 1> netw = FULLY_CONNECTED_GRAPH<1U>();
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
-    globalQ.initQueue();
+    EXPECT_TRUE(globalQ.initQueue());
+    EXPECT_FALSE(globalQ.initQueue());
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 }
@@ -87,7 +88,8 @@ TEST(SpapQueueTest, EmptyQueue2) {
     constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
-    globalQ.initQueue();
+    EXPECT_TRUE(globalQ.initQueue());
+    EXPECT_FALSE(globalQ.initQueue());
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 }
@@ -96,7 +98,22 @@ TEST(SpapQueueTest, EmptyQueue3) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
-    globalQ.initQueue();
+    EXPECT_TRUE(globalQ.initQueue());
+    EXPECT_FALSE(globalQ.initQueue());
     globalQ.processQueue();
     globalQ.waitProcessFinish();
+}
+
+TEST(SpapQueueTest, Destructor1) {
+    constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue());
+}
+
+TEST(SpapQueueTest, Destructor2) {
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue());
 }

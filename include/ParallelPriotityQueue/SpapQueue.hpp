@@ -333,15 +333,15 @@ template <typename T, QNetwork netw, template <class, class, std::size_t> class 
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::requestStop() {
     if (not queueActive_.load(std::memory_order_acquire)) { return; }
 
-    startSignal_.test_and_set(std::memory_order_relaxed);
     for (auto &workerThread : workers_) { workerThread.request_stop(); }
+    processQueue(); // In case worker threads are waiting for start signal
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 SpapQueue<T, netw, WorkerTemplate, LocalQType>::~SpapQueue() {
     queueActive_.store(true, std::memory_order_relaxed);    // Such that nobody else can start the queue
     requestStop();    // Required because worker threads can be stuck awaiting start signal
-    // Deconstructor of jthread automatically (calls request_stop and) joins the worker threads
+    // Deconstructor of jthread automatically joins the worker threads and thus destroys the worker resources
 }
 
 // template <typename T,
