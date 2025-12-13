@@ -156,13 +156,22 @@ TEST(QNetworkTest, LineGraphNumEdges) {
 }
 
 TEST(QNetworkTest, LineGraph) {
-    constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {0, 1}, {1, 1, 1, 1}, {1, 2, 1, 2});
+    constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {0, 1}, {1, 1, 1, 1}, {1, 2, 1, 2}, 17, 33, 6);
     EXPECT_TRUE(graph.isValidQNetwork());
     EXPECT_TRUE(graph.hasSeparateLogicalCores());
-    EXPECT_TRUE(LINE_GRAPH(graph).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(graph).hasSeparateLogicalCores());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(graph)).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(graph)).hasSeparateLogicalCores());
+    constexpr auto lgraph = LINE_GRAPH(graph);
+    constexpr auto llgraph = LINE_GRAPH(lgraph);
+
+    EXPECT_TRUE(lgraph.isValidQNetwork());
+    EXPECT_TRUE(lgraph.hasSeparateLogicalCores());
+    EXPECT_EQ(lgraph.enqueueFrequency_, graph.enqueueFrequency_);
+    EXPECT_EQ(lgraph.bufferSize_, graph.bufferSize_);
+    EXPECT_EQ(lgraph.maxPushAttempts_, graph.maxPushAttempts_);
+    EXPECT_TRUE(llgraph.isValidQNetwork());
+    EXPECT_TRUE(llgraph.hasSeparateLogicalCores());
+    EXPECT_EQ(llgraph.enqueueFrequency_, graph.enqueueFrequency_);
+    EXPECT_EQ(llgraph.bufferSize_, graph.bufferSize_);
+    EXPECT_EQ(llgraph.maxPushAttempts_, graph.maxPushAttempts_);
 
     EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()).isValidQNetwork());
     EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()).hasSeparateLogicalCores());
