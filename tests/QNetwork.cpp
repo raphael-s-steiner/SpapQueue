@@ -156,7 +156,8 @@ TEST(QNetworkTest, LineGraphNumEdges) {
 }
 
 TEST(QNetworkTest, LineGraph) {
-    constexpr auto graph = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {0, 1}, {1, 1, 1, 1}, {1, 2, 1, 2}, 17, 33, 6);
+    constexpr auto graph
+        = QNetwork<2, 4>({0, 2, 4}, {0, 1, 1, 0}, {0, 1}, {1, 1, 1, 1}, {1, 2, 1, 2}, 17, 33, 6);
     EXPECT_TRUE(graph.isValidQNetwork());
     EXPECT_TRUE(graph.hasSeparateLogicalCores());
     constexpr auto lgraph = LINE_GRAPH(graph);
@@ -173,30 +174,39 @@ TEST(QNetworkTest, LineGraph) {
     EXPECT_EQ(llgraph.bufferSize_, graph.bufferSize_);
     EXPECT_EQ(llgraph.maxPushAttempts_, graph.maxPushAttempts_);
 
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()).hasSeparateLogicalCores());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())).hasSeparateLogicalCores());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()))).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>()))).hasSeparateLogicalCores());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())))).isValidQNetwork());
-    EXPECT_TRUE(
-        LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>())))).hasSeparateLogicalCores());
+    constexpr auto lfull2 = LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>());
+    constexpr auto llfull2 = LINE_GRAPH(lfull2);
+    constexpr auto lllfull2 = LINE_GRAPH(llfull2);
+    constexpr auto llllfull2 = LINE_GRAPH(lllfull2);
+    EXPECT_TRUE(lfull2.isValidQNetwork());
+    EXPECT_TRUE(lfull2.hasSeparateLogicalCores());
+    EXPECT_TRUE(llfull2.isValidQNetwork());
+    EXPECT_TRUE(llfull2.hasSeparateLogicalCores());
+    EXPECT_TRUE(lllfull2.isValidQNetwork());
+    EXPECT_TRUE(lllfull2.hasSeparateLogicalCores());
+    EXPECT_TRUE(llllfull2.isValidQNetwork());
+    EXPECT_TRUE(llllfull2.hasSeparateLogicalCores());
 
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()).hasSeparateLogicalCores());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>())).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>())).hasSeparateLogicalCores());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()))).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>()))).hasSeparateLogicalCores());
+    constexpr auto lfull3 = LINE_GRAPH(FULLY_CONNECTED_GRAPH<3>());
+    constexpr auto llfull3 = LINE_GRAPH(lfull3);
+    constexpr auto lllfull3 = LINE_GRAPH(llfull3);
+    EXPECT_TRUE(lfull3.isValidQNetwork());
+    EXPECT_TRUE(lfull3.hasSeparateLogicalCores());
+    EXPECT_TRUE(llfull3.isValidQNetwork());
+    EXPECT_TRUE(llfull3.hasSeparateLogicalCores());
+    EXPECT_TRUE(lllfull3.isValidQNetwork());
+    EXPECT_TRUE(lllfull3.hasSeparateLogicalCores());
 
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>()).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>()).hasSeparateLogicalCores());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>())).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>())).hasSeparateLogicalCores());
+    constexpr auto lfull5 = LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>());
+    constexpr auto llfull5 = LINE_GRAPH(lfull5);
+    EXPECT_TRUE(lfull5.isValidQNetwork());
+    EXPECT_TRUE(lfull5.hasSeparateLogicalCores());
+    EXPECT_TRUE(llfull5.isValidQNetwork());
+    EXPECT_TRUE(llfull5.hasSeparateLogicalCores());
 
-    EXPECT_TRUE(LINE_GRAPH(PETERSEN_GRAPH).isValidQNetwork());
-    EXPECT_TRUE(LINE_GRAPH(PETERSEN_GRAPH).hasSeparateLogicalCores());
+    constexpr auto lPet = LINE_GRAPH(PETERSEN_GRAPH);
+    EXPECT_TRUE(lPet.isValidQNetwork());
+    EXPECT_TRUE(lPet.hasSeparateLogicalCores());
 }
 
 TEST(QNetworkTest, PortNumbers) {
@@ -205,31 +215,37 @@ TEST(QNetworkTest, PortNumbers) {
     EXPECT_TRUE(PETERSEN_GRAPH.hasHomogeneousPorts());
     EXPECT_EQ(PETERSEN_GRAPH.maxPortNum(), 3U);
 
-    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<3U>().hasHomogeneousInPorts());
-    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<3U>().hasHomogeneousOutPorts());
-    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<3U>().hasHomogeneousPorts());
-    EXPECT_EQ(FULLY_CONNECTED_GRAPH<3U>().maxPortNum(), 3U);
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>()).hasHomogeneousInPorts());
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>()).hasHomogeneousOutPorts());
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>()).hasHomogeneousPorts());
-    EXPECT_EQ(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>()).maxPortNum(), 3U);
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>())).hasHomogeneousInPorts());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>())).hasHomogeneousOutPorts());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>())).hasHomogeneousPorts());
-    EXPECT_EQ(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>())).maxPortNum(), 3U);
+    constexpr auto full3 = FULLY_CONNECTED_GRAPH<3U>();
+    constexpr auto lfull3 = LINE_GRAPH(full3);
+    constexpr auto llfull3 = LINE_GRAPH(lfull3);
+    EXPECT_TRUE(full3.hasHomogeneousInPorts());
+    EXPECT_TRUE(full3.hasHomogeneousOutPorts());
+    EXPECT_TRUE(full3.hasHomogeneousPorts());
+    EXPECT_EQ(full3.maxPortNum(), 3U);
+    EXPECT_TRUE(lfull3.hasHomogeneousInPorts());
+    EXPECT_TRUE(lfull3.hasHomogeneousOutPorts());
+    EXPECT_TRUE(lfull3.hasHomogeneousPorts());
+    EXPECT_EQ(lfull3.maxPortNum(), 3U);
+    EXPECT_TRUE(llfull3.hasHomogeneousInPorts());
+    EXPECT_TRUE(llfull3.hasHomogeneousOutPorts());
+    EXPECT_TRUE(llfull3.hasHomogeneousPorts());
+    EXPECT_EQ(llfull3.maxPortNum(), 3U);
 
-    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<5U>().hasHomogeneousInPorts());
-    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<5U>().hasHomogeneousOutPorts());
-    EXPECT_TRUE(FULLY_CONNECTED_GRAPH<5U>().hasHomogeneousPorts());
-    EXPECT_EQ(FULLY_CONNECTED_GRAPH<5U>().maxPortNum(), 5U);
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>()).hasHomogeneousInPorts());
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>()).hasHomogeneousOutPorts());
-    EXPECT_TRUE(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>()).hasHomogeneousPorts());
-    EXPECT_EQ(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>()).maxPortNum(), 5U);
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>())).hasHomogeneousInPorts());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>())).hasHomogeneousOutPorts());
-    EXPECT_TRUE(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>())).hasHomogeneousPorts());
-    EXPECT_EQ(LINE_GRAPH(LINE_GRAPH(FULLY_CONNECTED_GRAPH<5U>())).maxPortNum(), 5U);
+    constexpr auto full5 = FULLY_CONNECTED_GRAPH<5U>();
+    constexpr auto lfull5 = LINE_GRAPH(full5);
+    constexpr auto llfull5 = LINE_GRAPH(lfull5);
+    EXPECT_TRUE(full5.hasHomogeneousInPorts());
+    EXPECT_TRUE(full5.hasHomogeneousOutPorts());
+    EXPECT_TRUE(full5.hasHomogeneousPorts());
+    EXPECT_EQ(full5.maxPortNum(), 5U);
+    EXPECT_TRUE(lfull5.hasHomogeneousInPorts());
+    EXPECT_TRUE(lfull5.hasHomogeneousOutPorts());
+    EXPECT_TRUE(lfull5.hasHomogeneousPorts());
+    EXPECT_EQ(lfull5.maxPortNum(), 5U);
+    EXPECT_TRUE(llfull5.hasHomogeneousInPorts());
+    EXPECT_TRUE(llfull5.hasHomogeneousOutPorts());
+    EXPECT_TRUE(llfull5.hasHomogeneousPorts());
+    EXPECT_EQ(llfull5.maxPortNum(), 5U);
 
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
     EXPECT_FALSE(netw.hasHomogeneousInPorts());
