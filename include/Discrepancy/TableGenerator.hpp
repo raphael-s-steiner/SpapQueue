@@ -45,7 +45,7 @@ constexpr std::size_t findEarliestdeadline(
 }
 
 template <std::size_t M, std::size_t tableSize>
-constexpr std::array<std::size_t, tableSize> EarliestDeadlineFirstTable(
+constexpr std::array<std::size_t, tableSize> earliestDeadlineFirstTable(
     const std::array<std::size_t, M> frequencies) {
     static_assert(tableSize <= (std::numeric_limits<std::size_t>::max() >> ((sizeof(std::size_t) * 4U) + 1U)),
                   "May overflow if this condition is not met!");
@@ -93,7 +93,7 @@ constexpr std::array<std::size_t, after> extendTable(const std::array<std::size_
 }
 
 #define EARLIEST_DEADLINE_FIRST_TABLE(frequencies)                                                        \
-    (spapq::tables::EarliestDeadlineFirstTable<frequencies.size(),                                        \
+    (spapq::tables::earliestDeadlineFirstTable<frequencies.size(),                                        \
                                                spapq::tables::sumArray<frequencies.size()>(frequencies)>( \
         frequencies))
 #define REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(frequencies)                                               \

@@ -99,6 +99,7 @@ class SpapQueue final {
               class InputIt,
               bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
               std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
+
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushInternalHelper(
         InputIt first, InputIt last, const std::size_t workerId, const std::size_t port);
 

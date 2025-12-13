@@ -48,7 +48,7 @@ constexpr std::array<std::size_t, qNetworkTableSize<netw, workerId>()> qNetworkT
 
     const std::array<std::size_t, workerOutChannels> frequencies = qNetworkTableFrequencies<netw, workerId>();
 
-    auto table = EarliestDeadlineFirstTable<workerOutChannels, tableLength>(frequencies);
+    auto table = earliestDeadlineFirstTable<workerOutChannels, tableLength>(frequencies);
 
     for (std::size_t &val : table) { val += netw.vertexPointer_[workerId]; }
 
