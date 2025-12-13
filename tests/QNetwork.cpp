@@ -21,13 +21,14 @@ TEST(QNetworkTest, Constructors1) {
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.multiplicities_[i], 10U - i); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.batchSize_[i], (i + 1)); }
 
-    EXPECT_EQ(netw.maxBatchSize(), 4);
+    EXPECT_EQ(netw.enqueueFrequency_, 16U);
+    EXPECT_EQ(netw.maxBatchSize(), 4U);
     EXPECT_TRUE(netw.hasHomogeneousInPorts());
     EXPECT_TRUE(netw.hasHomogeneousOutPorts());
     EXPECT_TRUE(netw.hasHomogeneousPorts());
     EXPECT_TRUE(netw.hasSeparateLogicalCores());
     EXPECT_EQ(netw.maxPortNum(), 1U);
-    EXPECT_EQ(netw.bufferSize_, 16U);
+    EXPECT_EQ(netw.bufferSize_, 64U);
 }
 
 TEST(QNetworkTest, Constructors2) {
@@ -277,4 +278,9 @@ TEST(QNetworkTest, SelfPush) {
     EXPECT_EQ(netw.numPorts_[0], 3);
     EXPECT_EQ(netw.numPorts_[1], 2);
     EXPECT_EQ(netw.numPorts_[2], 1);
+}
+
+TEST(QNetworkTest, PrintQNetwork) {
+    constexpr QNetwork<10, 30> netw = PETERSEN_GRAPH;
+    netw.printQNetwork();
 }

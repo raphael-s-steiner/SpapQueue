@@ -40,12 +40,12 @@ class WorkerResource {
     virtual void processElement(const value_type &val) = 0;
 
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(const value_type &val,
-                                                                       std::size_t port);
+                                                                          std::size_t port);
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(value_type &&val, std::size_t port);
     template <class InputIt>
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(InputIt first,
-                                                                       InputIt last,
-                                                                       std::size_t port);
+                                                                          InputIt last,
+                                                                          std::size_t port);
 
     inline void run(std::stop_token stoken);
 
@@ -203,19 +203,18 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_tok
     std::size_t cntr = 0;
     while (globalQueue_.globalCount_.load(std::memory_order_acquire) > 0 && (not stoken.stop_requested())) {
         while ((not queue_.empty())) [[likely]] {
-            if (cntr == 128U) {
-                cntr = 0U;
+            if (cntr % 128U == 0U) {
                 if (stoken.stop_requested()) [[unlikely]] { break; }
             }
-            ++cntr;
 
-            // TODO how often to enqueue in channels -- make parameter
+            if (cntr % GlobalQType::netw_.enqueueFrequency_ == 0U) { enqueueInChannels(); }
 
-            enqueueInChannels();
             const value_type &val = queue_.top();
             processElement(val);
             queue_.pop();
             globalQueue_.globalCount_.fetch_sub(1U, std::memory_order_release);
+
+            ++cntr;
         }
         enqueueInChannels();
         pushOutBufferSelf(outBuffer_.begin());

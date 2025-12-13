@@ -334,7 +334,7 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::requestStop() {
     if (not queueActive_.load(std::memory_order_acquire)) { return; }
 
     for (auto &workerThread : workers_) { workerThread.request_stop(); }
-    processQueue(); // In case worker threads are waiting for start signal
+    processQueue();    // In case worker threads are waiting for start signal
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
