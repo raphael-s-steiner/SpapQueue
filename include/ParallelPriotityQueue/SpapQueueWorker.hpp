@@ -47,6 +47,9 @@ class WorkerResource {
                                                                           InputIt last,
                                                                           std::size_t port);
 
+    inline void pushUnsafe(const value_type &val);
+    inline void pushUnsafe(value_type &&val);
+
     inline void run(std::stop_token stoken);
 
   protected:
@@ -219,6 +222,16 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_tok
         enqueueInChannels();
         pushOutBufferSelf(outBuffer_.begin());
     }
+}
+
+template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushUnsafe(const value_type &val) {
+    queue_.push(val);
+}
+
+template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushUnsafe(value_type &&val) {
+    queue_.push(std::move(val));
 }
 
 }    // end namespace spapq
