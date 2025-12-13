@@ -73,6 +73,8 @@ struct QNetwork {
                        std::array<std::size_t, channels> edgeTargets);
 };
 
+// Implementation details
+
 template <std::size_t workers, std::size_t channels>
 constexpr void QNetwork<workers, channels>::setDefaultMultiplicities() {
     for (std::size_t i = 0U; i < multiplicities_.size(); ++i) { multiplicities_[i] = 1U; }
