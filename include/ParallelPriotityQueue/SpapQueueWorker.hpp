@@ -20,6 +20,7 @@ class WorkerResource {
     using value_type = GlobalQType::value_type;
 
   private:
+    const std::size_t workerId_;
     const std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()> channelIndices_;
     std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
 
@@ -29,8 +30,9 @@ class WorkerResource {
     const typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
         channelTableEndPointer_;
 
-    std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
-    LocalQType queue_;
+    alignas(
+        CACHE_LINE_SIZE) std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
+    alignas(CACHE_LINE_SIZE) LocalQType queue_;
 
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushOutBuffer();
     inline void pushOutBufferSelf(
@@ -57,7 +59,8 @@ class WorkerResource {
 
     template <std::size_t channelIndicesLength>
     constexpr WorkerResource(GlobalQType &globalQueue,
-                             const std::array<std::size_t, channelIndicesLength> &channelIndices);
+                             const std::array<std::size_t, channelIndicesLength> &channelIndices,
+                             std::size_t workerId);
 
   public:
     WorkerResource(const WorkerResource &other) = delete;
@@ -104,7 +107,10 @@ struct WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, netw, 0> 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 template <std::size_t channelIndicesLength>
 constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
-    GlobalQType &globalQueue, const std::array<std::size_t, channelIndicesLength> &channelIndices) :
+    GlobalQType &globalQueue,
+    const std::array<std::size_t, channelIndicesLength> &channelIndices,
+    std::size_t workerId) :
+    workerId_(workerId),
     channelIndices_(
         tables::extendTable<tables::maxTableSize<GlobalQType::netw_>(), channelIndicesLength>(channelIndices)),
     globalQueue_(globalQueue),

@@ -30,8 +30,9 @@ class DivisorWorker final : public WorkerResource<GlobalQType, LocalQType, numPo
   public:
     template <std::size_t channelIndicesLength>
     constexpr DivisorWorker(GlobalQType &globalQueue,
-                            const std::array<std::size_t, channelIndicesLength> &channelIndices) :
-        WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices){};
+                            const std::array<std::size_t, channelIndicesLength> &channelIndices,
+                            std::size_t workerId) :
+        WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices, workerId){};
 
     DivisorWorker(const DivisorWorker &other) = delete;
     DivisorWorker(DivisorWorker &&other) = delete;

@@ -31,7 +31,8 @@ class SpapQueue final {
     using value_type = T;
     static constexpr QNetwork<netw.numWorkers_, netw.numChannels_> netw_{netw};
 
-    bool initQueue();
+    template <typename... Args>
+    bool initQueue(Args &&...args);
     void processQueue();
     void waitProcessFinish();
     void requestStop();
@@ -67,8 +68,8 @@ class SpapQueue final {
 
     std::array<std::jthread, netw.numWorkers_> workers_;
 
-    template <std::size_t N>
-    void threadWork(std::stop_token stoken);
+    template <std::size_t N, typename... Args>
+    void threadWork(std::stop_token stoken, Args &&...args);
 
     template <class InputIt>
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushInternal(InputIt first,
@@ -116,14 +117,17 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::waitProcessFinish() {
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
-bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue() {
+template <typename... Args>
+bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue(Args &&...args) {
     if (queueActive_.exchange(true, std::memory_order_acq_rel)) {
         std::cerr << "SpapQueue is already active and cannot be initiated again!\n";
         return false;
     }
 
-    [this]<std::size_t... I>(std::index_sequence<I...>) {
-        ((workers_[I] = std::jthread(std::bind_front(&ThisQType::threadWork<I>, this))), ...);
+    [this, ... args = std::forward<Args>(args)]<std::size_t... I>(std::index_sequence<I...>) {
+        ((workers_[I]
+          = std::jthread(std::bind_front(&ThisQType::threadWork<I>, this), std::forward<Args>(args)...)),
+         ...);
     }(std::make_index_sequence<netw.numWorkers_>{});
 
     allocateSignal_.arrive_and_wait();
@@ -177,8 +181,8 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushInternal(InputIt
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
-template <std::size_t N>
-void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token stoken) {
+template <std::size_t N, typename... Args>
+void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token stoken, Args &&...args) {
     static_assert(N < netw.numWorkers_);
 
     // pinning thread
@@ -213,7 +217,8 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token 
 
     // init resource
     WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]> resource
-        = WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]>(*this, tables::qNetworkTable<netw, N>());
+        = WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[N]>(
+            *this, tables::qNetworkTable<netw, N>(), N, std::forward<Args>(args)...);
 
     // set reference
     if constexpr (netw.hasHomogeneousInPorts()) {
