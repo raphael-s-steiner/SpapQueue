@@ -11,7 +11,7 @@ using namespace spapq;
 using DivisorLocalQueueType
     = std::priority_queue<std::size_t, std::vector<std::size_t>, std::greater<std::size_t>>;
 
-static constexpr std::size_t divisorTestMaxSize = 10000;
+constexpr std::size_t divisorTestMaxSize = 10000;
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 class DivisorWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts> {
@@ -67,7 +67,7 @@ std::vector<std::size_t> computeAnswerDivisors(std::size_t N) {
 using FibonacchiLocalQueueType
     = std::priority_queue<std::size_t, std::vector<std::size_t>, std::less<std::size_t>>;
 
-static constexpr std::size_t fibonacciTestSize = 30;
+constexpr std::size_t fibonacciTestSize = 30;
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts> {
@@ -248,6 +248,47 @@ TEST(SpapQueueTest, DivisorsHeterogeneousWorkers) {
     globalQ.waitProcessFinish();
 
     std::vector<std::size_t> solution = computeAnswerDivisors(divisorTestMaxSize);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < divisorTestMaxSize; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
+TEST(SpapQueueTest, UseQueueTwice) {
+    constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(divisorTestMaxSize, 0));
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushUnsafe(1U, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerDivisors(divisorTestMaxSize);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < divisorTestMaxSize; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+
+    // Clearing counts
+    for (auto &vec : ansCounter) {
+        for (auto &val : vec) { val = 0; }
+    }
+
+    // Restarting Queue
+    std::cout << "Restarting\n";
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushUnsafe(1U, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
 
     // Tallying up from all workers
     for (std::size_t i = 1; i < netw.numWorkers_; ++i) {

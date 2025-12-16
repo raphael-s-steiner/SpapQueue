@@ -219,8 +219,8 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_tok
             if (cntr % GlobalQType::netw_.enqueueFrequency_ == 0U) { enqueueInChannels(); }
 
             const value_type val = queue_.top();
-            processElement(val);
             queue_.pop();
+            processElement(val);
             globalQueue_.globalCount_.fetch_sub(1U, std::memory_order_release);
 
             ++cntr;
