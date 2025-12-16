@@ -257,7 +257,7 @@ TEST(SpapQueueTest, DivisorsHeterogeneousWorkers) {
     for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
 }
 
-TEST(SpapQueueTest, UseQueueTwice) {
+TEST(SpapQueueTest, ReuseQueue) {
     constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
 
     std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
