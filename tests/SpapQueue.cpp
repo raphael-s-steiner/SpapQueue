@@ -141,7 +141,7 @@ TEST(SpapQueueTest, Destructor2) {
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
 }
 
-TEST(SpapQueueTest, SingleWorker) {
+TEST(SpapQueueTest, DivisorsSingleWorker) {
     constexpr QNetwork<1, 1> netw = FULLY_CONNECTED_GRAPH<1U>();
 
     std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
@@ -163,7 +163,7 @@ TEST(SpapQueueTest, SingleWorker) {
     for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
 }
 
-TEST(SpapQueueTest, HomogeneousWorkers) {
+TEST(SpapQueueTest, DivisorsHomogeneousWorkers) {
     constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
 
     std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
@@ -185,7 +185,7 @@ TEST(SpapQueueTest, HomogeneousWorkers) {
     for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
 }
 
-TEST(SpapQueueTest, HeterogeneousWorkers) {
+TEST(SpapQueueTest, DivisorsHeterogeneousWorkers) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
 
     std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
