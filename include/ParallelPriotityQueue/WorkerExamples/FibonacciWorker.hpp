@@ -11,7 +11,7 @@ class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, num
     template <typename, QNetwork, template <class, class, std::size_t> class, typename>
     friend class SpapQueue;
 
-    using BaseT = WorkerResource<GlobalQType, DivisorLocalQueueType, numPorts>;
+    using BaseT = WorkerResource<GlobalQType, LocalQType, numPorts>;
     using value_type = BaseT::value_type;
 
   protected:

@@ -7,6 +7,7 @@
 #include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
 
 using namespace spapq;
+
 using DivisorLocalQueueType
     = std::priority_queue<std::size_t, std::vector<std::size_t>, std::greater<std::size_t>>;
 
@@ -19,7 +20,7 @@ class DivisorWorker final : public WorkerResource<GlobalQType, LocalQType, numPo
     template <typename, QNetwork, template <class, class, std::size_t> class, typename>
     friend class SpapQueue;
 
-    using BaseT = WorkerResource<GlobalQType, DivisorLocalQueueType, numPorts>;
+    using BaseT = WorkerResource<GlobalQType, LocalQType, numPorts>;
     using value_type = BaseT::value_type;
 
   private:
@@ -59,6 +60,56 @@ std::vector<std::size_t> computeAnswerDivisors(std::size_t N) {
             }
         }
     }
+
+    return count;
+}
+
+using FibonacchiLocalQueueType
+    = std::priority_queue<std::size_t, std::vector<std::size_t>, std::less<std::size_t>>;
+
+static constexpr std::size_t fibonacciTestSize = 30;
+
+template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts> {
+    template <typename, typename, std::size_t>
+    friend class FibonacciWorker;
+    template <typename, QNetwork, template <class, class, std::size_t> class, typename>
+    friend class SpapQueue;
+
+    using BaseT = WorkerResource<GlobalQType, LocalQType, numPorts>;
+    using value_type = BaseT::value_type;
+
+  private:
+    std::vector<std::size_t> &locAnsCounter_;
+
+  protected:
+    inline void processElement(const value_type val) noexcept override {
+        ++locAnsCounter_[val];
+
+        if (val > 0) { this->enqueueGlobal(val - 1); }
+        if (val > 1) { this->enqueueGlobal(val - 2); }
+    }
+
+  public:
+    template <std::size_t channelIndicesLength>
+    constexpr FibonacciWorker(GlobalQType &globalQueue,
+                              const std::array<std::size_t, channelIndicesLength> &channelIndices,
+                              std::size_t workerId,
+                              std::vector<std::vector<std::size_t>> &ansCounter) :
+        WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices, workerId),
+        locAnsCounter_(ansCounter[workerId]){};
+
+    FibonacciWorker(const FibonacciWorker &other) = delete;
+    FibonacciWorker(FibonacciWorker &&other) = delete;
+    FibonacciWorker &operator=(const FibonacciWorker &other) = delete;
+    FibonacciWorker &operator=(FibonacciWorker &&other) = delete;
+    virtual ~FibonacciWorker() = default;
+};
+
+std::vector<std::size_t> computeAnswerFibonacci(std::size_t N) {
+    std::vector<std::size_t> count(N, 1U);
+
+    for (std::size_t i = count.size() - 3U; i < count.size(); --i) { count[i] = count[i + 1] + count[i + 2]; }
 
     return count;
 }
@@ -204,4 +255,70 @@ TEST(SpapQueueTest, DivisorsHeterogeneousWorkers) {
     }
 
     for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
+TEST(SpapQueueTest, FibonacciSingleWorker) {
+    constexpr QNetwork<1, 1> netw = FULLY_CONNECTED_GRAPH<1U>();
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(fibonacciTestSize + 1, 0));
+
+    SpapQueue<std::size_t, netw, FibonacciWorker, FibonacchiLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushUnsafe(fibonacciTestSize, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerFibonacci(fibonacciTestSize + 1);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < fibonacciTestSize + 1; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < fibonacciTestSize + 1; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
+TEST(SpapQueueTest, FibonacciHomogeneousWorkers) {
+    constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(fibonacciTestSize + 1, 0));
+
+    SpapQueue<std::size_t, netw, FibonacciWorker, FibonacchiLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushUnsafe(fibonacciTestSize, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerFibonacci(fibonacciTestSize + 1);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < fibonacciTestSize + 1; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < fibonacciTestSize + 1; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
+TEST(SpapQueueTest, FibonacciHeterogeneousWorkers) {
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(fibonacciTestSize + 1, 0));
+
+    SpapQueue<std::size_t, netw, FibonacciWorker, FibonacchiLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushUnsafe(fibonacciTestSize, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerFibonacci(fibonacciTestSize + 1);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < fibonacciTestSize + 1; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < fibonacciTestSize + 1; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
 }
