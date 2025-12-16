@@ -47,6 +47,7 @@ endmacro()
 
 # Adding Benchmarks
 _add_BM( RingBuffer )
+_add_BM( SpapqFibonacci )
 
 # Custom target to compile all the Benchmarks
 add_custom_target( build_BM DEPENDS ${BM_list} )
