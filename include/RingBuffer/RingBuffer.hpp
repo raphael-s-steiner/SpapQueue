@@ -18,7 +18,7 @@ namespace spapq {
  * @tparam N Size of ring buffer
  */
 template <typename T, std::size_t N>
-class RingBuffer {
+class alignas(CACHE_LINE_SIZE) RingBuffer {
   private:
     alignas(CACHE_LINE_SIZE) std::array<T, N> data_;
     alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> tailCounter_{N};
@@ -50,8 +50,7 @@ class RingBuffer {
 
     inline std::optional<T> pop() noexcept;
     [[nodiscard("Pop may fail when queue is empty.\n")]] inline bool pop(T &out) noexcept;
-    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(const T &value) noexcept;
-    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(T &&value) noexcept;
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(const T value) noexcept;
     template <class InputIt>
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(InputIt first,
                                                                           InputIt last) noexcept;
@@ -115,8 +114,7 @@ inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
     if ((cachedHeadCounter_ != tail)
         || ((cachedHeadCounter_ = headCounter_.load(std::memory_order_acquire)) != tail)) {
         const std::size_t pos = tail % N;
-        result = std::move(data_[pos]);
-        data_[pos].~T();
+        result = data_[pos];
         advanceTail();
     }
     return result;
@@ -129,15 +127,14 @@ inline bool RingBuffer<T, N>::pop(T &out) noexcept {
                          || ((cachedHeadCounter_ = headCounter_.load(std::memory_order_acquire)) != tail);
     if (hasData) {
         const std::size_t pos = tail % N;
-        out = std::move(data_[pos]);
-        data_[pos].~T();
+        out = data_[pos];
         advanceTail();
     }
     return hasData;
 }
 
 template <typename T, std::size_t N>
-inline bool RingBuffer<T, N>::push(const T &value) noexcept {
+inline bool RingBuffer<T, N>::push(const T value) noexcept {
     const std::size_t head = headCounter_.load(std::memory_order_relaxed);
     const std::size_t headLoopAround = head - N;
     const bool nonFull
@@ -145,20 +142,6 @@ inline bool RingBuffer<T, N>::push(const T &value) noexcept {
           || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) != headLoopAround);
     if (nonFull) {
         data_[head % N] = value;
-        advanceHead();
-    }
-    return nonFull;
-}
-
-template <typename T, std::size_t N>
-inline bool RingBuffer<T, N>::push(T &&value) noexcept {
-    const std::size_t head = headCounter_.load(std::memory_order_relaxed);
-    const std::size_t headLoopAround = head - N;
-    const bool nonFull
-        = (cachedTailCounter_ != headLoopAround)
-          || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) != headLoopAround);
-    if (nonFull) {
-        data_[head % N] = std::move(value);
         advanceHead();
     }
     return nonFull;
