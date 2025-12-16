@@ -33,27 +33,27 @@ class WorkerResource {
     LocalQType queue_;
     std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
 
-    [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushOutBuffer();
+    [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushOutBuffer() noexcept;
     inline void pushOutBufferSelf(
-        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer);
+        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) noexcept;
 
-    inline void enqueueInChannels();
-    virtual void processElement(const value_type val) = 0;
+    inline void enqueueInChannels() noexcept;
+    virtual void processElement(const value_type val) noexcept = 0;
 
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(const value_type val,
-                                                                          std::size_t port);
+                                                                          std::size_t port) noexcept;
     template <class InputIt>
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(InputIt first,
                                                                           InputIt last,
-                                                                          std::size_t port);
+                                                                          std::size_t port) noexcept;
 
-    inline void pushUnsafe(const value_type val);
+    inline void pushUnsafe(const value_type val) noexcept;
 
-    inline void run(std::stop_token stoken);
+    inline void run(std::stop_token stoken) noexcept;
 
   protected:
-    inline std::size_t workerId() const;
-    inline void enqueueGlobal(const value_type val);
+    inline std::size_t workerId() const noexcept;
+    inline void enqueueGlobal(const value_type val) noexcept;
 
     template <std::size_t channelIndicesLength, typename... Args>
     constexpr WorkerResource(GlobalQType &globalQueue,
@@ -120,7 +120,8 @@ constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
     queue_(std::forward<Args>(localQargs)...) { }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(const value_type val, std::size_t port) {
+inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(const value_type val,
+                                                                    std::size_t port) noexcept {
     return inPorts_[port].push(val);
 }
 
@@ -128,12 +129,12 @@ template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 template <class InputIt>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(InputIt first,
                                                                     InputIt last,
-                                                                    std::size_t port) {
+                                                                    std::size_t port) noexcept {
     return inPorts_[port].push(first, last);
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(const value_type val) {
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(const value_type val) noexcept {
     assert(bufferPointer_ != outBuffer_.end());
 
     globalQueue_.globalCount_.fetch_add(1U, std::memory_order_relaxed);
@@ -153,7 +154,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(con
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() {
+inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() noexcept {
     bool successfulPush = false;
 
     const std::size_t batch = GlobalQType::netw_.batchSize_[*channelPointer_];
@@ -178,7 +179,7 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() {
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf(
-    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) {
+    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) noexcept {
     constexpr bool hasBatchPush
         = requires (LocalQType &q,
                     typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator first,
@@ -196,7 +197,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueInChannels() {
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueInChannels() noexcept {
     for (auto &portRingBuffer : inPorts_) {
         std::optional<value_type> data = portRingBuffer.pop();
         while (data.has_value()) {
@@ -207,7 +208,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueInChannels
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_token stoken) {
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_token stoken) noexcept {
     std::size_t cntr = 0;
     while (globalQueue_.globalCount_.load(std::memory_order_acquire) > 0 && (not stoken.stop_requested())) {
         while ((not queue_.empty())) [[likely]] {
@@ -230,12 +231,12 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_tok
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushUnsafe(const value_type val) {
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushUnsafe(const value_type val) noexcept {
     queue_.push(val);
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
-inline std::size_t WorkerResource<GlobalQType, LocalQType, numPorts>::workerId() const {
+inline std::size_t WorkerResource<GlobalQType, LocalQType, numPorts>::workerId() const noexcept {
     return workerId_;
 }
 

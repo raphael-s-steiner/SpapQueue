@@ -15,7 +15,7 @@ class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, num
     using value_type = BaseT::value_type;
 
   protected:
-    inline void processElement(const value_type val) override {
+    inline void processElement(const value_type val) noexcept override {
         if (val > 0) { this->enqueueGlobal(val - 1); }
         if (val > 1) { this->enqueueGlobal(val - 2); }
     }

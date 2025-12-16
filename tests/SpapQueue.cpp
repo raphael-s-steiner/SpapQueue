@@ -26,7 +26,7 @@ class DivisorWorker final : public WorkerResource<GlobalQType, LocalQType, numPo
     std::vector<std::size_t> &locAnsCounter_;
 
   protected:
-    inline void processElement(const value_type val) override {
+    inline void processElement(const value_type val) noexcept override {
         ++locAnsCounter_[val];
         for (value_type i = 2 * val; i < divisorTestMaxSize; i += val) { this->enqueueGlobal(i); }
     }
