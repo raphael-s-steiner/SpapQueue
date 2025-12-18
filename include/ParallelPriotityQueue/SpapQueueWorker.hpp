@@ -24,6 +24,7 @@ class WorkerResource {
     std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
 
     const std::size_t workerId_;
+    std::size_t localCount_;
     GlobalQType &globalQueue_;
     typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator bufferPointer_;
     typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator channelPointer_;
@@ -32,6 +33,9 @@ class WorkerResource {
 
     LocalQType queue_;
     std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
+
+    inline void incrGlobalCount() noexcept;
+    inline void decrGlobalCount() noexcept;
 
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushOutBuffer() noexcept;
     inline void pushOutBufferSelf(
@@ -137,7 +141,7 @@ template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(const value_type val) noexcept {
     assert(bufferPointer_ != outBuffer_.end());
 
-    globalQueue_.globalCount_.fetch_add(1U, std::memory_order_relaxed);
+    incrGlobalCount();
     *bufferPointer_ = val;
     ++bufferPointer_;
 
@@ -221,7 +225,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_tok
             const value_type val = queue_.top();
             queue_.pop();
             processElement(val);
-            globalQueue_.globalCount_.fetch_sub(1U, std::memory_order_release);
+            decrGlobalCount();
 
             ++cntr;
         }
@@ -238,6 +242,16 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushUnsafe(const 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline std::size_t WorkerResource<GlobalQType, LocalQType, numPorts>::workerId() const noexcept {
     return workerId_;
+}
+
+template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::incrGlobalCount() noexcept {
+    globalQueue_.globalCount_.fetch_add(1U, std::memory_order_relaxed);
+}
+
+template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+inline void WorkerResource<GlobalQType, LocalQType, numPorts>::decrGlobalCount() noexcept {
+    globalQueue_.globalCount_.fetch_sub(1U, std::memory_order_release);
 }
 
 }    // end namespace spapq
