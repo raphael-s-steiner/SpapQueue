@@ -24,7 +24,7 @@ class WorkerResource {
     std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;
 
     const std::size_t workerId_;
-    std::size_t localCount_;
+    std::size_t localCount_{0U};
     GlobalQType &globalQueue_;
     typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator bufferPointer_;
     typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator channelPointer_;
@@ -246,12 +246,28 @@ inline std::size_t WorkerResource<GlobalQType, LocalQType, numPorts>::workerId()
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::incrGlobalCount() noexcept {
-    globalQueue_.globalCount_.fetch_add(1U, std::memory_order_relaxed);
+    ++localCount_;
+    const std::size_t qSize = queue_.size();
+    if (localCount_ >= qSize) {
+        const std::size_t newLocalCount = qSize / 2;
+        const std::size_t diff = localCount_ - newLocalCount;
+
+        localCount_ = newLocalCount;
+        globalQueue_.globalCount_.fetch_add(diff, std::memory_order_relaxed);
+    }
 }
 
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::decrGlobalCount() noexcept {
-    globalQueue_.globalCount_.fetch_sub(1U, std::memory_order_release);
+    if (localCount_ == 0) {
+        const std::size_t newLocalCount = queue_.size() / 2;
+        const std::size_t diff = newLocalCount + 1;
+
+        localCount_ = newLocalCount;
+        globalQueue_.globalCount_.fetch_sub(diff, std::memory_order_relaxed);
+    } else {
+        --localCount_;
+    }
 }
 
 }    // end namespace spapq
