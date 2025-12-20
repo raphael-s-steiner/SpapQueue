@@ -6,6 +6,10 @@
 
 namespace spapq {
 
+/**
+ * @brief Computes the number of edges (or channels) of the line graph of the QNetwork.
+ * 
+ */
 template <std::size_t workers, std::size_t channels>
 constexpr std::size_t lineGraphNumEdges(const QNetwork<workers, channels> &qNetwork) {
     std::size_t count = 0;
