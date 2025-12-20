@@ -51,6 +51,7 @@ constexpr std::size_t qNetworkTableSize() {
     return retVal;
 }
 
+// TODO
 template <QNetwork netw, std::size_t workerId>
 constexpr std::array<std::size_t, qNetworkTableSize<netw, workerId>()> qNetworkTable() {
     static_assert(netw.isValidQNetwork());

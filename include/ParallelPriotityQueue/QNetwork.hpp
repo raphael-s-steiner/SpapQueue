@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <iostream>
 
 namespace spapq {
@@ -95,15 +94,13 @@ struct QNetwork {
 
 template <std::size_t workers, std::size_t channels>
 inline constexpr std::size_t QNetwork<workers, channels>::outDegree(std::size_t worker) const noexcept {
-    assert(worker < numWorkers_);
-    const std::size_t degree = vertexPointer_[worker + 1U] - vertexPointer_[worker];
+    const std::size_t degree = vertexPointer_.at(worker + 1U) - vertexPointer_.at(worker);
     return degree;
 }
 
 template <std::size_t workers, std::size_t channels>
 inline constexpr std::size_t QNetwork<workers, channels>::inDegree(std::size_t worker) const noexcept {
-    assert(worker < numWorkers_);
-    return numPorts_[worker];
+    return numPorts_.at(worker);
 }
 
 template <std::size_t workers, std::size_t channels>
@@ -430,11 +427,9 @@ constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers 
 
 template <std::size_t workers, std::size_t channels>
 constexpr bool QNetwork<workers, channels>::hasPathToAllWorkers(std::size_t worker) const {
-    assert(worker < numWorkers_);
-
     std::array<bool, numWorkers_> reachable;
     for (bool &val : reachable) { val = false; }
-    for (std::size_t channel = vertexPointer_[worker]; channel < vertexPointer_[worker + 1U]; ++channel) {
+    for (std::size_t channel = vertexPointer_.at(worker); channel < vertexPointer_.at(worker + 1U); ++channel) {
         const std::size_t tgt = edgeTargets_[channel] == numWorkers_ ? worker : edgeTargets_[channel];
         reachable[tgt] = true;
     }
