@@ -34,6 +34,9 @@ struct QNetwork {
     std::array<std::size_t, channels> batchSize_;         ///< Number of tasks to be pushed over a channel in
                                                           ///< one go.
 
+    inline constexpr std::size_t outDegree(std::size_t worker) const noexcept;
+    inline constexpr std::size_t inDegree(std::size_t worker) const noexcept;
+
     constexpr void setDefaultMultiplicities();
     constexpr void setDefaultBatchSize();
     constexpr void setDefaultChannelBufferSize();
@@ -89,6 +92,19 @@ struct QNetwork {
 };
 
 // Implementation details
+
+template <std::size_t workers, std::size_t channels>
+inline constexpr std::size_t QNetwork<workers, channels>::outDegree(std::size_t worker) const noexcept {
+    assert(worker < numWorkers_);
+    const std::size_t degree = vertexPointer_[worker + 1U] - vertexPointer_[worker];
+    return degree;
+}
+
+template <std::size_t workers, std::size_t channels>
+inline constexpr std::size_t QNetwork<workers, channels>::inDegree(std::size_t worker) const noexcept {
+    assert(worker < numWorkers_);
+    return numPorts_[worker];
+}
 
 template <std::size_t workers, std::size_t channels>
 constexpr void QNetwork<workers, channels>::setDefaultMultiplicities() {

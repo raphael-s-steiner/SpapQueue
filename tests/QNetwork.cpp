@@ -62,6 +62,10 @@ TEST(QNetworkTest, Ports1) {
 
     for (std::size_t worker = 0; worker < netw.numWorkers_; ++worker) {
         EXPECT_EQ(netw.numPorts_[worker], inGraph[worker].size());
+        EXPECT_EQ(netw.inDegree(worker), inGraph[worker].size());
+        EXPECT_EQ(netw.outDegree(worker), outGraph[worker].size());
+        EXPECT_EQ(netw.inDegree(worker), 1U);
+        EXPECT_EQ(netw.outDegree(worker), 1U);
     }
 
     std::vector<std::vector<bool>> ports(netw.numWorkers_);
@@ -103,6 +107,10 @@ TEST(QNetworkTest, Ports2) {
 
     for (std::size_t worker = 0; worker < netw.numWorkers_; ++worker) {
         EXPECT_EQ(netw.numPorts_[worker], inGraph[worker].size());
+        EXPECT_EQ(netw.inDegree(worker), inGraph[worker].size());
+        EXPECT_EQ(netw.outDegree(worker), outGraph[worker].size());
+        EXPECT_EQ(netw.inDegree(worker), 3U);
+        EXPECT_EQ(netw.outDegree(worker), 3U);
     }
 
     std::vector<std::vector<bool>> ports(netw.numWorkers_);
@@ -127,6 +135,14 @@ TEST(QNetworkTest, Ports2) {
 
     EXPECT_TRUE(netw.isValidQNetwork());
     EXPECT_TRUE(netw.hasSeparateLogicalCores());
+}
+
+TEST(QNetworkTest, Degrees) {
+    constexpr QNetwork<4, 10> netw({0, 1, 3, 6, 10}, {0, 0, 1, 0, 1, 2, 0, 1, 2, 3});
+    for (std::size_t worker = 0U; worker < netw.numWorkers_; ++worker) {
+        EXPECT_EQ(netw.outDegree(worker), worker + 1U);
+        EXPECT_EQ(netw.inDegree(worker), 4U - worker);
+    }
 }
 
 TEST(QNetworkTest, Validity) {
