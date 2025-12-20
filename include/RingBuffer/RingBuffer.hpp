@@ -14,8 +14,8 @@ namespace spapq {
  * @brief A single-producer single consumer first-in-first-out queue implemented as a ring buffer on
  * the stack.
  *
- * @tparam T Data type
- * @tparam N Size of ring buffer
+ * @tparam T Data type.
+ * @tparam N Size or capacity.
  */
 template <typename T, std::size_t N>
 class alignas(CACHE_LINE_SIZE) RingBuffer {

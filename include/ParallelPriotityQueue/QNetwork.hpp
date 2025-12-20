@@ -10,23 +10,26 @@ namespace spapq {
 /**
  * @brief A Network describing how the queue should be interlinked.
  *
- * @tparam workers Number of workers processing the queue
- * @tparam channels Total number of channels between workers in the queue
+ * @tparam workers Number of workers processing the queue.
+ * @tparam channels Total number of channels between workers in the queue.
  */
 template <std::size_t workers, std::size_t channels>
 struct QNetwork {
     static constexpr std::size_t numWorkers_{workers};
     static constexpr std::size_t numChannels_{channels};
-    std::size_t enqueueFrequency_;
-    std::size_t channelBufferSize_;
-    std::size_t maxPushAttempts_;
-    std::array<std::size_t, workers + 1U> vertexPointer_;
-    std::array<std::size_t, workers> numPorts_;
-    std::array<std::size_t, workers> logicalCore_;
-    std::array<std::size_t, channels> edgeTargets_;    // netw.numWorkers_ is reserved for efficient self-push
-    std::array<std::size_t, channels> multiplicities_;
-    std::array<std::size_t, channels> targetPort_;
-    std::array<std::size_t, channels> batchSize_;
+    std::size_t enqueueFrequency_;    ///< Number of elements after which the worker checks incomming channels.
+    std::size_t channelBufferSize_;    ///< Size or capacity of the RingBuffer channels.
+    std::size_t maxPushAttempts_;      ///< Number of attemps to push to other workers before pushing to self.
+    std::array<std::size_t, workers + 1U> vertexPointer_;    ///< Vertex pointer in network CSR.
+    std::array<std::size_t, workers> numPorts_;              ///< Number of incomming channels of worker.
+    std::array<std::size_t, workers> logicalCore_;           ///< Pthread core number of worker.
+    std::array<std::size_t, channels> edgeTargets_;    ///< Target worker of channel in network CSR. The number
+                                                       ///< "numWorkers_" is reserved for efficient self-push.
+    std::array<std::size_t, channels>
+        multiplicities_;    ///< How often this channel should be preferred to push work
+                            ///< over other outgoing channels of the same worker.
+    std::array<std::size_t, channels> targetPort_;    ///< Local index of channel of receiving worker.
+    std::array<std::size_t, channels> batchSize_;    ///< Number of tasks to be pushed over a channel in one go.
 
     constexpr void setDefaultMultiplicities();
     constexpr void setDefaultBatchSize();
