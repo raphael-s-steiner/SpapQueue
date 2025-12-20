@@ -10,19 +10,20 @@ namespace spapq {
 namespace tables {
 
 template <std::size_t N>
-constexpr std::array<std::size_t, N> reducedIntegerArray(const std::array<std::size_t, N> arr) {
+constexpr std::array<std::size_t, N> reducedIntegerArray(const std::array<std::size_t, N> &arr) {
     std::size_t commonGCD = 0U;
     for (const std::size_t &val : arr) { commonGCD = std::gcd(commonGCD, val); }
 
-    assert(commonGCD > 0U);
-    std::array<std::size_t, N> reducedArr;
-    for (std::size_t i = 0U; i < arr.size(); ++i) { reducedArr[i] = arr[i] / commonGCD; }
+    std::array<std::size_t, N> reducedArr = arr;
+    if (commonGCD > 0U) {
+        for (std::size_t &val : reducedArr) { val /= commonGCD; }
+    }
 
     return reducedArr;
 };
 
 template <std::size_t N>
-constexpr std::size_t sumArray(const std::array<std::size_t, N> arr) {
+constexpr std::size_t sumArray(const std::array<std::size_t, N> &arr) {
     return std::accumulate(arr.cbegin(), arr.cend(), static_cast<std::size_t>(0U));
 };
 
@@ -46,7 +47,7 @@ constexpr std::size_t findEarliestdeadline(
 
 template <std::size_t M, std::size_t tableSize>
 constexpr std::array<std::size_t, tableSize> earliestDeadlineFirstTable(
-    const std::array<std::size_t, M> frequencies) {
+    const std::array<std::size_t, M> &frequencies) {
     static_assert(tableSize <= (std::numeric_limits<std::size_t>::max() >> ((sizeof(std::size_t) * 4U) + 1U)),
                   "May overflow if this condition is not met!");
     assert(tableSize

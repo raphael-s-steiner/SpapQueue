@@ -44,7 +44,6 @@ struct QNetwork {
     constexpr bool hasSeparateLogicalCores() const;
 
     void printQNetwork() const;
-    // TODO print dot file
 
     constexpr QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
                        std::array<std::size_t, channels> edgeTargets,

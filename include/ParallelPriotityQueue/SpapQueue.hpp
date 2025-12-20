@@ -150,8 +150,9 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushInternalHelper(
         } else {
 #ifdef __cpp_lib_unreachable
             std::unreachable();
-#endif
+#else
             assert(false);
+#endif
             return false;
         }
     }

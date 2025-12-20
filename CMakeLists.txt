@@ -17,9 +17,7 @@ endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Configuring for Debug build. Debug symbols enabled.")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    message(STATUS "Configuring for Release build. Optimization -O3 and -DNDEBUG enabled.")
-elseif(CMAKE_BUILD_TYPE STREQUAL "ReleaseNative")
-    message(STATUS "Configuring for Release build. Optimization -O3, -DNDEBUG enabled, and -march=native.")
+    message(STATUS "Configuring for Release build. Optimization -O3 and -DNDEBUG enabled, and -march=native.")
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     message(STATUS "Configuring for Release with Debug Info build. Optimization -O2 and debug symbols enabled.")
 else()
@@ -43,6 +41,7 @@ set(COMMON_CXX_WARNING_FLAGS
     "-Wuninitialized"
     "-Wno-interference-size" # disables warning that std::hardware_destructive_interference_size may depend on hardware, compiler, and flags
     "-Werror"
+    "-Wnrvo"
 )
 
 # --- Project-specific Compile Flags ---
@@ -53,8 +52,7 @@ target_compile_options(ProjectExecutableFlags INTERFACE ${COMMON_CXX_WARNING_FLA
 # Set build-type specific compile options
 target_compile_options(ProjectExecutableFlags INTERFACE
     $<$<CONFIG:DEBUG>:-g>
-    $<$<CONFIG:RELEASE>:-O3;-DNDEBUG>
-    $<$<CONFIG:RELEASENATIVE>:-O3;-DNDEBUG;-march=native>
+    $<$<CONFIG:RELEASE>:-O3;-DNDEBUG;-march=native>
     $<$<CONFIG:RELWITHDEBINFO>:-O2;-g>
 )
 
