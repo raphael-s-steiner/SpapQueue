@@ -17,7 +17,7 @@ struct QNetwork {
     static constexpr std::size_t numWorkers_{workers};
     static constexpr std::size_t numChannels_{channels};
     std::size_t enqueueFrequency_;
-    std::size_t bufferSize_;
+    std::size_t channelBufferSize_;
     std::size_t maxPushAttempts_;
     std::array<std::size_t, workers + 1U> vertexPointer_;
     std::array<std::size_t, workers> numPorts_;
@@ -29,7 +29,7 @@ struct QNetwork {
 
     constexpr void setDefaultMultiplicities();
     constexpr void setDefaultBatchSize();
-    constexpr void setDefaultBufferSize();
+    constexpr void setDefaultChannelBufferSize();
     constexpr void setDefaultMaxPushAttempts();
     constexpr void setDefaultLogicalCores();
     constexpr void setDefaultEnqueueFrequency();
@@ -57,7 +57,7 @@ struct QNetwork {
                        std::array<std::size_t, channels> multiplicities,
                        std::array<std::size_t, channels> batchSize,
                        std::size_t enqueueFrequency,
-                       std::size_t bufferSize,
+                       std::size_t channelBufferSize,
                        std::size_t maxPushAttempts);
 
     constexpr QNetwork(std::array<std::size_t, workers + 1U> vertexPointer,
@@ -103,8 +103,8 @@ constexpr void QNetwork<workers, channels>::setDefaultEnqueueFrequency() {
 }
 
 template <std::size_t workers, std::size_t channels>
-constexpr void QNetwork<workers, channels>::setDefaultBufferSize() {
-    bufferSize_ = std::max(maxBatchSize() * 8U, enqueueFrequency_ * 4U);
+constexpr void QNetwork<workers, channels>::setDefaultChannelBufferSize() {
+    channelBufferSize_ = std::max(maxBatchSize() * 8U, enqueueFrequency_ * 4U);
 }
 
 template <std::size_t workers, std::size_t channels>
@@ -191,7 +191,7 @@ constexpr bool QNetwork<workers, channels>::isValidQNetwork() const {
         if (vertexPointer_[worker] == vertexPointer_[worker + 1U]) { return false; }
     }
 
-    if (bufferSize_ < maxBatchSize()) { return false; }
+    if (channelBufferSize_ < maxBatchSize()) { return false; }
     if (maxPushAttempts_ == 0U) { return false; }
     if (enqueueFrequency_ == 0U) { return false; }
 
@@ -207,7 +207,7 @@ void QNetwork<workers, channels>::printQNetwork() const {
     std::cout << singleIndent << "#Workers : " << numWorkers_ << "\n";
     std::cout << singleIndent << "#Channels: " << numChannels_ << "\n";
     std::cout << singleIndent << "EnQFreq  : " << enqueueFrequency_ << "\n";
-    std::cout << singleIndent << "BuffrSize: " << bufferSize_ << "\n";
+    std::cout << singleIndent << "ChanlSize: " << channelBufferSize_ << "\n";
     std::cout << singleIndent << "MaxAttmps: " << maxPushAttempts_ << "\n";
 
     std::cout << "\n" << singleIndent << "Linking:\n";
@@ -326,10 +326,10 @@ constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers 
                                                 std::array<std::size_t, channels> multiplicities,
                                                 std::array<std::size_t, channels> batchSize,
                                                 std::size_t enqueueFrequency,
-                                                std::size_t bufferSize,
+                                                std::size_t channelBufferSize,
                                                 std::size_t maxPushAttempts) :
     enqueueFrequency_(enqueueFrequency),
-    bufferSize_(bufferSize),
+    channelBufferSize_(channelBufferSize),
     maxPushAttempts_(maxPushAttempts),
     vertexPointer_(vertexPointer),
     logicalCore_(logicalCore),
@@ -352,7 +352,7 @@ constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers 
     multiplicities_(multiplicities),
     batchSize_(batchSize) {
     setDefaultEnqueueFrequency();
-    setDefaultBufferSize();
+    setDefaultChannelBufferSize();
     setDefaultMaxPushAttempts();
     assignTargetPorts();
     changeToSelfPushLabels();
@@ -369,7 +369,7 @@ constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers 
     multiplicities_(multiplicities) {
     setDefaultBatchSize();
     setDefaultEnqueueFrequency();
-    setDefaultBufferSize();
+    setDefaultChannelBufferSize();
     setDefaultMaxPushAttempts();
     assignTargetPorts();
     changeToSelfPushLabels();
@@ -383,7 +383,7 @@ constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers 
     setDefaultMultiplicities();
     setDefaultBatchSize();
     setDefaultEnqueueFrequency();
-    setDefaultBufferSize();
+    setDefaultChannelBufferSize();
     setDefaultMaxPushAttempts();
     assignTargetPorts();
     changeToSelfPushLabels();
@@ -397,7 +397,7 @@ constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers 
     setDefaultMultiplicities();
     setDefaultBatchSize();
     setDefaultEnqueueFrequency();
-    setDefaultBufferSize();
+    setDefaultChannelBufferSize();
     setDefaultMaxPushAttempts();
     assignTargetPorts();
     changeToSelfPushLabels();

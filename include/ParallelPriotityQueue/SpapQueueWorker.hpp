@@ -32,7 +32,7 @@ class WorkerResource {
         channelTableEndPointer_;
 
     LocalQType queue_;
-    std::array<RingBuffer<value_type, GlobalQType::netw_.bufferSize_>, numPorts> inPorts_;
+    std::array<RingBuffer<value_type, GlobalQType::netw_.channelBufferSize_>, numPorts> inPorts_;
 
     inline void incrGlobalCount() noexcept;
     inline void decrGlobalCount() noexcept;

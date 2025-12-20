@@ -28,7 +28,7 @@ TEST(QNetworkTest, Constructors1) {
     EXPECT_TRUE(netw.hasHomogeneousPorts());
     EXPECT_TRUE(netw.hasSeparateLogicalCores());
     EXPECT_EQ(netw.maxPortNum(), 1U);
-    EXPECT_EQ(netw.bufferSize_, 64U);
+    EXPECT_EQ(netw.channelBufferSize_, 64U);
 }
 
 TEST(QNetworkTest, Constructors2) {
@@ -166,12 +166,12 @@ TEST(QNetworkTest, LineGraph) {
     EXPECT_TRUE(lgraph.isValidQNetwork());
     EXPECT_TRUE(lgraph.hasSeparateLogicalCores());
     EXPECT_EQ(lgraph.enqueueFrequency_, graph.enqueueFrequency_);
-    EXPECT_EQ(lgraph.bufferSize_, graph.bufferSize_);
+    EXPECT_EQ(lgraph.channelBufferSize_, graph.channelBufferSize_);
     EXPECT_EQ(lgraph.maxPushAttempts_, graph.maxPushAttempts_);
     EXPECT_TRUE(llgraph.isValidQNetwork());
     EXPECT_TRUE(llgraph.hasSeparateLogicalCores());
     EXPECT_EQ(llgraph.enqueueFrequency_, graph.enqueueFrequency_);
-    EXPECT_EQ(llgraph.bufferSize_, graph.bufferSize_);
+    EXPECT_EQ(llgraph.channelBufferSize_, graph.channelBufferSize_);
     EXPECT_EQ(llgraph.maxPushAttempts_, graph.maxPushAttempts_);
 
     constexpr auto lfull2 = LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>());

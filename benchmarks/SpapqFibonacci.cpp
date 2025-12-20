@@ -31,7 +31,7 @@ static void BM_SpapQueue_Fibonacci_1_Worker(benchmark::State &state) {
     constexpr std::array<std::size_t, channels> multiplicities = {1};
     constexpr std::array<std::size_t, channels> batchSize = {8};
     constexpr std::size_t enqueueFrequency = 24;
-    constexpr std::size_t bufferSize = 8;
+    constexpr std::size_t channelBufferSize = 8;
     constexpr std::size_t maxPushAttempts = 1;
 
     constexpr QNetwork<workers, channels> netw(vertexPointer,
@@ -40,7 +40,7 @@ static void BM_SpapQueue_Fibonacci_1_Worker(benchmark::State &state) {
                                                multiplicities,
                                                batchSize,
                                                enqueueFrequency,
-                                               bufferSize,
+                                               channelBufferSize,
                                                maxPushAttempts);
 
     SpapQueue<std::size_t, netw, FibonacciWorker, std::priority_queue<std::size_t>> globalQ;
@@ -75,7 +75,7 @@ static void BM_SpapQueue_Fibonacci_2_Workers(benchmark::State &state) {
     constexpr std::array<std::size_t, channels> multiplicities = {2, 1, 2, 1};
     constexpr std::array<std::size_t, channels> batchSize = {8, 16, 8, 16};
     constexpr std::size_t enqueueFrequency = 24;
-    constexpr std::size_t bufferSize = 64;
+    constexpr std::size_t channelBufferSize = 64;
     constexpr std::size_t maxPushAttempts = 2;
 
     constexpr QNetwork<workers, channels> netw(vertexPointer,
@@ -84,7 +84,7 @@ static void BM_SpapQueue_Fibonacci_2_Workers(benchmark::State &state) {
                                                multiplicities,
                                                batchSize,
                                                enqueueFrequency,
-                                               bufferSize,
+                                               channelBufferSize,
                                                maxPushAttempts);
 
     SpapQueue<std::size_t, netw, FibonacciWorker, std::priority_queue<std::size_t>> globalQ;
@@ -119,7 +119,7 @@ static void BM_SpapQueue_Fibonacci_4_Workers(benchmark::State &state) {
     constexpr std::array<std::size_t, channels> multiplicities = {2, 2, 1, 1, 2, 2, 1, 1};
     constexpr std::array<std::size_t, channels> batchSize = {8, 8, 16, 16, 8, 8, 16, 16};
     constexpr std::size_t enqueueFrequency = 24;
-    constexpr std::size_t bufferSize = 64;
+    constexpr std::size_t channelBufferSize = 64;
     constexpr std::size_t maxPushAttempts = 2;
 
     constexpr QNetwork<workers, channels> netw(vertexPointer,
@@ -128,7 +128,7 @@ static void BM_SpapQueue_Fibonacci_4_Workers(benchmark::State &state) {
                                                multiplicities,
                                                batchSize,
                                                enqueueFrequency,
-                                               bufferSize,
+                                               channelBufferSize,
                                                maxPushAttempts);
 
     SpapQueue<std::size_t, netw, FibonacciWorker, std::priority_queue<std::size_t>> globalQ;
@@ -163,17 +163,17 @@ static void BM_SpapQueue_Fibonacci_8_Workers(benchmark::State &state) {
     constexpr std::array<std::size_t, channels> multiplicities = {1, 1, 1, 1};
     constexpr std::array<std::size_t, channels> batchSize = {8, 16, 8, 16};
     constexpr std::size_t enqueueFrequency = 24;
-    constexpr std::size_t bufferSize = 64;
+    constexpr std::size_t channelBufferSize = 64;
     constexpr std::size_t maxPushAttempts = 4;
 
     constexpr QNetwork<workers, channels> netw2(vertexPointer,
-                                               edgeTargets,
-                                               logicalCore,
-                                               multiplicities,
-                                               batchSize,
-                                               enqueueFrequency,
-                                               bufferSize,
-                                               maxPushAttempts);
+                                                edgeTargets,
+                                                logicalCore,
+                                                multiplicities,
+                                                batchSize,
+                                                enqueueFrequency,
+                                                channelBufferSize,
+                                                maxPushAttempts);
 
     constexpr auto netw = LINE_GRAPH(LINE_GRAPH(netw2));
 

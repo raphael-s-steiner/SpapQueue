@@ -57,7 +57,7 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
                                            multiplicities,
                                            batchSize,
                                            qNetwork.enqueueFrequency_,
-                                           qNetwork.bufferSize_,
+                                           qNetwork.channelBufferSize_,
                                            qNetwork.maxPushAttempts_);
 }
 
