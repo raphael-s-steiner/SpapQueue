@@ -169,7 +169,7 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() n
             batch));
 
     const std::size_t targetWorker = GlobalQType::netw_.edgeTargets_[*channelPointer_];
-    if (targetWorker == GlobalQType::netw_.numWorkers_) {    // netw.numWorkers_ is reserved for self-push
+    if (targetWorker == GlobalQType::netw_.numWorkers_) {        // netw.numWorkers_ is reserved for self-push
         pushOutBufferSelf(itBegin);
         successfulPush = true;
     } else {
@@ -270,4 +270,4 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::decrGlobalCount()
     }
 }
 
-}    // end namespace spapq
+}        // end namespace spapq

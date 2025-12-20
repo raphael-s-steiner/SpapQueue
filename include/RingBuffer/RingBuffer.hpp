@@ -175,4 +175,4 @@ inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
     return enoughSpace;
 }
 
-}    // end namespace spapq
+}        // end namespace spapq

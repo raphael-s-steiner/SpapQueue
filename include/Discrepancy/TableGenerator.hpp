@@ -100,5 +100,5 @@ constexpr std::array<std::size_t, after> extendTable(const std::array<std::size_
 #define REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(frequencies)                                               \
     (EARLIEST_DEADLINE_FIRST_TABLE(spapq::tables::reducedIntegerArray<frequencies.size()>(frequencies)))
 
-}    // end namespace tables
-}    // end namespace spapq
+}        // end namespace tables
+}        // end namespace spapq

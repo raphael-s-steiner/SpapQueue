@@ -4,6 +4,9 @@
 
 namespace spapq {
 
+/**
+ * @brief The Petersen graph as a QNetwork
+ */
 static constexpr QNetwork<10, 30> PETERSEN_GRAPH(
     {0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30},
     {
@@ -20,4 +23,4 @@ static constexpr QNetwork<10, 30> PETERSEN_GRAPH(
     }
 );
 
-}    // end namespace spapq
+}        // end namespace spapq

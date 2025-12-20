@@ -18,4 +18,4 @@ consteval QNetwork<N, N * N> FULLY_CONNECTED_GRAPH() {
     return QNetwork<N, N * N>(vertexPtr, edges);
 };
 
-}    // end namespace spapq
+}        // end namespace spapq

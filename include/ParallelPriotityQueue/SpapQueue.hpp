@@ -104,7 +104,7 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::waitProcessFinish() {
     for (auto &thread : workers_) {
         if (thread.joinable()) { thread.join(); }
     }
-    globalCount_.store(0U, std::memory_order_relaxed);    // In case a stop was requested
+    globalCount_.store(0U, std::memory_order_relaxed);        // In case a stop was requested
     startSignal_.clear(std::memory_order_relaxed);
     queueActive_.store(false, std::memory_order_release);
 }
@@ -261,13 +261,13 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::requestStop() {
     if (not queueActive_.load(std::memory_order_acquire)) { return; }
 
     for (auto &workerThread : workers_) { workerThread.request_stop(); }
-    processQueue();    // In case worker threads are waiting for start signal
+    processQueue();        // In case worker threads are waiting for start signal
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 SpapQueue<T, netw, WorkerTemplate, LocalQType>::~SpapQueue() noexcept {
-    queueActive_.store(true, std::memory_order_relaxed);    // Such that nobody else can start the queue
-    requestStop();    // Required because worker threads can be stuck awaiting start signal
+    queueActive_.store(true, std::memory_order_relaxed);        // Such that nobody else can start the queue
+    requestStop();        // Required because worker threads can be stuck awaiting start signal
     // Deconstructor of jthread automatically joins the worker threads and thus destroys the worker resources
 }
 
@@ -298,4 +298,4 @@ inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushUnsafe(const val
     globalCount_.fetch_add(1U, std::memory_order_release);
 }
 
-}    // end namespace spapq
+}        // end namespace spapq

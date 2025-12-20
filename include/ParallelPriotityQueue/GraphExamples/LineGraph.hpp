@@ -15,6 +15,13 @@ constexpr std::size_t lineGraphNumEdges(const QNetwork<workers, channels> &qNetw
     return count;
 }
 
+/**
+ * @brief Generates QNetwork corresponding to the line graph of the input QNetwork.
+ *
+ * @tparam workers Number of workers of input QNetwork.
+ * @tparam channels Number of channels of input QNetwork.
+ * @tparam outNumEdges Number of channels of output QNetwork.
+ */
 template <std::size_t workers, std::size_t channels, std::size_t outNumEdges>
 consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, channels> &qNetwork) {
     assert(outNumEdges == lineGraphNumEdges(qNetwork));
@@ -61,8 +68,13 @@ consteval QNetwork<channels, outNumEdges> lineGraph(const QNetwork<workers, chan
                                            qNetwork.maxPushAttempts_);
 }
 
+/**
+ * @brief Generates the line graph of a constexpr QNetwork.
+ *
+ * @see spapq::lineGraph
+ */
 #define LINE_GRAPH(qNetwork)                                                                            \
     (spapq::lineGraph<qNetwork.numWorkers_, qNetwork.numChannels_, spapq::lineGraphNumEdges(qNetwork)>( \
         qNetwork))
 
-}    // end namespace spapq
+}        // end namespace spapq

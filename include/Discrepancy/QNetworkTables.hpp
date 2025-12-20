@@ -72,5 +72,5 @@ constexpr std::size_t maxTableSize() {
     return maxTableSizeHelper<netw, netw.numWorkers_>();
 }
 
-}    // end namespace tables
-}    // end namespace spapq
+}        // end namespace tables
+}        // end namespace spapq

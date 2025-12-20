@@ -34,4 +34,4 @@ class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, num
     virtual ~FibonacciWorker() = default;
 };
 
-}    // end namespace spapq
+}        // end namespace spapq

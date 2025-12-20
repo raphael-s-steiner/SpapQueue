@@ -30,9 +30,7 @@ TEST(QNetworkTest, Constructors1) {
     EXPECT_EQ(netw.maxPortNum(), 1U);
     EXPECT_EQ(netw.channelBufferSize_, 64U);
 
-    for (std::size_t w = 0U; w < netw.numWorkers_; ++w) {
-        EXPECT_TRUE(netw.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < netw.numWorkers_; ++w) { EXPECT_TRUE(netw.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(netw.isStronglyConnected());
 }
 
@@ -144,9 +142,7 @@ TEST(QNetworkTest, Validity) {
     EXPECT_TRUE(netw.isValidQNetwork());
     EXPECT_TRUE(netw.hasSeparateLogicalCores());
 
-    for (std::size_t w = 0U; w < netw.numWorkers_; ++w) {
-        EXPECT_TRUE(netw.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < netw.numWorkers_; ++w) { EXPECT_TRUE(netw.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(netw.isStronglyConnected());
 }
 
@@ -173,9 +169,7 @@ TEST(QNetworkTest, LineGraph) {
     constexpr auto lgraph = LINE_GRAPH(graph);
     constexpr auto llgraph = LINE_GRAPH(lgraph);
 
-    for (std::size_t w = 0U; w < graph.numWorkers_; ++w) {
-        EXPECT_TRUE(graph.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < graph.numWorkers_; ++w) { EXPECT_TRUE(graph.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(graph.isStronglyConnected());
 
     EXPECT_TRUE(lgraph.isValidQNetwork());
@@ -184,9 +178,7 @@ TEST(QNetworkTest, LineGraph) {
     EXPECT_EQ(lgraph.channelBufferSize_, graph.channelBufferSize_);
     EXPECT_EQ(lgraph.maxPushAttempts_, graph.maxPushAttempts_);
 
-    for (std::size_t w = 0U; w < lgraph.numWorkers_; ++w) {
-        EXPECT_TRUE(lgraph.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < lgraph.numWorkers_; ++w) { EXPECT_TRUE(lgraph.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(lgraph.isStronglyConnected());
 
     EXPECT_TRUE(llgraph.isValidQNetwork());
@@ -195,9 +187,7 @@ TEST(QNetworkTest, LineGraph) {
     EXPECT_EQ(llgraph.channelBufferSize_, graph.channelBufferSize_);
     EXPECT_EQ(llgraph.maxPushAttempts_, graph.maxPushAttempts_);
 
-    for (std::size_t w = 0U; w < llgraph.numWorkers_; ++w) {
-        EXPECT_TRUE(llgraph.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < llgraph.numWorkers_; ++w) { EXPECT_TRUE(llgraph.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(llgraph.isStronglyConnected());
 
     constexpr auto lfull2 = LINE_GRAPH(FULLY_CONNECTED_GRAPH<2>());
@@ -228,9 +218,7 @@ TEST(QNetworkTest, LineGraph) {
     EXPECT_TRUE(lllfull3.isValidQNetwork());
     EXPECT_TRUE(lllfull3.hasSeparateLogicalCores());
 
-    for (std::size_t w = 0U; w < lllfull3.numWorkers_; ++w) {
-        EXPECT_TRUE(lllfull3.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < lllfull3.numWorkers_; ++w) { EXPECT_TRUE(lllfull3.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(lllfull3.isStronglyConnected());
 
     constexpr auto lfull5 = LINE_GRAPH(FULLY_CONNECTED_GRAPH<5>());
@@ -240,18 +228,14 @@ TEST(QNetworkTest, LineGraph) {
     EXPECT_TRUE(llfull5.isValidQNetwork());
     EXPECT_TRUE(llfull5.hasSeparateLogicalCores());
 
-    for (std::size_t w = 0U; w < llfull5.numWorkers_; ++w) {
-        EXPECT_TRUE(llfull5.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < llfull5.numWorkers_; ++w) { EXPECT_TRUE(llfull5.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(llfull5.isStronglyConnected());
 
     constexpr auto lPet = LINE_GRAPH(PETERSEN_GRAPH);
     EXPECT_TRUE(lPet.isValidQNetwork());
     EXPECT_TRUE(lPet.hasSeparateLogicalCores());
 
-    for (std::size_t w = 0U; w < lPet.numWorkers_; ++w) {
-        EXPECT_TRUE(lPet.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < lPet.numWorkers_; ++w) { EXPECT_TRUE(lPet.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(lPet.isStronglyConnected());
 }
 
@@ -353,15 +337,11 @@ TEST(QNetworkTest, SelfPush) {
 
 TEST(QNetworkTest, Connectivity) {
     constexpr QNetwork<3, 6> netw1({0, 3, 5, 6}, {0, 3, 1, 3, 2, 0});
-    for (std::size_t w = 0U; w < netw1.numWorkers_; ++w) {
-        EXPECT_TRUE(netw1.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < netw1.numWorkers_; ++w) { EXPECT_TRUE(netw1.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(netw1.isStronglyConnected());
 
     constexpr QNetwork<2, 3> netw2({0, 1, 3}, {1, 0, 1});
-    for (std::size_t w = 0U; w < netw2.numWorkers_; ++w) {
-        EXPECT_TRUE(netw2.hasPathToAllWorkers(w));
-    }
+    for (std::size_t w = 0U; w < netw2.numWorkers_; ++w) { EXPECT_TRUE(netw2.hasPathToAllWorkers(w)); }
     EXPECT_TRUE(netw2.isStronglyConnected());
 
     constexpr QNetwork<3, 4> netw3({0, 0, 1, 4}, {1, 0, 3, 1});

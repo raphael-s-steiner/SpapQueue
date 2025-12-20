@@ -11,4 +11,4 @@ static constexpr std::size_t CACHE_LINE_SIZE = std::hardware_destructive_interfe
 static constexpr std::size_t CACHE_LINE_SIZE = 64U;
 #endif
 
-}    // end namespace spapq
+}        // end namespace spapq
