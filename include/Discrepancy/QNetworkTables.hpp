@@ -8,20 +8,18 @@ namespace tables {
 
 /**
  * @brief Computes the frequency of (batch-size-adjusted) pushes along outgoing channels of a worker.
- * 
+ *
  * @tparam netw QNetwork.
  * @tparam workerId Worker.
- * 
+ *
  * @see qNetworkTable
  */
 template <QNetwork netw, std::size_t workerId>
-constexpr std::array<std::size_t, netw.vertexPointer_[workerId + 1] - netw.vertexPointer_[workerId]>
-qNetworkTableFrequencies() {
+constexpr std::array<std::size_t, netw.outDegree(workerId)> qNetworkTableFrequencies() {
     static_assert(netw.isValidQNetwork());
     static_assert(workerId < netw.numWorkers_);
 
-    constexpr std::size_t workerOutChannels
-        = netw.vertexPointer_[workerId + 1] - netw.vertexPointer_[workerId];
+    constexpr std::size_t workerOutChannels = netw.outDegree(workerId);
 
     std::size_t batchSizeLCM = 1;
     for (std::size_t i = netw.vertexPointer_[workerId]; i < netw.vertexPointer_[workerId + 1]; ++i) {
@@ -40,10 +38,10 @@ qNetworkTableFrequencies() {
 
 /**
  * @brief Computes the size of the channel push table of a worker in a QNetwork.
- * 
+ *
  * @tparam netw QNetwork.
  * @tparam workerId Worker.
- * 
+ *
  * @see qNetworkTable
  */
 template <QNetwork netw, std::size_t workerId>
@@ -59,8 +57,7 @@ constexpr std::array<std::size_t, qNetworkTableSize<netw, workerId>()> qNetworkT
     static_assert(workerId < netw.numWorkers_);
 
     constexpr std::size_t tableLength = qNetworkTableSize<netw, workerId>();
-    constexpr std::size_t workerOutChannels
-        = netw.vertexPointer_[workerId + 1] - netw.vertexPointer_[workerId];
+    constexpr std::size_t workerOutChannels = netw.outDegree(workerId);
 
     const std::array<std::size_t, workerOutChannels> frequencies = qNetworkTableFrequencies<netw, workerId>();
 
@@ -73,9 +70,9 @@ constexpr std::array<std::size_t, qNetworkTableSize<netw, workerId>()> qNetworkT
 
 /**
  * @brief Computes the maximum table size of the first N workers.
- * 
+ *
  * @tparam netw QNetwork.
- * 
+ *
  * @see qNetworkTableFrequencies
  * @see qNetworkTable
  */
@@ -93,9 +90,9 @@ constexpr std::size_t maxTableSizeHelper() {
 
 /**
  * @brief Computes the maximum table size over all workers in a QNetwork.
- * 
+ *
  * @tparam netw QNetwork.
- * 
+ *
  * @see qNetworkTableFrequencies
  * @see qNetworkTable
  */
