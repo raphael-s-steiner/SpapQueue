@@ -9,6 +9,11 @@
 namespace spapq {
 namespace tables {
 
+/**
+ * @brief Divides each entry of the array by the gcd of the whole array. If all entries are zero, it returns
+ * the original array.
+ *
+ */
 template <std::size_t N>
 constexpr std::array<std::size_t, N> reducedIntegerArray(const std::array<std::size_t, N> &arr) {
     std::size_t commonGCD = 0U;
@@ -22,11 +27,22 @@ constexpr std::array<std::size_t, N> reducedIntegerArray(const std::array<std::s
     return reducedArr;
 };
 
+/**
+ * @brief Sums all elements of the array.
+ *
+ */
 template <std::size_t N>
 constexpr std::size_t sumArray(const std::array<std::size_t, N> &arr) {
     return std::accumulate(arr.cbegin(), arr.cend(), static_cast<std::size_t>(0U));
 };
 
+/**
+ * @brief Finds the smallest integer n such that ((frequency * n) / tableSize) >= lbVal through binary search.
+ *
+ * @param lower Lower bound on the search interval. Must either be 0 or satisfy ((frequency * (lower - 1U)) /
+ * tableSize) < lbVal.
+ * @param upper Upper bound of the search interval. Must satisfy ((frequency * upper) / tableSize) >= lbVal.
+ */
 constexpr std::size_t findEarliestdeadline(
     std::size_t lower, std::size_t upper, std::size_t frequency, std::size_t tableSize, std::size_t lbVal) {
     assert(((frequency * upper) / tableSize) >= lbVal);
@@ -45,6 +61,15 @@ constexpr std::size_t findEarliestdeadline(
     return upper;
 }
 
+/**
+ * @brief Compute a so-called table, which is a series (array) A such that for N = 0,...,tableSize and for
+ * s=0,...,M-1, we have that |#{n in [0,N[ | A[n] == s} - frequencies[s] * N / tableSize| is bounded by 1 (in
+ * infinite precision).
+ *
+ * @tparam M Size of the array frequencies.
+ * @tparam tableSize Sum of the entries in frequencies, which the size of the output table.
+ * @param frequencies The value frequencies[i] marks the number of occurences of i inside the table
+ */
 template <std::size_t M, std::size_t tableSize>
 constexpr std::array<std::size_t, tableSize> earliestDeadlineFirstTable(
     const std::array<std::size_t, M> &frequencies) {
@@ -80,6 +105,14 @@ constexpr std::array<std::size_t, tableSize> earliestDeadlineFirstTable(
     return table;
 };
 
+/**
+ * @brief Extends an array to a larger size and fills in the new elements with the maximum value of
+ * std::size_t.
+ *
+ * @tparam after Size of the array after the extension.
+ * @tparam before Size of the array before the extension.
+ * @param table Array.
+ */
 template <std::size_t after, std::size_t before>
 constexpr std::array<std::size_t, after> extendTable(const std::array<std::size_t, before> &table) {
     static_assert(after >= before);
@@ -93,10 +126,21 @@ constexpr std::array<std::size_t, after> extendTable(const std::array<std::size_
     return longTable;
 }
 
+/**
+ * @brief Helper macro to compute the earliest deadline first table.
+ *
+ * @see earliestDeadlineFirstTable
+ */
 #define EARLIEST_DEADLINE_FIRST_TABLE(frequencies)                                                        \
     (spapq::tables::earliestDeadlineFirstTable<frequencies.size(),                                        \
                                                spapq::tables::sumArray<frequencies.size()>(frequencies)>( \
         frequencies))
+
+/**
+ * @brief Helper macro to compute the earliest deadline first table based on the reduced frequencies.
+ *
+ * @see earliestDeadlineFirstTable
+ */
 #define REDUCED_EARLIEST_DEADLINE_FIRST_TABLE(frequencies)                                               \
     (EARLIEST_DEADLINE_FIRST_TABLE(spapq::tables::reducedIntegerArray<frequencies.size()>(frequencies)))
 

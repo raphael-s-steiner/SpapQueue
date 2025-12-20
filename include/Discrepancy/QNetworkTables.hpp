@@ -58,7 +58,7 @@ constexpr std::size_t qNetworkTableSize() {
  *
  * @tparam netw QNetwork.
  * @tparam workerId Worker.
- * 
+ *
  * @see earliestDeadlineFirstTable
  */
 template <QNetwork netw, std::size_t workerId>
