@@ -17,19 +17,22 @@ template <std::size_t workers, std::size_t channels>
 struct QNetwork {
     static constexpr std::size_t numWorkers_{workers};
     static constexpr std::size_t numChannels_{channels};
-    std::size_t enqueueFrequency_;    ///< Number of elements after which the worker checks incomming channels.
-    std::size_t channelBufferSize_;    ///< Size or capacity of the RingBuffer channels.
-    std::size_t maxPushAttempts_;      ///< Number of attemps to push to other workers before pushing to self.
-    std::array<std::size_t, workers + 1U> vertexPointer_;    ///< Vertex pointer in network CSR.
-    std::array<std::size_t, workers> numPorts_;              ///< Number of incomming channels of worker.
-    std::array<std::size_t, workers> logicalCore_;           ///< Pthread core number of worker.
-    std::array<std::size_t, channels> edgeTargets_;    ///< Target worker of channel in network CSR. The number
-                                                       ///< "numWorkers_" is reserved for efficient self-push.
-    std::array<std::size_t, channels>
-        multiplicities_;    ///< How often this channel should be preferred to push work
-                            ///< over other outgoing channels of the same worker.
-    std::array<std::size_t, channels> targetPort_;    ///< Local index of channel of receiving worker.
-    std::array<std::size_t, channels> batchSize_;    ///< Number of tasks to be pushed over a channel in one go.
+    std::size_t enqueueFrequency_;         ///< Number of tasks after which workers check incomming channels.
+    std::size_t channelBufferSize_;        ///< Size or capacity of the RingBuffer channels.
+    std::size_t maxPushAttempts_;          ///< Number of attempts to push to over channels before pushing to
+                                           ///< self.
+    std::array<std::size_t, workers + 1U> vertexPointer_;        ///< Vertex pointer in network CSR.
+    std::array<std::size_t, workers> numPorts_;                  ///< Number of incomming channels of worker.
+    std::array<std::size_t, workers> logicalCore_;               ///< Pthread core number of worker.
+    std::array<std::size_t, channels> edgeTargets_;              ///< Target worker of channel in network CSR.
+                                                                 ///< The number "numWorkers_" is reserved for
+                                                                 ///< efficient self-push.
+    std::array<std::size_t, channels> multiplicities_;           ///< How often this channel should be
+                                                                 ///< preferred to push work over other
+                                                                 ///< outgoing channels of the same worker.
+    std::array<std::size_t, channels> targetPort_;        ///< Local index of channel of receiving worker.
+    std::array<std::size_t, channels> batchSize_;         ///< Number of tasks to be pushed over a channel in
+                                                          ///< one go.
 
     constexpr void setDefaultMultiplicities();
     constexpr void setDefaultBatchSize();
@@ -448,4 +451,4 @@ constexpr bool QNetwork<workers, channels>::isStronglyConnected() const {
     return true;
 }
 
-}    // end namespace spapq
+}        // end namespace spapq

@@ -218,7 +218,7 @@ PackConstructorInitializers: NextLine
 PenaltyBreakAssignment: 10
 PenaltyBreakBeforeFirstCallParameter: 1
 PenaltyBreakBeforeMemberAccess: 150
-PenaltyBreakComment: 300
+PenaltyBreakComment: 35
 PenaltyBreakFirstLessLess: 50
 PenaltyBreakOpenParenthesis: 0
 PenaltyBreakScopeResolution: 500
@@ -302,7 +302,7 @@ SpaceBeforeRangeBasedForLoopColon: true
 SpaceBeforeSquareBrackets: false
 SpaceInEmptyBlock: true
 SpaceInEmptyBraces: Block
-SpacesBeforeTrailingComments: 4
+SpacesBeforeTrailingComments: 8
 SpacesInAngles:  Never
 SpacesInContainerLiterals: true
 SpacesInLineCommentPrefix:
