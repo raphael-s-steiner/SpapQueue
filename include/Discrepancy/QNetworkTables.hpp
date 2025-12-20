@@ -51,7 +51,16 @@ constexpr std::size_t qNetworkTableSize() {
     return retVal;
 }
 
-// TODO
+/**
+ * @brief Computes a balanced (discrepancy-minimising) sequence of outgoing channels of a worker through which
+ * said worker pushes tasks. This so-called table also takes into account the multiplicities and batchsizes of
+ * the channels. The table itself is based on the earliest deadline first table.
+ *
+ * @tparam netw QNetwork.
+ * @tparam workerId Worker.
+ * 
+ * @see earliestDeadlineFirstTable
+ */
 template <QNetwork netw, std::size_t workerId>
 constexpr std::array<std::size_t, qNetworkTableSize<netw, workerId>()> qNetworkTable() {
     static_assert(netw.isValidQNetwork());
