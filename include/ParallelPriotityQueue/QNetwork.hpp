@@ -6,6 +6,12 @@
 
 namespace spapq {
 
+/**
+ * @brief A Network describing how the queue should be interlinked.
+ *
+ * @tparam workers Number of workers processing the queue
+ * @tparam channels Total number of channels between workers in the queue
+ */
 template <std::size_t workers, std::size_t channels>
 struct QNetwork {
     static constexpr std::size_t numWorkers_{workers};
@@ -154,6 +160,31 @@ constexpr bool QNetwork<workers, channels>::isValidQNetwork() const {
     if (not std::all_of(
             numPorts_.cbegin(), numPorts_.cend(), [](const std::size_t &ports) { return ports > 0U; })) {
         return false;
+    }
+
+    for (std::size_t worker = 0U; worker < numWorkers_; ++worker) {
+        for (std::size_t channel = vertexPointer_[worker]; channel < vertexPointer_[worker + 1U]; ++channel) {
+            const std::size_t tgt = edgeTargets_[channel] == numWorkers_ ? worker : edgeTargets_[channel];
+            if (targetPort_.at(channel) >= numPorts_[tgt]) { return false; }
+        }
+    }
+
+    for (std::size_t worker = 0U; worker < numWorkers_; ++worker) {
+        std::array<bool, numChannels_> portOccupied;
+        for (bool &val : portOccupied) { val = false; }
+
+        for (std::size_t otherWorker = 0U; otherWorker < numWorkers_; ++otherWorker) {
+            for (std::size_t channel = vertexPointer_[otherWorker]; channel < vertexPointer_[otherWorker + 1U];
+                 ++channel) {
+                const std::size_t tgt = edgeTargets_[channel] == numWorkers_ ? otherWorker :
+                                                                               edgeTargets_[channel];
+
+                if (tgt == worker) {
+                    if (portOccupied[targetPort_[channel]]) { return false; }
+                    portOccupied[targetPort_[channel]] = true;
+                }
+            }
+        }
     }
 
     for (std::size_t worker = 0U; worker < numWorkers_; ++worker) {

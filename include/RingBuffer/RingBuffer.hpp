@@ -12,7 +12,7 @@ namespace spapq {
 
 /**
  * @brief A single-producer single consumer first-in-first-out queue implemented as a ring buffer on
- * the stack
+ * the stack.
  *
  * @tparam T Data type
  * @tparam N Size of ring buffer
@@ -27,7 +27,6 @@ class alignas(CACHE_LINE_SIZE) RingBuffer {
     alignas(CACHE_LINE_SIZE) std::size_t cachedHeadCounter_{N};
     char padding_[CACHE_LINE_SIZE - sizeof(std::size_t)];
 
-  protected:
     inline std::size_t getTailPosition() const noexcept;
     inline std::size_t getHeadPosition() const noexcept;
 
