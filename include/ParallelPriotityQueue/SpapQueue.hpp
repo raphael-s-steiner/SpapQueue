@@ -94,6 +94,7 @@ class SpapQueue final {
     static_assert(isDerivedWorkerResource<WorkerTemplate, ThisQType, LocalQType, netw.numWorkers_>(),
                   "WorkerTemplate must be derived from WorkerResource.\n");
     static_assert(netw.hasSeparateLogicalCores(), "Workers should be on separate logical Cores.\n");
+    static_assert(netw.isStronglyConnected(), "Required to keep all workers busy.\n");
 };
 
 // Implementation Details

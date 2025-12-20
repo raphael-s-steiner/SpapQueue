@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <iostream>
 
 namespace spapq {
@@ -37,6 +38,8 @@ struct QNetwork {
     constexpr void assignTargetPorts();
     constexpr void changeToSelfPushLabels();
 
+    constexpr bool hasPathToAllWorkers(std::size_t worker) const;
+    constexpr bool isStronglyConnected() const;
     constexpr bool isValidQNetwork() const;
 
     constexpr std::size_t maxBatchSize() const;
@@ -402,5 +405,44 @@ constexpr QNetwork<workers, channels>::QNetwork(std::array<std::size_t, workers 
     assignTargetPorts();
     changeToSelfPushLabels();
 };
+
+template <std::size_t workers, std::size_t channels>
+constexpr bool QNetwork<workers, channels>::hasPathToAllWorkers(std::size_t worker) const {
+    assert(worker < numWorkers_);
+
+    std::array<bool, numWorkers_> reachable;
+    for (bool &val : reachable) { val = false; }
+    for (std::size_t channel = vertexPointer_[worker]; channel < vertexPointer_[worker + 1U]; ++channel) {
+        const std::size_t tgt = edgeTargets_[channel] == numWorkers_ ? worker : edgeTargets_[channel];
+        reachable[tgt] = true;
+    }
+
+    bool hasChanged = true;
+    while (hasChanged) {
+        hasChanged = false;
+
+        for (std::size_t w = 0U; w < numWorkers_; ++w) {
+            if (!reachable[w]) { continue; }
+
+            for (std::size_t channel = vertexPointer_[w]; channel < vertexPointer_[w + 1U]; ++channel) {
+                const std::size_t tgt = edgeTargets_[channel] == numWorkers_ ? w : edgeTargets_[channel];
+                if (reachable[tgt]) { continue; }
+
+                reachable[tgt] = true;
+                hasChanged = true;
+            }
+        }
+    }
+
+    return std::all_of(reachable.cbegin(), reachable.cend(), [](bool val) { return val; });
+}
+
+template <std::size_t workers, std::size_t channels>
+constexpr bool QNetwork<workers, channels>::isStronglyConnected() const {
+    for (std::size_t worker = 0U; worker < numWorkers_; ++worker) {
+        if (not hasPathToAllWorkers(worker)) { return false; }
+    }
+    return true;
+}
 
 }    // end namespace spapq
