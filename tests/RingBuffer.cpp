@@ -43,10 +43,10 @@ TEST(RingBufferTest, Functionality1) {
     std::array<int, 12> values{9, 23, 4, 1, -5, 123, 23, -23, -82, 0, 0, 1};
 
     RingBuffer<int, 5> channel;
-    EXPECT_TRUE(channel.isEmpty());
-    EXPECT_FALSE(channel.isFull());
+    EXPECT_TRUE(channel.empty());
+    EXPECT_FALSE(channel.full());
     EXPECT_EQ(channel.occupancy(), 0U);
-    EXPECT_EQ(channel.getCapacity(), 5U);
+    EXPECT_EQ(channel.capacity(), 5U);
 
     for (std::size_t i = 0U; i < values.size(); ++i) {
         int val = values[i];
@@ -56,17 +56,17 @@ TEST(RingBufferTest, Functionality1) {
         EXPECT_EQ(success, i < 5U);
     }
 
-    EXPECT_TRUE(channel.isFull());
+    EXPECT_TRUE(channel.full());
 }
 
 TEST(RingBufferTest, Functionality2) {
     std::array<int, 12> values{9, 23, 4, 1, -5, 123, 23, -23, -82, 0, 0, 1};
 
     RingBuffer<int, 6> channel;
-    EXPECT_TRUE(channel.isEmpty());
-    EXPECT_FALSE(channel.isFull());
+    EXPECT_TRUE(channel.empty());
+    EXPECT_FALSE(channel.full());
     EXPECT_EQ(channel.occupancy(), 0U);
-    EXPECT_EQ(channel.getCapacity(), 6U);
+    EXPECT_EQ(channel.capacity(), 6U);
 
     for (std::size_t i = 0U; i < values.size(); ++i) {
         int val = values[i];
@@ -76,7 +76,7 @@ TEST(RingBufferTest, Functionality2) {
         EXPECT_EQ(success, i < 6U);
     }
 
-    EXPECT_TRUE(channel.isFull());
+    EXPECT_TRUE(channel.full());
 
     for (std::size_t i = 0U; i < values.size(); ++i) {
         int val = values[i];
@@ -98,7 +98,7 @@ TEST(RingBufferTest, Functionality2) {
         }
     }
 
-    EXPECT_TRUE(channel.isEmpty());
+    EXPECT_TRUE(channel.empty());
 }
 
 TEST(RingBufferTest, Functionality3) {
@@ -106,7 +106,7 @@ TEST(RingBufferTest, Functionality3) {
 
     RingBuffer<int, 6> channel;
     EXPECT_FALSE(channel.push(values.cbegin(), values.cend()));
-    EXPECT_TRUE(channel.isEmpty());
+    EXPECT_TRUE(channel.empty());
 
     auto it = values.cbegin();
     std::advance(it, 6);
@@ -125,7 +125,7 @@ TEST(RingBufferTest, Functionality3) {
     it = values.cbegin();
     std::advance(it, 4);
     EXPECT_TRUE(channel.push(values.cbegin(), it));
-    EXPECT_TRUE(channel.isFull());
+    EXPECT_TRUE(channel.full());
 
     for (int val : {-5, 123, 9, 23, 4, 1}) {
         std::optional<int> result = channel.pop();
@@ -133,9 +133,9 @@ TEST(RingBufferTest, Functionality3) {
         EXPECT_EQ(val, result.value());
     }
 
-    EXPECT_FALSE(channel.isFull());
+    EXPECT_FALSE(channel.full());
     EXPECT_FALSE(channel.pop());
-    EXPECT_TRUE(channel.isEmpty());
+    EXPECT_TRUE(channel.empty());
 }
 
 TEST(RingBufferTest, Multithread1) {
@@ -144,27 +144,27 @@ TEST(RingBufferTest, Multithread1) {
 
     constexpr std::size_t capacity = 64;
     RingBuffer<int, capacity> channel;
-    EXPECT_EQ(capacity, channel.getCapacity());
+    EXPECT_EQ(capacity, channel.capacity());
 
     std::jthread consumer([&channel, &values]() {
         for (std::size_t i = 0U; i < values.size(); ++i) {
-            while (channel.isEmpty()) { }
-            EXPECT_FALSE(channel.isEmpty());
+            while (channel.empty()) { }
+            EXPECT_FALSE(channel.empty());
             EXPECT_LE(0U, channel.occupancy());
-            EXPECT_LE(channel.occupancy(), channel.getCapacity());
+            EXPECT_LE(channel.occupancy(), channel.capacity());
             std::optional<int> result = channel.pop();
             EXPECT_TRUE(result.has_value());
             EXPECT_EQ(result.value(), values[i]);
         }
-        EXPECT_TRUE(channel.isEmpty());
+        EXPECT_TRUE(channel.empty());
     });
 
     std::jthread producer([&channel, &values]() {
         for (std::size_t i = 0U; i < values.size(); ++i) {
-            while (channel.isFull()) { }
-            EXPECT_FALSE(channel.isFull());
+            while (channel.full()) { }
+            EXPECT_FALSE(channel.full());
             EXPECT_LE(0U, channel.occupancy());
-            EXPECT_LE(channel.occupancy(), channel.getCapacity());
+            EXPECT_LE(channel.occupancy(), channel.capacity());
             EXPECT_TRUE(channel.push(values[i]));
         }
     });
@@ -172,7 +172,7 @@ TEST(RingBufferTest, Multithread1) {
     producer.join();
     consumer.join();
 
-    EXPECT_TRUE(channel.isEmpty());
+    EXPECT_TRUE(channel.empty());
 }
 
 TEST(RingBufferTest, Multithread2) {
@@ -181,19 +181,19 @@ TEST(RingBufferTest, Multithread2) {
 
     constexpr std::size_t capacity = 16U;
     RingBuffer<long, capacity> channel;
-    EXPECT_EQ(capacity, channel.getCapacity());
+    EXPECT_EQ(capacity, channel.capacity());
 
     std::jthread consumer([&channel, &values]() {
         for (std::size_t i = 0U; i < values.size(); ++i) {
-            while (channel.isEmpty()) { }
-            EXPECT_FALSE(channel.isEmpty());
+            while (channel.empty()) { }
+            EXPECT_FALSE(channel.empty());
             EXPECT_LE(0U, channel.occupancy());
-            EXPECT_LE(channel.occupancy(), channel.getCapacity());
+            EXPECT_LE(channel.occupancy(), channel.capacity());
             std::optional<long> result = channel.pop();
             EXPECT_TRUE(result.has_value());
             EXPECT_EQ(result.value(), values[i]);
         }
-        EXPECT_TRUE(channel.isEmpty());
+        EXPECT_TRUE(channel.empty());
     });
 
     std::jthread producer([&channel, &values]() {
@@ -205,7 +205,7 @@ TEST(RingBufferTest, Multithread2) {
     producer.join();
     consumer.join();
 
-    EXPECT_TRUE(channel.isEmpty());
+    EXPECT_TRUE(channel.empty());
 }
 
 TEST(RingBufferTest, Multithread3) {
@@ -214,17 +214,17 @@ TEST(RingBufferTest, Multithread3) {
 
     constexpr std::size_t capacity = 16U;
     RingBuffer<long, capacity> channel;
-    EXPECT_EQ(capacity, channel.getCapacity());
+    EXPECT_EQ(capacity, channel.capacity());
 
     std::jthread consumer([&channel, &values]() {
         for (std::size_t i = 0U; i < values.size(); ++i) {
             std::optional<long> popVal(std::nullopt);
             while (!popVal.has_value()) { popVal = channel.pop(); }
             EXPECT_LE(0U, channel.occupancy());
-            EXPECT_LE(channel.occupancy(), channel.getCapacity());
+            EXPECT_LE(channel.occupancy(), channel.capacity());
             EXPECT_EQ(popVal.value(), values[i]);
         }
-        EXPECT_TRUE(channel.isEmpty());
+        EXPECT_TRUE(channel.empty());
     });
 
     std::jthread producer([&channel, &values]() {
@@ -236,7 +236,7 @@ TEST(RingBufferTest, Multithread3) {
     producer.join();
     consumer.join();
 
-    EXPECT_TRUE(channel.isEmpty());
+    EXPECT_TRUE(channel.empty());
 }
 
 TEST(RingBufferTest, Multithread4) {
@@ -245,17 +245,17 @@ TEST(RingBufferTest, Multithread4) {
 
     constexpr std::size_t capacity = 16U;
     RingBuffer<long, capacity> channel;
-    EXPECT_EQ(capacity, channel.getCapacity());
+    EXPECT_EQ(capacity, channel.capacity());
 
     std::jthread consumer([&channel, &values]() {
         for (std::size_t i = 0U; i < values.size(); ++i) {
             std::optional<long> popVal(std::nullopt);
             while (not (popVal = channel.pop())) { }
             EXPECT_LE(0U, channel.occupancy());
-            EXPECT_LE(channel.occupancy(), channel.getCapacity());
+            EXPECT_LE(channel.occupancy(), channel.capacity());
             EXPECT_EQ(popVal.value(), values[i]);
         }
-        EXPECT_TRUE(channel.isEmpty());
+        EXPECT_TRUE(channel.empty());
     });
 
     std::jthread producer([&channel, &values]() {
@@ -267,7 +267,7 @@ TEST(RingBufferTest, Multithread4) {
     producer.join();
     consumer.join();
 
-    EXPECT_TRUE(channel.isEmpty());
+    EXPECT_TRUE(channel.empty());
 }
 
 TEST(RingBufferTest, Alignment) {

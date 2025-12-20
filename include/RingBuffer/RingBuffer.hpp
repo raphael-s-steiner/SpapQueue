@@ -41,10 +41,10 @@ class alignas(CACHE_LINE_SIZE) RingBuffer {
     RingBuffer &operator=(RingBuffer &&other) = delete;
     ~RingBuffer() = default;
 
-    inline constexpr std::size_t getCapacity() const noexcept { return N; };
+    inline constexpr std::size_t capacity() const noexcept;
 
-    inline bool isEmpty() const noexcept;
-    inline bool isFull() const noexcept;
+    inline bool empty() const noexcept;
+    inline bool full() const noexcept;
     inline std::size_t occupancy() const noexcept;
 
     inline std::optional<T> pop() noexcept;
@@ -91,16 +91,40 @@ inline void RingBuffer<T, N>::advanceHead(std::size_t n) noexcept {
     headCounter_.fetch_add(n, std::memory_order_release);
 };
 
+/**
+ * @brief The number of elements the Ringbuffer can maximally hold.
+ *
+ */
 template <typename T, std::size_t N>
-inline bool RingBuffer<T, N>::isEmpty() const noexcept {
+inline constexpr std::size_t RingBuffer<T, N>::capacity() const noexcept {
+    return N;
+};
+
+/**
+ * @brief Checks whether the Ringbuffer is empty. If used to check whether one can pop from the Ringbuffer it
+ * is better (more performant) to just use pop and check if it succeeded.
+ *
+ */
+template <typename T, std::size_t N>
+inline bool RingBuffer<T, N>::empty() const noexcept {
     return tailCounter_.load(std::memory_order_relaxed) == headCounter_.load(std::memory_order_acquire);
 };
 
+/**
+ * @brief Checks whether the Ringbuffer is full. If used to check whether one can push to the Ringbuffer it
+ * is better (more performant) to just use push and check if it succeeded.
+ *
+ */
 template <typename T, std::size_t N>
-inline bool RingBuffer<T, N>::isFull() const noexcept {
+inline bool RingBuffer<T, N>::full() const noexcept {
     return tailCounter_.load(std::memory_order_acquire) + N == headCounter_.load(std::memory_order_relaxed);
 };
 
+/**
+ * @brief Returns the number of elements currently in the Ringbuffer. If used to check whether one can push
+ * to/pop from the Ringbuffer it is better (more performant) to just use push/pop and check if it succeeded.
+ *
+ */
 template <typename T, std::size_t N>
 inline std::size_t RingBuffer<T, N>::occupancy() const noexcept {
     return headCounter_.load(std::memory_order_acquire) - tailCounter_.load(std::memory_order_acquire);
