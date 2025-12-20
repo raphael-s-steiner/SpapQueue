@@ -4,6 +4,13 @@
 
 namespace spapq {
 
+/**
+ * @brief A fully connected QNetwork including all self-loops.
+ *
+ * @tparam N Number of workers.
+ *
+ * @see QNetwork
+ */
 template <std::size_t N>
 consteval QNetwork<N, N * N> FULLY_CONNECTED_GRAPH() {
     static_assert(N > 0U, "Needs to have at least one worker!");
