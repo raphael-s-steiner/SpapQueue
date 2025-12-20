@@ -4,6 +4,11 @@
 
 namespace spapq {
 
+/**
+ * @brief An spapQueue worker which spawns two tasks when processing a task, much like the (terrible)
+ * recursive implementation to compute Fibonacci numbers.
+ *
+ */
 template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
 class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts> {
     template <typename, typename, std::size_t>
