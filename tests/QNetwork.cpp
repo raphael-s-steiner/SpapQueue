@@ -373,6 +373,30 @@ TEST(QNetworkTest, Connectivity) {
     EXPECT_FALSE(netw4.isStronglyConnected());
 }
 
+TEST(QNetworkTest, SrcTgt) {
+    constexpr QNetwork<10, 30> netw1 = PETERSEN_GRAPH;
+    for (std::size_t worker = 0U; worker < netw1.numWorkers_; ++worker) {
+        for (std::size_t channel = netw1.vertexPointer_[worker]; channel < netw1.vertexPointer_[worker + 1U]; ++channel) {
+            EXPECT_EQ(netw1.source(channel), worker);
+            EXPECT_EQ(netw1.target(channel), netw1.edgeTargets_[channel]);
+        }
+    }
+    EXPECT_EQ(netw1.source(100U), netw1.numWorkers_);
+
+    constexpr auto netw2 = FULLY_CONNECTED_GRAPH<9U>();
+    for (std::size_t worker = 0U; worker < netw2.numWorkers_; ++worker) {
+        for (std::size_t channel = netw2.vertexPointer_[worker]; channel < netw2.vertexPointer_[worker + 1U]; ++channel) {
+            EXPECT_EQ(netw2.source(channel), worker);
+            if (channel % 9U == 0U) {
+                EXPECT_EQ(netw2.target(channel), worker);
+            } else {
+                EXPECT_EQ(netw2.target(channel), netw2.edgeTargets_[channel]);
+            }
+        }
+    }
+    EXPECT_EQ(netw2.source(100U), netw2.numWorkers_);
+}
+
 TEST(QNetworkTest, PrintQNetwork) {
     constexpr QNetwork<10, 30> netw = PETERSEN_GRAPH;
     netw.printQNetwork();

@@ -36,6 +36,9 @@ struct QNetwork {
     inline constexpr std::size_t outDegree(std::size_t worker) const noexcept;
     inline constexpr std::size_t inDegree(std::size_t worker) const noexcept;
 
+    inline constexpr std::size_t source(std::size_t channel) const noexcept;
+    inline constexpr std::size_t target(std::size_t channel) const noexcept;
+
     constexpr void setDefaultMultiplicities();
     constexpr void setDefaultBatchSize();
     constexpr void setDefaultChannelBufferSize();
@@ -460,6 +463,28 @@ constexpr bool QNetwork<workers, channels>::isStronglyConnected() const {
         if (not hasPathToAllWorkers(worker)) { return false; }
     }
     return true;
+}
+
+/**
+ * @brief Returns the source/producer worker of the channel.
+ * 
+ */
+template <std::size_t workers, std::size_t channels>
+inline constexpr std::size_t QNetwork<workers, channels>::source(std::size_t channel) const noexcept {
+    auto it = std::upper_bound(vertexPointer_.cbegin(), vertexPointer_.cend(), channel);
+    std::size_t src = static_cast<std::size_t>(std::distance(vertexPointer_.cbegin(), it) - 1);
+    return src;
+}
+
+/**
+ * @brief Returns the target/consumer worker of the channel.
+ * 
+ */
+template <std::size_t workers, std::size_t channels>
+inline constexpr std::size_t QNetwork<workers, channels>::target(std::size_t channel) const noexcept {
+    std::size_t tgt = edgeTargets_.at(channel);
+    if (tgt == numWorkers_) { tgt = source(channel); }
+    return tgt;
 }
 
 }        // end namespace spapq
