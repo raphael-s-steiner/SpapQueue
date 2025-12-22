@@ -55,12 +55,12 @@ class alignas(CACHE_LINE_SIZE) RingBuffer {
                                                                           InputIt last) noexcept;
 
     // assertions
-    static_assert(std::is_nothrow_default_constructible_v<T>);
-    static_assert(std::is_nothrow_copy_constructible_v<T>);
     static_assert(N > 0U, "No trivial RingBuffers allowed!\n");
     static_assert(N < std::numeric_limits<std::size_t>::max(),
                   "Needed to differentiate empty from full RingBuffer.\n");
     static_assert(std::atomic<std::size_t>::is_always_lock_free, "Want atomic to be lock free.\n");
+    static_assert(std::is_nothrow_default_constructible_v<T>);
+    static_assert(std::is_nothrow_copy_constructible_v<T>);
 
     // overflow protection
     // can be commented out if number of inserts will be less than the maximum value of std::size_t

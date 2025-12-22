@@ -199,7 +199,7 @@ TEST(SpapQueueTest, DivisorsSingleWorker) {
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(1U, 0U);
+    globalQ.pushBeforeProcessing(1U, 0U);
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 
@@ -221,7 +221,7 @@ TEST(SpapQueueTest, DivisorsHomogeneousWorkers) {
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(1U, 0U);
+    globalQ.pushBeforeProcessing(1U, 0U);
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 
@@ -243,7 +243,7 @@ TEST(SpapQueueTest, DivisorsHeterogeneousWorkers) {
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(1U, 0U);
+    globalQ.pushBeforeProcessing(1U, 0U);
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 
@@ -257,6 +257,74 @@ TEST(SpapQueueTest, DivisorsHeterogeneousWorkers) {
     for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
 }
 
+TEST(SpapQueueTest, DivisorsPushSafeHomogeneousWorkers) {
+    constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(divisorTestMaxSize, 0));
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushBeforeProcessing(1U, 0U);
+    globalQ.processQueue();
+
+    std::size_t count = 1U;
+
+    if (globalQ.pushDuringProcessing<0>(1U)) { ++count; }
+    if (globalQ.pushDuringProcessing<4>(1U)) { ++count; }
+    if (globalQ.pushDuringProcessing<8>(1U)) { ++count; }
+    if (globalQ.pushDuringProcessing<12>(1U)) { ++count; }
+
+    if constexpr (divisorTestMaxSize >= 5000) { EXPECT_EQ(count, 5U); }
+
+    globalQ.waitProcessFinish();
+
+    EXPECT_FALSE(globalQ.pushDuringProcessing<0>(1U));
+    EXPECT_FALSE(globalQ.pushDuringProcessing<4>(1U));
+    EXPECT_FALSE(globalQ.pushDuringProcessing<8>(1U));
+    EXPECT_FALSE(globalQ.pushDuringProcessing<12>(1U));
+
+    std::vector<std::size_t> solution = computeAnswerDivisors(divisorTestMaxSize);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < divisorTestMaxSize; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i] * count); }
+}
+
+TEST(SpapQueueTest, DivisorsPushSafeHeterogeneousWorkers) {
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(divisorTestMaxSize, 0));
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushBeforeProcessing(1U, 0U);
+    globalQ.processQueue();
+
+    std::size_t count = 1U;
+
+    if (globalQ.pushDuringProcessing<2>(1U)) { ++count; }
+
+    if constexpr (divisorTestMaxSize >= 5000) { EXPECT_EQ(count, 2U); }
+
+    globalQ.waitProcessFinish();
+
+    EXPECT_FALSE(globalQ.pushDuringProcessing<2>(1U));
+
+    std::vector<std::size_t> solution = computeAnswerDivisors(divisorTestMaxSize);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < divisorTestMaxSize; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i] * count); }
+}
+
 TEST(SpapQueueTest, ReuseQueue) {
     constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
 
@@ -265,7 +333,7 @@ TEST(SpapQueueTest, ReuseQueue) {
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(1U, 0U);
+    globalQ.pushBeforeProcessing(1U, 0U);
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 
@@ -286,7 +354,7 @@ TEST(SpapQueueTest, ReuseQueue) {
     // Restarting Queue
     std::cout << "Restarting\n";
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(1U, 0U);
+    globalQ.pushBeforeProcessing(1U, 0U);
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 
@@ -306,7 +374,7 @@ TEST(SpapQueueTest, ReuseQueue2) {
 
     SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(1U, 0U);
+    globalQ.pushBeforeProcessing(1U, 0U);
     globalQ.requestStop();
     globalQ.processQueue();
     globalQ.waitProcessFinish();
@@ -321,7 +389,7 @@ TEST(SpapQueueTest, ReuseQueue2) {
     // Restarting Queue
     std::cout << "Restarting\n";
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(1U, 0U);
+    globalQ.pushBeforeProcessing(1U, 0U);
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 
@@ -341,7 +409,7 @@ TEST(SpapQueueTest, FibonacciSingleWorker) {
 
     SpapQueue<std::size_t, netw, FibonacciWorker, FibonacchiLocalQueueType> globalQ;
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(fibonacciTestSize, 0U);
+    globalQ.pushBeforeProcessing(fibonacciTestSize, 0U);
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 
@@ -363,7 +431,7 @@ TEST(SpapQueueTest, FibonacciHomogeneousWorkers) {
 
     SpapQueue<std::size_t, netw, FibonacciWorker, FibonacchiLocalQueueType> globalQ;
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(fibonacciTestSize, 0U);
+    globalQ.pushBeforeProcessing(fibonacciTestSize, 0U);
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 
@@ -385,7 +453,7 @@ TEST(SpapQueueTest, FibonacciHeterogeneousWorkers) {
 
     SpapQueue<std::size_t, netw, FibonacciWorker, FibonacchiLocalQueueType> globalQ;
     EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
-    globalQ.pushUnsafe(fibonacciTestSize, 0U);
+    globalQ.pushBeforeProcessing(fibonacciTestSize, 0U);
     globalQ.processQueue();
     globalQ.waitProcessFinish();
 

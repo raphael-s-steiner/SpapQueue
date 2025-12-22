@@ -48,7 +48,7 @@ static void BM_SpapQueue_Fibonacci_1_Worker(benchmark::State &state) {
     for (auto _ : state) {
         state.PauseTiming();
         globalQ.initQueue();
-        globalQ.pushUnsafe(N, 0U);
+        globalQ.pushBeforeProcessing(N, 0U);
         state.ResumeTiming();
 
         globalQ.processQueue();
@@ -92,7 +92,7 @@ static void BM_SpapQueue_Fibonacci_2_Workers(benchmark::State &state) {
     for (auto _ : state) {
         state.PauseTiming();
         globalQ.initQueue();
-        globalQ.pushUnsafe(N, 0U);
+        globalQ.pushBeforeProcessing(N, 0U);
         state.ResumeTiming();
 
         globalQ.processQueue();
@@ -136,7 +136,7 @@ static void BM_SpapQueue_Fibonacci_4_Workers(benchmark::State &state) {
     for (auto _ : state) {
         state.PauseTiming();
         globalQ.initQueue();
-        globalQ.pushUnsafe(N, 0U);
+        globalQ.pushBeforeProcessing(N, 0U);
         state.ResumeTiming();
 
         globalQ.processQueue();
@@ -182,7 +182,7 @@ static void BM_SpapQueue_Fibonacci_8_Workers(benchmark::State &state) {
     for (auto _ : state) {
         state.PauseTiming();
         globalQ.initQueue();
-        globalQ.pushUnsafe(N, 0U);
+        globalQ.pushBeforeProcessing(N, 0U);
         state.ResumeTiming();
 
         globalQ.processQueue();

@@ -37,9 +37,9 @@ class SpapQueue final {
     void waitProcessFinish();
     void requestStop();
 
-    inline void pushUnsafe(const value_type val, const std::size_t workerId = 0U) noexcept;
-
-    // TODO pushSafe
+    inline void pushBeforeProcessing(const value_type val, const std::size_t workerId = 0U) noexcept;
+    template <std::size_t channel>
+    [[nodiscard("Push may fail when channel is full or queue has already finished.\n")]] inline bool pushDuringProcessing(const value_type val) noexcept;
 
     SpapQueue() = default;
     SpapQueue(const SpapQueue &other) = delete;
@@ -85,7 +85,7 @@ class SpapQueue final {
     template <std::size_t tupleSize,
               bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
               std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
-    inline void pushUnsafeHelper(const value_type val, const std::size_t workerId) noexcept;
+    inline void pushBeforeProcessingHelper(const value_type val, const std::size_t workerId) noexcept;
 
     // Static asserts
     static_assert(netw.isValidQNetwork(), "The QNetwork needs to be valid!\n");
@@ -95,6 +95,8 @@ class SpapQueue final {
                   "WorkerTemplate must be derived from WorkerResource.\n");
     static_assert(netw.hasSeparateLogicalCores(), "Workers should be on separate logical Cores.\n");
     static_assert(netw.isStronglyConnected(), "Required to keep all workers busy.\n");
+    static_assert(std::is_nothrow_default_constructible_v<value_type>);
+    static_assert(std::is_nothrow_copy_constructible_v<value_type>);
 };
 
 // Implementation Details
@@ -275,7 +277,7 @@ template <typename T, QNetwork netw, template <class, class, std::size_t> class 
 template <std::size_t tupleSize,
           bool networkHomogeneousInPorts,
           std::enable_if_t<not networkHomogeneousInPorts, bool>>
-inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushUnsafeHelper(
+inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessingHelper(
     const value_type val, const std::size_t workerId) noexcept {
     static_assert(0 < tupleSize && tupleSize <= netw.numWorkers_);
     if constexpr (tupleSize == netw.numWorkers_) { assert(workerId < netw.numWorkers_); }
@@ -283,19 +285,50 @@ inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushUnsafeHelper(
     if (workerId == (netw.numWorkers_ - tupleSize)) {
         return std::get<netw.numWorkers_ - tupleSize>(workerResources_)->pushUnsafe(val);
     } else {
-        if constexpr (tupleSize > 1) { pushUnsafeHelper<tupleSize - 1>(val, workerId); }
+        if constexpr (tupleSize > 1) { pushBeforeProcessingHelper<tupleSize - 1>(val, workerId); }
     }
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
-inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushUnsafe(const value_type val,
+inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing(const value_type val,
                                                                        const std::size_t workerId) noexcept {
     if constexpr (netw.hasHomogeneousInPorts()) {
         workerResources_[workerId]->pushUnsafe(val);
     } else {
-        pushUnsafeHelper<netw.numWorkers_>(val, workerId);
+        pushBeforeProcessingHelper<netw.numWorkers_>(val, workerId);
     }
     globalCount_.fetch_add(1U, std::memory_order_release);
+}
+
+template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
+template <std::size_t channel>
+inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing(const value_type val) noexcept {
+    static_assert(channel < netw.numChannels_, "Must be a valid channel in the QNetwork.");
+    static_assert(netw.edgeTargets_[channel] == netw.numWorkers_, "Channel must not have a producer.");
+
+    constexpr std::size_t worker = netw.source(channel);
+    constexpr std::size_t port = netw.targetPort_[channel];
+
+    bool success = false;
+
+    // Checks if queue is still running and if so signals that there is more work to come
+    std::size_t prevCount = globalCount_.load(std::memory_order_relaxed);
+    while (prevCount > 0U
+           && (not globalCount_.compare_exchange_weak(
+               prevCount, prevCount + 1U, std::memory_order_relaxed, std::memory_order_relaxed))) { };
+
+    // Only inserts if queue is still running
+    if (prevCount > 0U) {
+        if constexpr (netw.hasHomogeneousInPorts()) {
+            success = workerResources_[worker]->push(val, port);
+        } else {
+            success = std::get<worker>(workerResources_)->push(val, port);
+        }
+
+        if (not success) { globalCount_.fetch_sub(1U, std::memory_order_relaxed); }
+    }
+
+    return success;
 }
 
 }        // end namespace spapq

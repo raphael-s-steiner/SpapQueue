@@ -37,17 +37,17 @@ class WorkerResource {
     inline void incrGlobalCount() noexcept;
     inline void decrGlobalCount() noexcept;
 
-    [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushOutBuffer() noexcept;
+    [[nodiscard("Push may fail when channel is full.\n")]] inline bool pushOutBuffer() noexcept;
     inline void pushOutBufferSelf(
         const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) noexcept;
 
     inline void enqueueInChannels() noexcept;
     virtual void processElement(const value_type val) noexcept = 0;
 
-    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(const value_type val,
+    [[nodiscard("Push may fail when channel is full.\n")]] inline bool push(const value_type val,
                                                                           std::size_t port) noexcept;
     template <class InputIt>
-    [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(InputIt first,
+    [[nodiscard("Push may fail when channel is full.\n")]] inline bool push(InputIt first,
                                                                           InputIt last,
                                                                           std::size_t port) noexcept;
 
