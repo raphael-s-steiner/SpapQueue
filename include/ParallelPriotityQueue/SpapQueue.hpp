@@ -39,7 +39,8 @@ class SpapQueue final {
 
     inline void pushBeforeProcessing(const value_type val, const std::size_t workerId = 0U) noexcept;
     template <std::size_t channel>
-    [[nodiscard("Push may fail when channel is full or queue has already finished.\n")]] inline bool pushDuringProcessing(const value_type val) noexcept;
+    [[nodiscard("Push may fail when channel is full or queue has already finished.\n")]] inline bool
+    pushDuringProcessing(const value_type val) noexcept;
 
     SpapQueue() = default;
     SpapQueue(const SpapQueue &other) = delete;
@@ -290,8 +291,8 @@ inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing
 }
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
-inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing(const value_type val,
-                                                                       const std::size_t workerId) noexcept {
+inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing(
+    const value_type val, const std::size_t workerId) noexcept {
     if constexpr (netw.hasHomogeneousInPorts()) {
         workerResources_[workerId]->pushUnsafe(val);
     } else {
