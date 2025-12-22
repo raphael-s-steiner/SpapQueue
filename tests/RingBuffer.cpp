@@ -29,9 +29,9 @@ TEST(RingBufferTest, Values2) {
 }
 
 TEST(RingBufferTest, Values3) {
-    std::array<std::string, 5> values{"Hello World!", "", "Elephant", "312", "All done!"};
+    std::array<double, 5> values{0.23, -3.23, 23.934, 93.2902, -0.02};
 
-    RingBuffer<std::string, 5> channel;
+    RingBuffer<double, 5> channel;
     for (auto val : values) {
         bool succ = channel.push(val);
         EXPECT_TRUE(succ);

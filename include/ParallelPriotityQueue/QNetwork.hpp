@@ -467,7 +467,7 @@ constexpr bool QNetwork<workers, channels>::isStronglyConnected() const {
 
 /**
  * @brief Returns the source/producer worker of the channel.
- * 
+ *
  */
 template <std::size_t workers, std::size_t channels>
 inline constexpr std::size_t QNetwork<workers, channels>::source(std::size_t channel) const noexcept {
@@ -478,7 +478,7 @@ inline constexpr std::size_t QNetwork<workers, channels>::source(std::size_t cha
 
 /**
  * @brief Returns the target/consumer worker of the channel.
- * 
+ *
  */
 template <std::size_t workers, std::size_t channels>
 inline constexpr std::size_t QNetwork<workers, channels>::target(std::size_t channel) const noexcept {
