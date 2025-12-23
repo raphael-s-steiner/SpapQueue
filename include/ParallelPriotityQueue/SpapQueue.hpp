@@ -55,7 +55,7 @@ class SpapQueue final {
     using WorkerCollective = std::conditional_t<
         netw.hasHomogeneousInPorts(),
         std::array<WorkerTemplate<ThisQType, LocalQType, netw.numPorts_[0U]> *, netw.numWorkers_>,
-        typename WorkerCollectiveHelper<WorkerTemplate, ThisQType, LocalQType, netw, netw.numWorkers_>::template type<>
+        typename WorkerCollectiveHelper<WorkerTemplate, ThisQType, LocalQType, netw.numWorkers_>::template type<>
     >;
 
     alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> globalCount_{0U};
