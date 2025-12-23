@@ -20,6 +20,34 @@
 
 namespace spapq {
 
+/**
+ * @brief SpapQueue is a lock-free parallel approximate priority queue. To run the queue call
+ * (1) initQueue, which allocates the workers,
+ * (2) pushBeforeProcessing, to populate the queue with initial tasks,
+ * (3) processQueue, to let the workers start processing the queue,
+ * (4) pushDuringProcessing, whilst the queue is running (and only then) additional tasks may be enqueued on
+ *     self-push channels,
+ * (5) waitProcessFinish, to wait till all of the tasks in the queue have been completed.
+ *
+ * Once the queue has completed, it can be reused following the same steps. Calling the functions in any other
+ * order results in undefined behaviour.
+ *
+ * The queue may be interrupted at any point (by the main thread operating on the queue) by calling
+ * requestStop.
+ *
+ * The SpapQueue class or object itself is generally not considered thread-safe with a few exceptions.
+ * (a) pushBeforeProcessing can be called for each worker by at most one thread. Hence, netw.numWorker_ number
+ *     of threads can populate the queue.
+ * (b) pushDuringProcessing can be called for each (self-push) channel by at most one thread.
+ *
+ * @tparam T Type of queue element or task.
+ * @tparam netw QNetwork which dictates the linking of the workers and other queue related information.
+ * @tparam WorkerTemplate The worker type to be used for the queue. Needs to inherit from WorkerResource.
+ * @tparam LocalQType Type of the local queue of each individual worker.
+ *
+ * @see QNetwork
+ * @see WorkerResource
+ */
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 class SpapQueue final {
     template <typename, typename, std::size_t>
@@ -102,6 +130,10 @@ class SpapQueue final {
 
 // Implementation Details
 
+/**
+ * @brief Wait till the whole queue has finished processing all tasks.
+ *
+ */
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::waitProcessFinish() {
     for (auto &thread : workers_) {
@@ -112,6 +144,14 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::waitProcessFinish() {
     queueActive_.store(false, std::memory_order_release);
 }
 
+/**
+ * @brief Initialises the queue by allocating resources and the worker thread.
+ *
+ * @param workerArgs Arguments to be forwarded to the workers. Note that arguments passed by reference need to
+ * be wrapped by std::ref.
+ * @return true If initialisation has succeeded, i.e., not already initialised.
+ * @return false If the queue is already active.
+ */
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 template <typename... Args>
 bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue(Args &&...workerArgs) {
@@ -130,11 +170,15 @@ bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue(Args &&...workerA
     return true;
 }
 
+/**
+ * @brief Signals the workers to begin processing the queue.
+ *
+ */
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::processQueue() {
     startSignal_.test_and_set(std::memory_order_release);
     startSignal_.notify_all();
-};
+}
 
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 template <std::size_t tupleSize,
@@ -162,6 +206,10 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushInternalHelper(
     }
 }
 
+/**
+ * @brief Batch push onto channel, return whether succeeded.
+ *
+ */
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 template <class InputIt>
 inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushInternal(InputIt first,
@@ -175,6 +223,12 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushInternal(InputIt
     }
 }
 
+/**
+ * @brief Intructions to be executed by the worker.
+ *
+ * @param stoken Stop token
+ * @param workerArgs Arguments to be passed to the worker constructor.
+ */
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 template <std::size_t N, typename... Args>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token stoken, Args &&...workerArgs) {
@@ -259,6 +313,10 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::threadWork(std::stop_token 
 #endif
 }
 
+/**
+ * @brief Request early stop or termination of the queue.
+ *
+ */
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 void SpapQueue<T, netw, WorkerTemplate, LocalQType>::requestStop() {
     if (not queueActive_.load(std::memory_order_acquire)) { return; }
@@ -290,6 +348,13 @@ inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing
     }
 }
 
+/**
+ * @brief Enqueues initial tasks into the local queue of a worker. Only to be used after initialisation and
+ * before processing the queue.
+ *
+ * @param val Task or queue element.
+ * @param workerId Worker id whose local queue to push to.
+ */
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing(
     const value_type val, const std::size_t workerId) noexcept {
@@ -301,6 +366,16 @@ inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing
     globalCount_.fetch_add(1U, std::memory_order_release);
 }
 
+/**
+ * @brief Enqueues tasks into a self-push channel of the queue. Only to be used after initialisation and
+ * during processing the queue.
+ *
+ * @tparam channel A self-push channel into which to push.
+ * @param val Task or queue element.
+ * @return true If push succeeded.
+ * @return false If push failed. This is either because the channel buffer is full or the queue has already
+ * finished.
+ */
 template <typename T, QNetwork netw, template <class, class, std::size_t> class WorkerTemplate, typename LocalQType>
 template <std::size_t channel>
 inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing(const value_type val) noexcept {
