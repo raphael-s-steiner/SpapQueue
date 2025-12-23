@@ -307,9 +307,6 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing
     static_assert(channel < netw.numChannels_, "Must be a valid channel in the QNetwork.");
     static_assert(netw.edgeTargets_[channel] == netw.numWorkers_, "Channel must not have a producer.");
 
-    constexpr std::size_t worker = netw.source(channel);
-    constexpr std::size_t port = netw.targetPort_[channel];
-
     bool success = false;
 
     // Checks if queue is still running and if so signals that there is more work to come
@@ -320,6 +317,9 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing
 
     // Only inserts if queue is still running
     if (prevCount > 0U) {
+        constexpr std::size_t worker = netw.source(channel);
+        constexpr std::size_t port = netw.targetPort_[channel];
+
         if constexpr (netw.hasHomogeneousInPorts()) {
             success = workerResources_[worker]->push(val, port);
         } else {
