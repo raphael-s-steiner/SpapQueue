@@ -33,13 +33,8 @@ class WorkerResource {
 
   private:
     const std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>
-        channelIndices_;                                                         ///< Order
-                                                                                 ///< of
-                                                                                 ///< outgoing
-                                                                                 ///< channels
-                                                                                 ///< to
-                                                                                 ///< push
-                                                                                 ///< to.
+        channelIndices_;                                                         ///< Order of outgoing
+                                                                                 ///< channels to push to.
     std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;        ///< Small buffer before
                                                                                  ///< pushing to outgoing
                                                                                  ///< channel.
