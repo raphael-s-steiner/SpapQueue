@@ -21,12 +21,12 @@
 namespace spapq {
 
 /**
- * @brief SpapQueue is a lock-free parallel approximate priority queue. To run the queue call
- * (1) initQueue, which allocates the workers,
- * (2) pushBeforeProcessing, to populate the queue with initial tasks,
- * (3) processQueue, to let the workers start processing the queue,
+ * @brief SpapQueue is a lock-free parallel approximate priority queue. To run the queue call\n
+ * (1) initQueue, which allocates the workers,\n
+ * (2) pushBeforeProcessing, to populate the queue with initial tasks,\n
+ * (3) processQueue, to let the workers start processing the queue,\n
  * (4) pushDuringProcessing, whilst the queue is running (and only then) additional tasks may be enqueued on
- *     self-push channels,
+ *     self-push channels,\n
  * (5) waitProcessFinish, to wait till all of the tasks in the queue have been completed.
  *
  * Once the queue has completed, it can be reused following the same steps. Calling the functions in any other
@@ -35,9 +35,9 @@ namespace spapq {
  * The queue may be interrupted at any point (by the main thread operating on the queue) by calling
  * requestStop.
  *
- * The SpapQueue class or object itself is generally not considered thread-safe with a few exceptions.
+ * The SpapQueue class or object itself is generally not considered thread-safe with a few exceptions.\n
  * (a) pushBeforeProcessing can be called for each worker by at most one thread. Hence, netw.numWorker_ number
- *     of threads can populate the queue.
+ *     of threads can populate the queue.\n
  * (b) pushDuringProcessing can be called for each (self-push) channel by at most one thread.
  *
  * @tparam T Type of queue element or task.
@@ -86,15 +86,22 @@ class SpapQueue final {
         typename WorkerCollectiveHelper<WorkerTemplate, ThisQType, LocalQType, netw.numWorkers_>::template type<>
     >;
 
-    alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> globalCount_{0U};
-    alignas(CACHE_LINE_SIZE) WorkerCollective workerResources_;
+    alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> globalCount_{
+        0U};        ///< Is zero if and only if there is no task in the queue. Together with all the
+                    ///< localCount_ of workers keeps track of the total number of tasks in the global queue.
+    alignas(CACHE_LINE_SIZE) WorkerCollective workerResources_;        ///< Resources of the workers.
 
-    std::atomic<bool> queueActive_{false};
-    std::atomic_flag startSignal_;
-    std::barrier<> allocateSignal_{netw.numWorkers_ + 1};
-    std::barrier<> safeToDeallocateSignal_{netw.numWorkers_};
+    std::atomic<bool> queueActive_{false};        ///< Keeps track whether the queue is active, i.e., whether
+                                                  ///< worker threads have been spawned.
+    std::atomic_flag startSignal_;        ///< The signal for the workers to start working on the tasks in the
+                                          ///< queue.
+    std::barrier<> allocateSignal_{netw.numWorkers_ + 1};        ///< Signals that it is now safe to enqueue
+                                                                 ///< tasks.
+    std::barrier<> safeToDeallocateSignal_{netw.numWorkers_};        ///< Signal that all workers have finished
+                                                                     ///< working and that it is now safe to
+                                                                     ///< deallocate the worker resources.
 
-    std::array<std::jthread, netw.numWorkers_> workers_;
+    std::array<std::jthread, netw.numWorkers_> workers_;        ///< Worker threads.
 
     template <std::size_t N, typename... Args>
     void threadWork(std::stop_token stoken, Args &&...workerArgs);
