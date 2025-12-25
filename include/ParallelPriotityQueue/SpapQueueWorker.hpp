@@ -9,8 +9,6 @@
 
 namespace spapq {
 
-// TODO: concept for localQType
-
 /**
  * @brief A base class for the functionality of the local worker of the (global) sparse parallel approximate
  * priority queue (SpapQueue).
