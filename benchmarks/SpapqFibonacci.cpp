@@ -1,5 +1,6 @@
 #include <benchmark/benchmark.h>
 
+#include <queue>
 #include <vector>
 
 #include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
