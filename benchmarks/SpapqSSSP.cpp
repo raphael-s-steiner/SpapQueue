@@ -18,11 +18,6 @@ constexpr unsigned numVertices_ = 20000U;
 constexpr unsigned edgesPerVertex_ = 7U;
 constexpr std::size_t seedNumber_ = 1729U;
 
-struct CSRGraph {
-    std::vector<unsigned> sourcePointers_;
-    std::vector<unsigned> edgeTargets_;
-};
-
 CSRGraph makeGraph(const unsigned numVertices, const unsigned edgesPerVertex, const std::size_t seed) {
     std::mt19937 gen(seed);
     std::uniform_real_distribution<> dis(-1.0, 1.0);
@@ -119,8 +114,7 @@ static void BM_SpapQueue_SSSP_1_Worker(benchmark::State &state) {
             dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
         }
 
-        globalQ.initQueue(
-            std::cref(graph.sourcePointers_), std::cref(graph.edgeTargets_), std::ref(distances));
+        globalQ.initQueue(std::cref(graph), std::ref(distances));
         globalQ.pushBeforeProcessing({0, 0}, 0U);
 
         state.ResumeTiming();
@@ -180,8 +174,7 @@ static void BM_SpapQueue_SSSP_2_Workers(benchmark::State &state) {
             dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
         }
 
-        globalQ.initQueue(
-            std::cref(graph.sourcePointers_), std::cref(graph.edgeTargets_), std::ref(distances));
+        globalQ.initQueue(std::cref(graph), std::ref(distances));
         globalQ.pushBeforeProcessing({0, 0}, 0U);
 
         state.ResumeTiming();
@@ -241,8 +234,7 @@ static void BM_SpapQueue_SSSP_4_Workers(benchmark::State &state) {
             dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
         }
 
-        globalQ.initQueue(
-            std::cref(graph.sourcePointers_), std::cref(graph.edgeTargets_), std::ref(distances));
+        globalQ.initQueue(std::cref(graph), std::ref(distances));
         globalQ.pushBeforeProcessing({0, 0}, 0U);
 
         state.ResumeTiming();
@@ -304,8 +296,7 @@ static void BM_SpapQueue_SSSP_8_Workers(benchmark::State &state) {
             dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
         }
 
-        globalQ.initQueue(
-            std::cref(graph.sourcePointers_), std::cref(graph.edgeTargets_), std::ref(distances));
+        globalQ.initQueue(std::cref(graph), std::ref(distances));
         globalQ.pushBeforeProcessing({0, 0}, 0U);
 
         state.ResumeTiming();
