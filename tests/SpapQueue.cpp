@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriotityQueue/WorkerExamples/SSSPWorker.hpp"
 
 using namespace spapq;
 
@@ -112,6 +113,41 @@ std::vector<std::size_t> computeAnswerFibonacci(std::size_t N) {
     for (std::size_t i = count.size() - 3U; i < count.size(); --i) { count[i] = count[i + 1] + count[i + 2]; }
 
     return count;
+}
+
+constexpr unsigned SSSPTorusSideLength = 100U;
+
+CSRGraph make3DTorus(const unsigned sideLength) {
+    CSRGraph graph;
+
+    const unsigned sideLengthSqr = sideLength * sideLength;
+    const unsigned numVert = sideLength * sideLength * sideLength;
+    graph.sourcePointers_.reserve(numVert);
+    graph.edgeTargets_.reserve(6 * numVert);
+
+    for (unsigned i = 0U; i < sideLength; ++i) {
+        for (unsigned j = 0U; j < sideLength; ++j) {
+            for (unsigned k = 0U; k < sideLength; ++k) {
+                graph.sourcePointers_.emplace_back(graph.edgeTargets_.size());
+
+                graph.edgeTargets_.emplace_back(
+                    ((k + 1) % sideLength) + (j * sideLength) + (i * sideLengthSqr));
+                graph.edgeTargets_.emplace_back(
+                    ((k + sideLength - 1) % sideLength) + (j * sideLength) + (i * sideLengthSqr));
+                graph.edgeTargets_.emplace_back(
+                    k + (((j + 1) % sideLength) * sideLength) + (i * sideLengthSqr));
+                graph.edgeTargets_.emplace_back(
+                    k + (((j + sideLength - 1) % sideLength) * sideLength) + (i * sideLengthSqr));
+                graph.edgeTargets_.emplace_back(
+                    k + (j * sideLength) + (((i + 1) % sideLength) * sideLengthSqr));
+                graph.edgeTargets_.emplace_back(
+                    k + (j * sideLength) + (((i + sideLength - 1) % sideLength) * sideLengthSqr));
+            }
+        }
+    }
+    graph.sourcePointers_.emplace_back(graph.edgeTargets_.size());
+
+    return graph;
 }
 
 TEST(SpapQueueTest, Constructors1) {
@@ -465,4 +501,127 @@ TEST(SpapQueueTest, FibonacciHeterogeneousWorkers) {
     }
 
     for (std::size_t i = 0; i < fibonacciTestSize + 1; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
+TEST(SpapQueueTest, SSSPSingleWorker) {
+    constexpr QNetwork<1, 1> netw = FULLY_CONNECTED_GRAPH<1U>();
+
+    SpapQueue<std::pair<unsigned, unsigned>,
+              netw,
+              SSSPWorker,
+              std::priority_queue<std::pair<unsigned, unsigned>,
+                                  std::vector<std::pair<unsigned, unsigned>>,
+                                  std::greater<std::pair<unsigned, unsigned>>>>
+        globalQ;
+
+    const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
+    const unsigned nVerts = SSSPTorusSideLength * SSSPTorusSideLength * SSSPTorusSideLength;
+
+    std::vector<std::atomic<unsigned>> distances(nVerts);
+    for (auto &dist : distances) {
+        dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
+    }
+
+    EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
+    globalQ.pushBeforeProcessing({0U, 0U}, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    const unsigned sideLengthSqr = SSSPTorusSideLength * SSSPTorusSideLength;
+
+    for (unsigned i = 0U; i < SSSPTorusSideLength; ++i) {
+        for (unsigned j = 0U; j < SSSPTorusSideLength; ++j) {
+            for (unsigned k = 0U; k < SSSPTorusSideLength; ++k) {
+                const unsigned vert = k + (j * SSSPTorusSideLength) + (i * sideLengthSqr);
+
+                const unsigned dist = std::min(k, SSSPTorusSideLength - k)
+                                      + std::min(j, SSSPTorusSideLength - j)
+                                      + std::min(i, SSSPTorusSideLength - i);
+
+                EXPECT_EQ(distances[vert].load(std::memory_order_relaxed), dist);
+            }
+        }
+    }
+}
+
+TEST(SpapQueueTest, SSSPHomogeneousWorkers) {
+    constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
+
+    SpapQueue<std::pair<unsigned, unsigned>,
+              netw,
+              SSSPWorker,
+              std::priority_queue<std::pair<unsigned, unsigned>,
+                                  std::vector<std::pair<unsigned, unsigned>>,
+                                  std::greater<std::pair<unsigned, unsigned>>>>
+        globalQ;
+
+    const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
+    const unsigned nVerts = SSSPTorusSideLength * SSSPTorusSideLength * SSSPTorusSideLength;
+
+    std::vector<std::atomic<unsigned>> distances(nVerts);
+    for (auto &dist : distances) {
+        dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
+    }
+
+    EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
+    globalQ.pushBeforeProcessing({0U, 0U}, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    const unsigned sideLengthSqr = SSSPTorusSideLength * SSSPTorusSideLength;
+
+    for (unsigned i = 0U; i < SSSPTorusSideLength; ++i) {
+        for (unsigned j = 0U; j < SSSPTorusSideLength; ++j) {
+            for (unsigned k = 0U; k < SSSPTorusSideLength; ++k) {
+                const unsigned vert = k + (j * SSSPTorusSideLength) + (i * sideLengthSqr);
+
+                const unsigned dist = std::min(k, SSSPTorusSideLength - k)
+                                      + std::min(j, SSSPTorusSideLength - j)
+                                      + std::min(i, SSSPTorusSideLength - i);
+
+                EXPECT_EQ(distances[vert].load(std::memory_order_relaxed), dist);
+            }
+        }
+    }
+}
+
+TEST(SpapQueueTest, SSSPHeterogeneousWorkers) {
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
+
+    SpapQueue<std::pair<unsigned, unsigned>,
+              netw,
+              SSSPWorker,
+              std::priority_queue<std::pair<unsigned, unsigned>,
+                                  std::vector<std::pair<unsigned, unsigned>>,
+                                  std::greater<std::pair<unsigned, unsigned>>>>
+        globalQ;
+
+    const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
+    const unsigned nVerts = SSSPTorusSideLength * SSSPTorusSideLength * SSSPTorusSideLength;
+
+    std::vector<std::atomic<unsigned>> distances(nVerts);
+    for (auto &dist : distances) {
+        dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
+    }
+
+    EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
+    globalQ.pushBeforeProcessing({0U, 0U}, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    const unsigned sideLengthSqr = SSSPTorusSideLength * SSSPTorusSideLength;
+
+    for (unsigned i = 0U; i < SSSPTorusSideLength; ++i) {
+        for (unsigned j = 0U; j < SSSPTorusSideLength; ++j) {
+            for (unsigned k = 0U; k < SSSPTorusSideLength; ++k) {
+                const unsigned vert = k + (j * SSSPTorusSideLength) + (i * sideLengthSqr);
+
+                const unsigned dist = std::min(k, SSSPTorusSideLength - k)
+                                      + std::min(j, SSSPTorusSideLength - j)
+                                      + std::min(i, SSSPTorusSideLength - i);
+
+                EXPECT_EQ(distances[vert].load(std::memory_order_relaxed), dist);
+            }
+        }
+    }
 }
