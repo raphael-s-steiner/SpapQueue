@@ -32,11 +32,11 @@ using DivisorLocalQueueType
 
 constexpr std::size_t divisorTestMaxSize = 10000;
 
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 class DivisorWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts> {
-    template <typename, typename, std::size_t>
+    template <typename, BasicQueue, std::size_t>
     friend class DivisorWorker;
-    template <typename, QNetwork, template <class, class, std::size_t> class, typename>
+    template <typename, QNetwork, template <class, BasicQueue, std::size_t> class, BasicQueue>
     friend class SpapQueue;
 
     using BaseT = WorkerResource<GlobalQType, LocalQType, numPorts>;
@@ -88,11 +88,11 @@ using FibonacchiLocalQueueType
 
 constexpr std::size_t fibonacciTestSize = 30;
 
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts> {
-    template <typename, typename, std::size_t>
+    template <typename, BasicQueue, std::size_t>
     friend class FibonacciWorker;
-    template <typename, QNetwork, template <class, class, std::size_t> class, typename>
+    template <typename, QNetwork, template <class, BasicQueue, std::size_t> class, BasicQueue>
     friend class SpapQueue;
 
     using BaseT = WorkerResource<GlobalQType, LocalQType, numPorts>;

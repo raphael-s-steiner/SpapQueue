@@ -23,6 +23,7 @@ limitations under the License.
 
 #include "Discrepancy/QNetworkTables.hpp"
 #include "Discrepancy/TableGenerator.hpp"
+#include "ParallelPriotityQueue/Concepts/BasicQueue.hpp"
 #include "RingBuffer/RingBuffer.hpp"
 
 namespace spapq {
@@ -37,11 +38,11 @@ namespace spapq {
  *
  * @see SpapQueue
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 class WorkerResource {
-    template <typename, typename, std::size_t>
+    template <typename, BasicQueue, std::size_t>
     friend class WorkerResource;
-    template <typename, QNetwork, template <class, class, std::size_t> class, typename>
+    template <typename, QNetwork, template <class, BasicQueue, std::size_t> class, BasicQueue>
     friend class SpapQueue;
 
   public:
@@ -120,7 +121,7 @@ class WorkerResource {
  * @see SpapQueue
  * @see WorkerResource
  */
-template <template <class, class, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType, std::size_t N>
+template <template <class, BasicQueue, std::size_t> class WorkerTemplate, class GlobalQType, BasicQueue LocalQType, std::size_t N>
 constexpr bool isDerivedWorkerResource() {
     static_assert(N <= GlobalQType::netw_.numWorkers_);
 
@@ -142,7 +143,7 @@ constexpr bool isDerivedWorkerResource() {
  * @tparam LocalQType Worker local queue type.
  * @tparam N Tuple of first N workers.
  */
-template <template <class, class, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType, std::size_t N>
+template <template <class, BasicQueue, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType, std::size_t N>
 struct WorkerCollectiveHelper {
     static_assert(N <= GlobalQType::netw_.numWorkers_);
     template <typename... Args>
@@ -150,7 +151,7 @@ struct WorkerCollectiveHelper {
         template type<WorkerTemplate<GlobalQType, LocalQType, GlobalQType::netw_.numPorts_[N - 1]> *, Args...>;
 };
 
-template <template <class, class, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType>
+template <template <class, BasicQueue, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType>
 struct WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, 0> {
     template <typename... Args>
     using type = std::tuple<Args...>;
@@ -158,7 +159,7 @@ struct WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, 0> {
 
 // Implementation details
 
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 template <std::size_t channelIndicesLength, typename... Args>
 constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
     GlobalQType &globalQueue,
@@ -174,13 +175,13 @@ constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
     channelTableEndPointer_(std::next(channelIndices_.cbegin(), channelIndicesLength)),
     queue_(std::forward<Args>(localQargs)...) { }
 
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(const value_type val,
                                                                     std::size_t port) noexcept {
     return inPorts_[port].push(val);
 }
 
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 template <class InputIt>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(InputIt first,
                                                                     InputIt last,
@@ -193,7 +194,7 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(InputIt firs
  *
  * @param val Task.
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(const value_type val) noexcept {
     assert(bufferPointer_ != outBuffer_.end());
 
@@ -217,7 +218,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(con
  * @brief Pushes the outbuffer to the current outgoing channel.
  *
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() noexcept {
     bool successfulPush = false;
 
@@ -246,7 +247,7 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() n
  *
  * @param fromPointer
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf(
     const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) noexcept {
     constexpr bool hasBatchPush
@@ -269,7 +270,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf
  * @brief Enqueues all tasks in the incomming channels into the local queue.
  *
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueInChannels() noexcept {
     for (auto &portRingBuffer : inPorts_) {
         std::optional<value_type> data = portRingBuffer.pop();
@@ -286,7 +287,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueInChannels
  *
  * @param stoken Stop token.
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_token stoken) noexcept {
     std::size_t cntr = 0;
     while (globalQueue_.globalCount_.load(std::memory_order_acquire) > 0 && (not stoken.stop_requested())) {
@@ -315,7 +316,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_tok
  *
  * @param val Task.
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushUnsafe(const value_type val) noexcept {
     queue_.push(val);
 }
@@ -324,7 +325,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushUnsafe(const 
  * @brief Returns the worker Id in the global queue.
  *
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline std::size_t WorkerResource<GlobalQType, LocalQType, numPorts>::workerId() const noexcept {
     return workerId_;
 }
@@ -334,7 +335,7 @@ inline std::size_t WorkerResource<GlobalQType, LocalQType, numPorts>::workerId()
  * global queue and localCount_ in all local queues.
  *
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::incrGlobalCount() noexcept {
     ++localCount_;
     const std::size_t qSize = queue_.size();
@@ -352,7 +353,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::incrGlobalCount()
  * global queue and localCount_ in all local queues.
  *
  */
-template <typename GlobalQType, typename LocalQType, std::size_t numPorts>
+template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::decrGlobalCount() noexcept {
     if (localCount_ == 0) {
         const std::size_t newLocalCount = queue_.size() / 2;
