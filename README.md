@@ -27,3 +27,7 @@ To run all benchmarks, run the following command.
 ```bash
 make run_BM
 ```
+
+## Citation
+
+TBA
