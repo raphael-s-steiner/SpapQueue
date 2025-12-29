@@ -1,3 +1,17 @@
+# Copyright 2025 Raphael S. Steiner
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 cmake_minimum_required(VERSION 3.20)
 
 # For fetching GoogleTests -- Required by GoogleBenchmark (seemingly)
@@ -20,7 +34,6 @@ FetchContent_Declare(
     GIT_TAG 31c66f47f60d06790a4885a261d682ba339bd100 #refs/tags/v1.9.4
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
-
 FetchContent_MakeAvailable(GoogleBenchmark)
 
 # Create an empty list for the Benchmark
@@ -31,6 +44,7 @@ set( RUN_BM_COMMANDS )
 macro( _add_BM name )
     # Add the benchmark to the list
     list( APPEND BM_list ${name}_BM )
+    
     # Create the Benchmark
     add_executable(${name}_BM ${name}.cpp)
     target_link_libraries(${name}_BM PRIVATE SPAPQueue benchmark::benchmark ProjectExecutableFlags)

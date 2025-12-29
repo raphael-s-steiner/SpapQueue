@@ -1,3 +1,17 @@
+# Copyright 2025 Raphael S. Steiner
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 cmake_minimum_required(VERSION 3.20)
 
 # For fetching GoogleTests
@@ -19,6 +33,7 @@ set( tests_list )
 macro( _add_test name )
     # Add the test to the list
     list( APPEND tests_list ${name}Test )
+
     # Create the test
     add_executable(${name}Test ${name}.cpp)
     target_link_libraries(${name}Test PRIVATE SPAPQueue GTest::gtest_main ProjectExecutableFlags)
@@ -27,13 +42,11 @@ macro( _add_test name )
     gtest_discover_tests(${name}Test)
 endmacro()
 
-
-
+# Adding tests
 _add_test( RingBuffer )
 _add_test( QNetwork )
 _add_test( DiscrepancyTables )
 _add_test( SpapQueue )
-
 
 # Custom target to compile all the tests
 add_custom_target( build_tests DEPENDS ${tests_list} )

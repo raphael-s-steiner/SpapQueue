@@ -28,6 +28,12 @@ To run all benchmarks, run the following command.
 make run_BM
 ```
 
+To generate documentation, run the following command.
+
+```bash
+make doc
+```
+
 ## License
 
 The library is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
