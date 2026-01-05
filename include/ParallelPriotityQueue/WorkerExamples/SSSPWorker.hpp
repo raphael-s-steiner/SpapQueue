@@ -71,11 +71,10 @@ class SSSPWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts
 
         if (dist == distance_[vertex].load(std::memory_order_relaxed)) {
             const distance_type newDist = dist + 1;
-            for (vertex_type indx = graph_.sourcePointers_[vertex]; indx < graph_.sourcePointers_[vertex + 1]; ++indx) {
+            for (vertex_type indx = graph_.sourcePointers_[vertex]; indx < graph_.sourcePointers_[vertex + 1];
+                 ++indx) {
                 const vertex_type tgt = graph_.edgeTargets_[indx];
-                if (updateDistance(tgt, newDist)) {
-                    this->enqueueGlobal({newDist, tgt});
-                }
+                if (updateDistance(tgt, newDist)) { this->enqueueGlobal({newDist, tgt}); }
             }
         }
     }
