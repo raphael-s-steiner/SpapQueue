@@ -110,12 +110,12 @@ static void BM_SpapQueue_SSSP_1_Worker(benchmark::State &state) {
                                                channelBufferSize,
                                                maxPushAttempts);
 
-    SpapQueue<std::pair<unsigned, unsigned>,
+    SpapQueue<std::array<unsigned, 2U>,
               netw,
               SSSPWorker,
-              std::priority_queue<std::pair<unsigned, unsigned>,
-                                  std::vector<std::pair<unsigned, unsigned>>,
-                                  std::greater<std::pair<unsigned, unsigned>>>>
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
         globalQ;
 
     const unsigned nVerts = static_cast<unsigned>(state.range(0));
@@ -171,12 +171,12 @@ static void BM_SpapQueue_SSSP_2_Workers(benchmark::State &state) {
                                                channelBufferSize,
                                                maxPushAttempts);
 
-    SpapQueue<std::pair<unsigned, unsigned>,
+    SpapQueue<std::array<unsigned, 2U>,
               netw,
               SSSPWorker,
-              std::priority_queue<std::pair<unsigned, unsigned>,
-                                  std::vector<std::pair<unsigned, unsigned>>,
-                                  std::greater<std::pair<unsigned, unsigned>>>>
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
         globalQ;
 
     const unsigned nVerts = static_cast<unsigned>(state.range(0));
@@ -232,12 +232,12 @@ static void BM_SpapQueue_SSSP_4_Workers(benchmark::State &state) {
                                                channelBufferSize,
                                                maxPushAttempts);
 
-    SpapQueue<std::pair<unsigned, unsigned>,
+    SpapQueue<std::array<unsigned, 2U>,
               netw,
               SSSPWorker,
-              std::priority_queue<std::pair<unsigned, unsigned>,
-                                  std::vector<std::pair<unsigned, unsigned>>,
-                                  std::greater<std::pair<unsigned, unsigned>>>>
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
         globalQ;
 
     const unsigned nVerts = static_cast<unsigned>(state.range(0));
@@ -295,12 +295,12 @@ static void BM_SpapQueue_SSSP_8_Workers(benchmark::State &state) {
 
     constexpr auto netw = LINE_GRAPH(LINE_GRAPH(netw2));
 
-    SpapQueue<std::pair<unsigned, unsigned>,
+    SpapQueue<std::array<unsigned, 2U>,
               netw,
               SSSPWorker,
-              std::priority_queue<std::pair<unsigned, unsigned>,
-                                  std::vector<std::pair<unsigned, unsigned>>,
-                                  std::greater<std::pair<unsigned, unsigned>>>>
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
         globalQ;
 
     const unsigned nVerts = static_cast<unsigned>(state.range(0));

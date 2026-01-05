@@ -47,8 +47,8 @@ class SSSPWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts
 
     using BaseT = WorkerResource<GlobalQType, LocalQType, numPorts>;
     using value_type = BaseT::value_type;
-    using distance_type = value_type::first_type;
-    using vertex_type = value_type::second_type;
+    using distance_type = value_type::value_type;
+    using vertex_type = value_type::value_type;
 
     const CSRGraph &graph_;
 
@@ -66,8 +66,8 @@ class SSSPWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts
 
   protected:
     inline void processElement(const value_type val) noexcept override {
-        const distance_type dist = val.first;
-        const vertex_type vertex = val.second;
+        const distance_type dist = val[0];
+        const vertex_type vertex = val[1];
 
         if (dist == distance_[vertex].load(std::memory_order_relaxed)) {
             const distance_type newDist = dist + 1;

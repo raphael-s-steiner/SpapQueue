@@ -524,12 +524,12 @@ TEST(SpapQueueTest, FibonacciHeterogeneousWorkers) {
 TEST(SpapQueueTest, SSSPSingleWorker) {
     constexpr QNetwork<1, 1> netw = FULLY_CONNECTED_GRAPH<1U>();
 
-    SpapQueue<std::pair<unsigned, unsigned>,
+    SpapQueue<std::array<unsigned, 2U>,
               netw,
               SSSPWorker,
-              std::priority_queue<std::pair<unsigned, unsigned>,
-                                  std::vector<std::pair<unsigned, unsigned>>,
-                                  std::greater<std::pair<unsigned, unsigned>>>>
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
         globalQ;
 
     const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
@@ -566,12 +566,12 @@ TEST(SpapQueueTest, SSSPSingleWorker) {
 TEST(SpapQueueTest, SSSPHomogeneousWorkers) {
     constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
 
-    SpapQueue<std::pair<unsigned, unsigned>,
+    SpapQueue<std::array<unsigned, 2U>,
               netw,
               SSSPWorker,
-              std::priority_queue<std::pair<unsigned, unsigned>,
-                                  std::vector<std::pair<unsigned, unsigned>>,
-                                  std::greater<std::pair<unsigned, unsigned>>>>
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
         globalQ;
 
     const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
@@ -608,12 +608,12 @@ TEST(SpapQueueTest, SSSPHomogeneousWorkers) {
 TEST(SpapQueueTest, SSSPHeterogeneousWorkers) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
 
-    SpapQueue<std::pair<unsigned, unsigned>,
+    SpapQueue<std::array<unsigned, 2U>,
               netw,
               SSSPWorker,
-              std::priority_queue<std::pair<unsigned, unsigned>,
-                                  std::vector<std::pair<unsigned, unsigned>>,
-                                  std::greater<std::pair<unsigned, unsigned>>>>
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
         globalQ;
 
     const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
