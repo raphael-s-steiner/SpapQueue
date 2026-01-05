@@ -54,23 +54,27 @@ class SSSPWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts
 
     std::vector<std::atomic<distance_type>> &distance_;
 
+    inline bool updateDistance(const vertex_type vertex, const distance_type dist) {
+        bool ret = false;
+        distance_type currDist = distance_[vertex].load(std::memory_order_relaxed);
+        while ((dist < currDist) & (not ret)) {
+            ret = distance_[vertex].compare_exchange_weak(
+                currDist, dist, std::memory_order_relaxed, std::memory_order_relaxed);
+        }
+        return ret;
+    }
+
   protected:
     inline void processElement(const value_type val) noexcept override {
         const distance_type dist = val.first;
         const vertex_type vertex = val.second;
 
-        distance_type currDist = distance_[vertex].load(std::memory_order_relaxed);
-        while (dist < currDist) {
-            if (distance_[vertex].compare_exchange_weak(
-                    currDist, dist, std::memory_order_relaxed, std::memory_order_relaxed)) {
-                const distance_type newDist = dist + 1;
-                for (vertex_type indx = graph_.sourcePointers_[vertex];
-                     indx < graph_.sourcePointers_[vertex + 1];
-                     ++indx) {
-                    const vertex_type tgt = graph_.edgeTargets_[indx];
-                    if (newDist < distance_[tgt].load(std::memory_order_relaxed)) {
-                        this->enqueueGlobal({newDist, tgt});
-                    }
+        if (dist == distance_[vertex].load(std::memory_order_relaxed)) {
+            const distance_type newDist = dist + 1;
+            for (vertex_type indx = graph_.sourcePointers_[vertex]; indx < graph_.sourcePointers_[vertex + 1]; ++indx) {
+                const vertex_type tgt = graph_.edgeTargets_[indx];
+                if (updateDistance(tgt, newDist)) {
+                    this->enqueueGlobal({newDist, tgt});
                 }
             }
         }

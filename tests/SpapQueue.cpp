@@ -539,6 +539,7 @@ TEST(SpapQueueTest, SSSPSingleWorker) {
     for (auto &dist : distances) {
         dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
     }
+    distances[0].store(0U, std::memory_order_relaxed);
 
     EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
     globalQ.pushBeforeProcessing({0U, 0U}, 0U);
@@ -580,6 +581,7 @@ TEST(SpapQueueTest, SSSPHomogeneousWorkers) {
     for (auto &dist : distances) {
         dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
     }
+    distances[0].store(0U, std::memory_order_relaxed);
 
     EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
     globalQ.pushBeforeProcessing({0U, 0U}, 0U);
@@ -621,6 +623,7 @@ TEST(SpapQueueTest, SSSPHeterogeneousWorkers) {
     for (auto &dist : distances) {
         dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
     }
+    distances[0].store(0U, std::memory_order_relaxed);
 
     EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
     globalQ.pushBeforeProcessing({0U, 0U}, 0U);

@@ -131,6 +131,7 @@ static void BM_SpapQueue_SSSP_1_Worker(benchmark::State &state) {
         for (auto &dist : distances) {
             dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
         }
+        distances[0].store(0U, std::memory_order_relaxed);
 
         globalQ.initQueue(std::cref(graph), std::ref(distances));
         globalQ.pushBeforeProcessing({0, 0}, 0U);
@@ -191,6 +192,7 @@ static void BM_SpapQueue_SSSP_2_Workers(benchmark::State &state) {
         for (auto &dist : distances) {
             dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
         }
+        distances[0].store(0U, std::memory_order_relaxed);
 
         globalQ.initQueue(std::cref(graph), std::ref(distances));
         globalQ.pushBeforeProcessing({0, 0}, 0U);
@@ -251,6 +253,7 @@ static void BM_SpapQueue_SSSP_4_Workers(benchmark::State &state) {
         for (auto &dist : distances) {
             dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
         }
+        distances[0].store(0U, std::memory_order_relaxed);
 
         globalQ.initQueue(std::cref(graph), std::ref(distances));
         globalQ.pushBeforeProcessing({0, 0}, 0U);
@@ -313,6 +316,7 @@ static void BM_SpapQueue_SSSP_8_Workers(benchmark::State &state) {
         for (auto &dist : distances) {
             dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
         }
+        distances[0].store(0U, std::memory_order_relaxed);
 
         globalQ.initQueue(std::cref(graph), std::ref(distances));
         globalQ.pushBeforeProcessing({0, 0}, 0U);
