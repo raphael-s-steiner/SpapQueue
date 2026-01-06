@@ -18,8 +18,10 @@ limitations under the License.
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <atomic>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <type_traits>
@@ -209,11 +211,20 @@ inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
     }
 
     if (enoughSpace) {
-        while (first != last) {
-            data_[head % N] = *first;
-            ++head;
-            ++first;
+        auto dataIt = data_.begin();
+        const std::size_t headIndx = head % N;
+        std::advance(dataIt, headIndx);
+
+        const std::size_t numElementsFirstPush = std::min(N - headIndx, numElements);
+        const std::size_t numElementsSecondPush = numElements - numElementsFirstPush;
+
+        std::copy_n(first, numElementsFirstPush, dataIt);
+
+        if (numElementsSecondPush > 0U) {
+            std::advance(first, numElementsFirstPush);
+            std::copy_n(first, numElementsSecondPush, data_.begin());
         }
+
         advanceHead(numElements);
     }
     return enoughSpace;

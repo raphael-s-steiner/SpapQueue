@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <gtest/gtest.h>
 
+#include <numeric>
 #include <thread>
 
 using namespace spapq;
@@ -154,6 +155,28 @@ TEST(RingBufferTest, Functionality3) {
     EXPECT_FALSE(channel.full());
     EXPECT_FALSE(channel.pop());
     EXPECT_TRUE(channel.empty());
+}
+
+TEST(RingBufferTest, BatchPush) {
+    constexpr std::size_t batch = 20U;
+    constexpr std::size_t numIt = 50U;
+
+    std::vector<int> values(numIt * batch);
+    std::iota(values.begin(), values.end(), 27);
+
+    RingBuffer<int, 41> channel;
+
+    for (auto it = values.cbegin(); it != values.cend();) {
+        auto endIt = std::next(it, batch);
+        EXPECT_TRUE(channel.push(it, endIt));
+
+        while (it != endIt) {
+            std::optional<int> result = channel.pop();
+            EXPECT_TRUE(result.has_value());
+            EXPECT_EQ(*it, result.value());
+            ++it;
+        }
+    }
 }
 
 TEST(RingBufferTest, Multithread1) {
