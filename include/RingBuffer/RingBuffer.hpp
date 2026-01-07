@@ -211,19 +211,17 @@ inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
     }
 
     if (enoughSpace) {
-        auto dataIt = data_.begin();
         const std::size_t headIndx = head % N;
-        std::advance(dataIt, headIndx);
-
+        
         const std::size_t numElementsFirstPush = std::min(N - headIndx, numElements);
         const std::size_t numElementsSecondPush = numElements - numElementsFirstPush;
-
+        
+        auto dataIt = data_.begin();
+        std::advance(dataIt, headIndx);
         std::copy_n(first, numElementsFirstPush, dataIt);
 
-        if (numElementsSecondPush > 0U) {
-            std::advance(first, numElementsFirstPush);
-            std::copy_n(first, numElementsSecondPush, data_.begin());
-        }
+        std::advance(first, numElementsFirstPush);
+        std::copy_n(first, numElementsSecondPush, data_.begin());
 
         advanceHead(numElements);
     }
