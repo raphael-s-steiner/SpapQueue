@@ -21,6 +21,7 @@ limitations under the License.
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <execution>
 #include <iterator>
 #include <limits>
 #include <optional>
@@ -218,10 +219,10 @@ inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
         
         auto dataIt = data_.begin();
         std::advance(dataIt, headIndx);
-        std::copy_n(first, numElementsFirstPush, dataIt);
+        std::copy_n(std::execution::unseq, first, numElementsFirstPush, dataIt);
 
         std::advance(first, numElementsFirstPush);
-        std::copy_n(first, numElementsSecondPush, data_.begin());
+        std::copy_n(std::execution::unseq, first, numElementsSecondPush, data_.begin());
 
         advanceHead(numElements);
     }
