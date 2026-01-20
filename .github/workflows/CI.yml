@@ -1,0 +1,119 @@
+name: SpapQueue CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+    types: [opened, closed, reopened, synchronize, ready_for_review]
+
+jobs:
+  # -------------------------------------------------
+  # 1. DEBUG BUILD TEST
+  # -------------------------------------------------
+  debug_build:
+    name: Debug Build Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            make build-essential gcc g++ git libasan libubsan \
+            doxygen python3-pip
+          pip3 install --upgrade pip
+          pip3 install cmake==3.21.3
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON -DENABLE_UBSAN=ON
+
+      - name: Build Debug
+        working-directory: ${{ github.workspace }}/build
+        run: cmake --build . -j$(nproc)
+
+      - name: Run tests
+        working-directory: ${{ github.workspace }}/build
+        run: ctest --output-on-failure --output-junit test_results_debug.xml
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-debug
+          path: build/test_results_debug.xml
+
+  # -------------------------------------------------
+  # 2. RELEASE BUILD TEST DOC
+  # -------------------------------------------------
+  release_build:
+    name: Release Build Test
+    runs-on: ubuntu-latest
+    needs: debug_build
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            make build-essential gcc g++ git libasan libubsan \
+            lcov doxygen python3-pip
+          pip3 install --upgrade pip
+          pip3 install cmake==3.21.3
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON -DENABLE_UBSAN=ON
+
+      - name: Build Debug
+        working-directory: ${{ github.workspace }}/build
+        run: cmake --build . -j$(nproc)
+
+      - name: Run tests with coverage
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          # Run tests
+          ctest --output-on-failure --output-junit test_results_release.xml
+
+          # Capture coverage ONLY from include/
+          lcov --capture --directory . \
+               --output-file coverage.info \
+               --ignore-errors empty,mismatch \
+               --include '*/SpapQueue/include/*'
+
+          # Remove unused warnings + ignore tests/apps
+          lcov --remove coverage.info '*/tests/*' '*/apps/*' \
+               --ignore-errors unused,empty,mismatch \
+               --output-file coverage.info
+
+          # Generate HTML report
+          genhtml coverage.info --output-directory coverage_html
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build/coverage_html
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-release
+          path: build/test_results_release.xml
+
+      - name: Build documentation
+        run: |
+          cmake --build build --target doc
+          mkdir -p public
+          cp -r doc/html/* public
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: public
