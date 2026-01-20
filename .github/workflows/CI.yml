@@ -107,10 +107,6 @@ jobs:
           name: test-results-release
           path: build/test_results_release.xml
 
-      - name: Run benchmark
-        working-directory: ${{ github.workspace }}/build
-        run: make run_BM
-
       - name: Build documentation
         run: |
           cmake --build build --target doc
