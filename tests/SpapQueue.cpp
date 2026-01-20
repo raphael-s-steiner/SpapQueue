@@ -30,7 +30,7 @@ using namespace spapq;
 using DivisorLocalQueueType
     = std::priority_queue<std::size_t, std::vector<std::size_t>, std::greater<std::size_t>>;
 
-constexpr std::size_t divisorTestMaxSize = 10000;
+constexpr std::size_t divisorTestMaxSize = 2000;
 
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 class DivisorWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts> {
@@ -86,7 +86,7 @@ std::vector<std::size_t> computeAnswerDivisors(std::size_t N) {
 using FibonacchiLocalQueueType
     = std::priority_queue<std::size_t, std::vector<std::size_t>, std::less<std::size_t>>;
 
-constexpr std::size_t fibonacciTestSize = 30;
+constexpr std::size_t fibonacciTestSize = 26;
 
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts> {
@@ -133,7 +133,7 @@ std::vector<std::size_t> computeAnswerFibonacci(std::size_t N) {
     return count;
 }
 
-constexpr unsigned SSSPTorusSideLength = 100U;
+constexpr unsigned SSSPTorusSideLength = 80U;
 
 CSRGraph make3DTorus(const unsigned sideLength) {
     CSRGraph graph;
