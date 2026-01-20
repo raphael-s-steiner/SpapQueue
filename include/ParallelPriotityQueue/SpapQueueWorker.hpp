@@ -122,7 +122,7 @@ class WorkerResource {
  * @see WorkerResource
  */
 template <template <class, BasicQueue, std::size_t> class WorkerTemplate, class GlobalQType, BasicQueue LocalQType, std::size_t N>
-constexpr bool isDerivedWorkerResource() {
+consteval bool isDerivedWorkerResource() {
     static_assert(N <= GlobalQType::netw_.numWorkers_);
 
     if constexpr (N == 0U) {
@@ -131,7 +131,7 @@ constexpr bool isDerivedWorkerResource() {
         constexpr bool val
             = std::is_base_of<WorkerResource<GlobalQType, LocalQType, GlobalQType::netw_.numPorts_[N - 1]>,
                               WorkerTemplate<GlobalQType, LocalQType, GlobalQType::netw_.numPorts_[N - 1]>>::value;
-        return val && isDerivedWorkerResource<WorkerTemplate, GlobalQType, LocalQType, N - 1>;
+        return val && isDerivedWorkerResource<WorkerTemplate, GlobalQType, LocalQType, N - 1>();
     }
 }
 
