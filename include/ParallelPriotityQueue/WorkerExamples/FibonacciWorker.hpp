@@ -48,7 +48,7 @@ class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, num
     constexpr FibonacciWorker(GlobalQType &globalQueue,
                               const std::array<std::size_t, channelIndicesLength> &channelIndices,
                               std::size_t workerId) :
-        WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices, workerId){};
+        WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices, workerId){}
 
     FibonacciWorker(const FibonacciWorker &other) = delete;
     FibonacciWorker(FibonacciWorker &&other) = delete;

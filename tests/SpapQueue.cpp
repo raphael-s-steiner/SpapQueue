@@ -58,7 +58,7 @@ class DivisorWorker final : public WorkerResource<GlobalQType, LocalQType, numPo
                             std::size_t workerId,
                             std::vector<std::vector<std::size_t>> &ansCounter) :
         WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices, workerId),
-        locAnsCounter_(ansCounter[workerId]){};
+        locAnsCounter_(ansCounter[workerId]){}
 
     DivisorWorker(const DivisorWorker &other) = delete;
     DivisorWorker(DivisorWorker &&other) = delete;
@@ -116,7 +116,7 @@ class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, num
                               std::size_t workerId,
                               std::vector<std::vector<std::size_t>> &ansCounter) :
         WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices, workerId),
-        locAnsCounter_(ansCounter[workerId]){};
+        locAnsCounter_(ansCounter[workerId]){}
 
     FibonacciWorker(const FibonacciWorker &other) = delete;
     FibonacciWorker(FibonacciWorker &&other) = delete;
