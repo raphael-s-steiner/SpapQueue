@@ -23,7 +23,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            make build-essential gcc g++ git libasan libubsan \
+            make build-essential gcc g++ git libasan6 libubsan1 \
             doxygen python3-pip
           pip3 install --upgrade pip
           pip3 install cmake==3.21.3
@@ -62,7 +62,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            make build-essential gcc g++ git libasan libubsan \
+            make build-essential gcc g++ git \
             lcov doxygen python3-pip
           pip3 install --upgrade pip
           pip3 install cmake==3.21.3
