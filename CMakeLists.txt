@@ -70,6 +70,22 @@ target_compile_options(ProjectExecutableFlags INTERFACE
     $<$<CONFIG:RELWITHDEBINFO>:-O2;-g>
 )
 
+# Flag for address sanitizer
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+if (ENABLE_ASAN)
+    message(STATUS "Address sanitizer enabled.")
+    target_compile_options(ProjectExecutableFlags INTERFACE -fsanitize=address)
+    target_link_options(ProjectExecutableFlags INTERFACE -fsanitize=address)
+endif ()
+
+# Flag for undefined behaviour sanitizer
+option(ENABLE_UBSAN "Enable UndefinedBehaviourSanitizer" OFF)
+if (ENABLE_UBSAN)
+    message(STATUS "Undefined behaviour sanitizer enabled.")
+    target_compile_options(ProjectExecutableFlags INTERFACE -fsanitize=undefined)
+    target_link_options(ProjectExecutableFlags INTERFACE -fsanitize=undefined)
+endif ()
+
 # --- Library Definition ---
 add_library(SPAPQueue INTERFACE)
 
