@@ -88,7 +88,7 @@ class SSSPWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts
                          std::vector<std::atomic<distance_type>> &distance) :
         WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices, workerId),
         graph_(graph),
-        distance_(distance){};
+        distance_(distance){}
 
     SSSPWorker(const SSSPWorker &other) = delete;
     SSSPWorker(SSSPWorker &&other) = delete;
