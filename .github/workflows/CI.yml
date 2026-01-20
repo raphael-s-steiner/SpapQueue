@@ -44,12 +44,12 @@ jobs:
           # Capture coverage ONLY from include/
           lcov --capture --directory . \
                --output-file coverage.info \
-               --ignore-errors empty,mismatch \
+               --ignore-errors empty,mismatch,negative \
                --include '*/SpapQueue/include/*'
 
           # Remove unused warnings + ignore tests/apps
-          lcov --remove coverage.info '*/tests/*' '*/apps/*' \
-               --ignore-errors unused,empty,mismatch \
+          lcov --remove coverage.info '*/tests/*' \
+               --ignore-errors unused,empty,mismatch,negative \
                --output-file coverage.info
 
           # Generate HTML report
