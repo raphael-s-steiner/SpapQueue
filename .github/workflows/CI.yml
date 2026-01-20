@@ -35,7 +35,7 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         run: cmake --build . -j$(nproc)
 
-      - name: Run tests
+      - name: Run tests with coverage
         working-directory: ${{ github.workspace }}/build
         run: |
           # Run tests
@@ -96,7 +96,7 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         run: cmake --build . -j$(nproc)
 
-      - name: Run tests with coverage
+      - name: Run tests
         working-directory: ${{ github.workspace }}/build
         run: ctest --output-on-failure --output-junit test_results_release.xml
         continue-on-error: true
@@ -106,6 +106,10 @@ jobs:
         with:
           name: test-results-release
           path: build/test_results_release.xml
+
+      - name: Run benchmark
+        working-directory: ${{ github.workspace }}/build
+        run: make run_BM
 
       - name: Build documentation
         run: |
