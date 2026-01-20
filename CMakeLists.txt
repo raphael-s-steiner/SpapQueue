@@ -71,7 +71,7 @@ target_compile_options(ProjectExecutableFlags INTERFACE
 )
 
 # Flag for address sanitizer
-option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
 if (ENABLE_ASAN)
     message(STATUS "Address sanitizer enabled.")
     target_compile_options(ProjectExecutableFlags INTERFACE -fsanitize=address)
@@ -79,12 +79,20 @@ if (ENABLE_ASAN)
 endif ()
 
 # Flag for undefined behaviour sanitizer
-option(ENABLE_UBSAN "Enable UndefinedBehaviourSanitizer" OFF)
+option(ENABLE_UBSAN "Enable Undefined Behaviour Sanitizer" OFF)
 if (ENABLE_UBSAN)
     message(STATUS "Undefined behaviour sanitizer enabled.")
     target_compile_options(ProjectExecutableFlags INTERFACE -fsanitize=undefined)
     target_link_options(ProjectExecutableFlags INTERFACE -fsanitize=undefined)
 endif ()
+
+# Flag for code coverage
+option(ENABLE_COVERAGE "Enable Code Coverage" OFF)
+if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    message(STATUS "Code coverage enabled")
+    add_compile_options(--coverage -g)
+    add_link_options(--coverage)
+endif()
 
 # --- Library Definition ---
 add_library(SPAPQueue INTERFACE)

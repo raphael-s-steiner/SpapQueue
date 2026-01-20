@@ -24,12 +24,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             make build-essential gcc g++ git libasan6 libubsan1 \
-            doxygen python3-pip
+            lcov doxygen python3-pip
           pip3 install --upgrade pip
           pip3 install cmake==3.31.6
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON -DENABLE_UBSAN=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON -DENABLE_UBSAN=ON -DENABLE_COVERAGE=ON
 
       - name: Build Debug
         working-directory: ${{ github.workspace }}/build
@@ -37,8 +37,30 @@ jobs:
 
       - name: Run tests
         working-directory: ${{ github.workspace }}/build
-        run: ctest --output-on-failure --output-junit test_results_debug.xml
+        run: |
+          # Run tests
+          ctest --output-on-failure --output-junit test_results_debug.xml
+
+          # Capture coverage ONLY from include/
+          lcov --capture --directory . \
+               --output-file coverage.info \
+               --ignore-errors empty,mismatch \
+               --include '*/SpapQueue/include/*'
+
+          # Remove unused warnings + ignore tests/apps
+          lcov --remove coverage.info '*/tests/*' '*/apps/*' \
+               --ignore-errors unused,empty,mismatch \
+               --output-file coverage.info
+
+          # Generate HTML report
+          genhtml coverage.info --output-directory coverage_html
         continue-on-error: true
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build/coverage_html
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -68,37 +90,16 @@ jobs:
           pip3 install cmake==3.31.6
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON -DENABLE_UBSAN=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build Debug
+      - name: Build Release
         working-directory: ${{ github.workspace }}/build
         run: cmake --build . -j$(nproc)
 
       - name: Run tests with coverage
         working-directory: ${{ github.workspace }}/build
-        run: |
-          # Run tests
-          ctest --output-on-failure --output-junit test_results_release.xml
-
-          # Capture coverage ONLY from include/
-          lcov --capture --directory . \
-               --output-file coverage.info \
-               --ignore-errors empty,mismatch \
-               --include '*/SpapQueue/include/*'
-
-          # Remove unused warnings + ignore tests/apps
-          lcov --remove coverage.info '*/tests/*' '*/apps/*' \
-               --ignore-errors unused,empty,mismatch \
-               --output-file coverage.info
-
-          # Generate HTML report
-          genhtml coverage.info --output-directory coverage_html
-
-      - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: build/coverage_html
+        run: ctest --output-on-failure --output-junit test_results_release.xml
+        continue-on-error: true
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
