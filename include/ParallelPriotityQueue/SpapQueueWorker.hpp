@@ -220,7 +220,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(con
  */
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() noexcept {
-    bool successfulPush = false;
+    bool successfulPush;
 
     const std::size_t batch = GlobalQType::netw_.batchSize_[*channelPointer_];
     assert(batch <= static_cast<std::size_t>(std::distance(outBuffer_.begin(), bufferPointer_)));
