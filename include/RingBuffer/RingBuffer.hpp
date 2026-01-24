@@ -51,8 +51,8 @@ class alignas(CACHE_LINE_SIZE) RingBuffer {
     inline std::size_t getTailPosition() const noexcept;
     inline std::size_t getHeadPosition() const noexcept;
 
-    inline void advanceTail(std::size_t n = 1U) noexcept;
-    inline void advanceHead(std::size_t n = 1U) noexcept;
+    inline void advanceTail(const std::size_t n = 1U) noexcept;
+    inline void advanceHead(const std::size_t n = 1U) noexcept;
 
     inline std::optional<T> popItem(const std::size_t position) noexcept;
 
@@ -107,12 +107,12 @@ inline std::size_t RingBuffer<T, N>::getHeadPosition() const noexcept {
 };
 
 template <typename T, std::size_t N>
-inline void RingBuffer<T, N>::advanceTail(std::size_t n) noexcept {
+inline void RingBuffer<T, N>::advanceTail(const std::size_t n) noexcept {
     tailCounter_.fetch_add(n, std::memory_order_release);
 };
 
 template <typename T, std::size_t N>
-inline void RingBuffer<T, N>::advanceHead(std::size_t n) noexcept {
+inline void RingBuffer<T, N>::advanceHead(const std::size_t n) noexcept {
     headCounter_.fetch_add(n, std::memory_order_release);
 };
 

@@ -82,11 +82,11 @@ class WorkerResource {
     virtual void processElement(const value_type val) noexcept = 0;
 
     [[nodiscard("Push may fail when channel is full.\n")]] inline bool push(const value_type val,
-                                                                            std::size_t port) noexcept;
+                                                                            const std::size_t port) noexcept;
     template <class InputIt>
     [[nodiscard("Push may fail when channel is full.\n")]] inline bool push(InputIt first,
                                                                             InputIt last,
-                                                                            std::size_t port) noexcept;
+                                                                            const std::size_t port) noexcept;
 
     inline void pushUnsafe(const value_type val) noexcept;
 
@@ -177,7 +177,7 @@ constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
 
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(const value_type val,
-                                                                    std::size_t port) noexcept {
+                                                                    const std::size_t port) noexcept {
     return inPorts_[port].push(val);
 }
 
@@ -185,7 +185,7 @@ template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 template <class InputIt>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(InputIt first,
                                                                     InputIt last,
-                                                                    std::size_t port) noexcept {
+                                                                    const std::size_t port) noexcept {
     return inPorts_[port].push(first, last);
 }
 
