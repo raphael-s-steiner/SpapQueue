@@ -55,7 +55,7 @@ set(COMMON_CXX_WARNING_FLAGS
     "-Wuninitialized"
     "-Wno-interference-size" # disables warning that std::hardware_destructive_interference_size may depend on hardware, compiler, and flags
     "-Werror"
-#    "-Wnrvo"
+    $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,14>>:-Wnrvo>
 )
 
 # --- Project-specific Compile Flags ---
