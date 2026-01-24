@@ -54,8 +54,6 @@ class alignas(CACHE_LINE_SIZE) RingBuffer {
     inline void advanceTail(const std::size_t n = 1U) noexcept;
     inline void advanceHead(const std::size_t n = 1U) noexcept;
 
-    inline std::optional<T> popItem(const std::size_t position) noexcept;
-
   public:
     RingBuffer() = default;
     RingBuffer(const RingBuffer &other) = delete;
@@ -156,20 +154,17 @@ inline std::size_t RingBuffer<T, N>::occupancy() const noexcept {
 };
 
 template <typename T, std::size_t N>
-inline std::optional<T> RingBuffer<T, N>::popItem(const std::size_t position) noexcept {
-    std::optional<T> ret(data_[position]);
-    advanceTail();
-    return ret;
-}
-
-template <typename T, std::size_t N>
 inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
     const std::size_t tail = tailCounter_.load(std::memory_order_relaxed);
-    const bool hasVal = (cachedHeadCounter_ != tail)
-                        || ((cachedHeadCounter_ = headCounter_.load(std::memory_order_acquire)) != tail);
-
-    std::optional<T> result = hasVal ? popItem(tail % N) : std::optional<T>(std::nullopt);
-    return result;
+    if ((cachedHeadCounter_ != tail)
+        || ((cachedHeadCounter_ = headCounter_.load(std::memory_order_acquire)) != tail)) {
+        const std::size_t pos = tail % N;
+        std::optional<T> val(data_[pos]);
+        advanceTail();
+        return val;
+    } else {
+        return std::optional<T>(std::nullopt);
+    }
 }
 
 template <typename T, std::size_t N>
