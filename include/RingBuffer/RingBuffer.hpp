@@ -160,7 +160,7 @@ inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
     if ((cachedHeadCounter_ != tail)
         || ((cachedHeadCounter_ = headCounter_.load(std::memory_order_acquire)) != tail)) {
         const std::size_t pos = tail % N;
-        result = data_[pos];
+        result.emplace(data_[pos]);
         advanceTail();
     }
     return result;
