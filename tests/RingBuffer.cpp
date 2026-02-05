@@ -312,11 +312,11 @@ TEST(RingBufferTest, Multithread4) {
 }
 
 TEST(RingBufferTest, Alignment) {
-    RingBuffer<int, 5> channel1;
-    EXPECT_EQ(alignof(RingBuffer<int, 5>) % CACHE_LINE_SIZE, 0U);
-    EXPECT_EQ(sizeof(channel1) % CACHE_LINE_SIZE, 0U);
+    static_assert(sizeof(int8_t) == 1U);
 
-    RingBuffer<char, 125> channel2;
+    EXPECT_EQ(alignof(RingBuffer<int, 5>) % CACHE_LINE_SIZE, 0U);
+    EXPECT_EQ(sizeof(RingBuffer<int, 5>) % CACHE_LINE_SIZE, 0U);
+
     EXPECT_EQ(alignof(RingBuffer<char, 125>) % CACHE_LINE_SIZE, 0U);
-    EXPECT_EQ(sizeof(channel2) % CACHE_LINE_SIZE, 0U);
+    EXPECT_EQ(sizeof(RingBuffer<char, 125>) % CACHE_LINE_SIZE, 0U);
 }

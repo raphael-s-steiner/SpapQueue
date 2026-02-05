@@ -21,6 +21,7 @@ limitations under the License.
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cstdint>
 #include <execution>
 #include <iterator>
 #include <limits>
@@ -46,7 +47,7 @@ class alignas(CACHE_LINE_SIZE) RingBuffer {
     alignas(CACHE_LINE_SIZE) std::atomic<std::size_t> headCounter_{N};
     alignas(CACHE_LINE_SIZE) std::size_t cachedTailCounter_{N};
     alignas(CACHE_LINE_SIZE) std::size_t cachedHeadCounter_{N};
-    char padding_[CACHE_LINE_SIZE - sizeof(std::size_t)];
+    int8_t padding_[CACHE_LINE_SIZE - sizeof(std::size_t)];
 
     inline std::size_t getTailPosition() const noexcept;
     inline std::size_t getHeadPosition() const noexcept;
