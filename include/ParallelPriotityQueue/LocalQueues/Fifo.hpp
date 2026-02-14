@@ -22,6 +22,11 @@ limitations under the License.
 
 namespace spapq {
 
+/**
+ * @brief A simple first-in-first-out queue 
+ * 
+ * @tparam T Value type
+ */
 template <typename T>
 class Fifo {
   private:

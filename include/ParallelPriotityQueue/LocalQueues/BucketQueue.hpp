@@ -22,6 +22,13 @@ limitations under the License.
 
 namespace spapq {
 
+/**
+ * @brief A simple bucket queue with priority according to Compare. The smallest element with respect to
+ * Compare has the highest priority.
+ *
+ * @tparam T Value type
+ * @tparam Compare Comparison operator
+ */
 template <typename T, typename Compare = std::less<T>>
 class BucketQueue {
   private:
@@ -57,11 +64,17 @@ bool BucketQueue<T, Compare>::empty() const {
     return cntrs_.empty();
 }
 
+/**
+ * @brief Returns the highest priority element, that is the smallest element with respect to Compare.
+ */
 template <typename T, class Compare>
 T BucketQueue<T, Compare>::top() const {
     return cntrs_.cbegin()->first;
 }
 
+/**
+ * @brief Removes the highest priority element, that is the smallest element with respect to Compare.
+ */
 template <typename T, class Compare>
 void BucketQueue<T, Compare>::pop() {
     --size_;
