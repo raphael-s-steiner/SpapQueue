@@ -23,6 +23,7 @@ limitations under the License.
 
 #include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
 #include "ParallelPriotityQueue/GraphExamples/LineGraph.hpp"
+#include "ParallelPriotityQueue/LocalQueues/BucketQueue.hpp"
 #include "ParallelPriotityQueue/LocalQueues/Fifo.hpp"
 #include "ParallelPriotityQueue/SpapQueue.hpp"
 #include "ParallelPriotityQueue/WorkerExamples/FibonacciWorker.hpp"
@@ -31,8 +32,8 @@ using namespace spapq;
 
 constexpr std::size_t fibonacciTestSize = 34;
 
-template<typename T>
-using LocalQueueType = Fifo<T>; // std::priority_queue<T>
+template <typename T>
+using LocalQueueType = BucketQueue<T, std::greater<T>>;        // or std::priority_queue<T> or Fifo<T>
 
 benchmark::IterationCount fibonacciProcessedElements(std::size_t N) {
     std::vector<benchmark::IterationCount> fibs(N + 1, 1);
@@ -136,13 +137,17 @@ static void BM_SpapQueue_Fibonacci_4_Workers(benchmark::State &state) {
     constexpr std::size_t workers = 4U;
     constexpr std::size_t channels = 8U;
 
+    constexpr std::size_t numaMultiplier = 16U;
+
     constexpr std::array<std::size_t, workers + 1U> vertexPointer = {0, 2, 4, 6, 8};
     constexpr std::array<std::size_t, channels> edgeTargets = {0, 1, 2, 3, 2, 3, 0, 1};
     constexpr std::array<std::size_t, workers> logicalCore = {0, 1, 2, 3};
-    constexpr std::array<std::size_t, channels> multiplicities = {2, 2, 1, 1, 2, 2, 1, 1};
-    constexpr std::array<std::size_t, channels> batchSize = {8, 8, 16, 16, 8, 8, 16, 16};
+    constexpr std::array<std::size_t, channels> multiplicities
+        = {numaMultiplier, numaMultiplier, 1, 1, numaMultiplier, numaMultiplier, 1, 1};
+    constexpr std::array<std::size_t, channels> batchSize
+        = {8, 8, 8 * numaMultiplier, 8 * numaMultiplier, 8, 8, 8 * numaMultiplier, 8 * numaMultiplier};
     constexpr std::size_t enqueueFrequency = 24;
-    constexpr std::size_t channelBufferSize = 64;
+    constexpr std::size_t channelBufferSize = 8 * numaMultiplier;
     constexpr std::size_t maxPushAttempts = 2;
 
     constexpr QNetwork<workers, channels> netw(vertexPointer,
@@ -180,13 +185,15 @@ static void BM_SpapQueue_Fibonacci_8_Workers(benchmark::State &state) {
     constexpr std::size_t workers = 2U;
     constexpr std::size_t channels = 4U;
 
+    constexpr std::size_t numaMultiplier = 8U;
+
     constexpr std::array<std::size_t, workers + 1U> vertexPointer = {0, 2, 4};
     constexpr std::array<std::size_t, channels> edgeTargets = {0, 1, 1, 0};
     constexpr std::array<std::size_t, workers> logicalCore = {0, 1};
     constexpr std::array<std::size_t, channels> multiplicities = {1, 1, 1, 1};
-    constexpr std::array<std::size_t, channels> batchSize = {8, 16, 8, 16};
+    constexpr std::array<std::size_t, channels> batchSize = {8, 8 * numaMultiplier, 8, 8 * numaMultiplier};
     constexpr std::size_t enqueueFrequency = 24;
-    constexpr std::size_t channelBufferSize = 64;
+    constexpr std::size_t channelBufferSize = 8 * numaMultiplier;
     constexpr std::size_t maxPushAttempts = 4;
 
     constexpr QNetwork<workers, channels> netw2(vertexPointer,

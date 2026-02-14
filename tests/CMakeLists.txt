@@ -49,6 +49,7 @@ _add_test( DiscrepancyTables )
 _add_test( SpapQueue )
 _add_test( Concepts )
 _add_test( Fifo )
+_add_test( BucketQueue )
 
 # Custom target to compile all the tests
 add_custom_target( build_tests DEPENDS ${tests_list} )
