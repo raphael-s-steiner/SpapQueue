@@ -23,12 +23,16 @@ limitations under the License.
 
 #include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
 #include "ParallelPriotityQueue/GraphExamples/LineGraph.hpp"
+#include "ParallelPriotityQueue/LocalQueues/Fifo.hpp"
 #include "ParallelPriotityQueue/SpapQueue.hpp"
 #include "ParallelPriotityQueue/WorkerExamples/FibonacciWorker.hpp"
 
 using namespace spapq;
 
 constexpr std::size_t fibonacciTestSize = 34;
+
+template<typename T>
+using LocalQueueType = Fifo<T>; // std::priority_queue<T>
 
 benchmark::IterationCount fibonacciProcessedElements(std::size_t N) {
     std::vector<benchmark::IterationCount> fibs(N + 1, 1);
@@ -62,7 +66,7 @@ static void BM_SpapQueue_Fibonacci_1_Worker(benchmark::State &state) {
                                                channelBufferSize,
                                                maxPushAttempts);
 
-    SpapQueue<std::size_t, netw, FibonacciWorker, std::priority_queue<std::size_t>> globalQ;
+    SpapQueue<std::size_t, netw, FibonacciWorker, LocalQueueType<std::size_t>> globalQ;
 
     for (auto _ : state) {
         state.PauseTiming();
@@ -106,7 +110,7 @@ static void BM_SpapQueue_Fibonacci_2_Workers(benchmark::State &state) {
                                                channelBufferSize,
                                                maxPushAttempts);
 
-    SpapQueue<std::size_t, netw, FibonacciWorker, std::priority_queue<std::size_t>> globalQ;
+    SpapQueue<std::size_t, netw, FibonacciWorker, LocalQueueType<std::size_t>> globalQ;
 
     for (auto _ : state) {
         state.PauseTiming();
@@ -150,7 +154,7 @@ static void BM_SpapQueue_Fibonacci_4_Workers(benchmark::State &state) {
                                                channelBufferSize,
                                                maxPushAttempts);
 
-    SpapQueue<std::size_t, netw, FibonacciWorker, std::priority_queue<std::size_t>> globalQ;
+    SpapQueue<std::size_t, netw, FibonacciWorker, LocalQueueType<std::size_t>> globalQ;
 
     for (auto _ : state) {
         state.PauseTiming();
@@ -196,7 +200,7 @@ static void BM_SpapQueue_Fibonacci_8_Workers(benchmark::State &state) {
 
     constexpr auto netw = LINE_GRAPH(LINE_GRAPH(netw2));
 
-    SpapQueue<std::size_t, netw, FibonacciWorker, std::priority_queue<std::size_t>> globalQ;
+    SpapQueue<std::size_t, netw, FibonacciWorker, LocalQueueType<std::size_t>> globalQ;
 
     for (auto _ : state) {
         state.PauseTiming();
