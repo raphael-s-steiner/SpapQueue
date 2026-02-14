@@ -43,6 +43,30 @@ benchmark::IterationCount fibonacciProcessedElements(std::size_t N) {
     return std::accumulate(fibs.cbegin(), fibs.cend(), 0U);
 }
 
+static void BM_Baseline_Fibonacci_1_Worker(benchmark::State &state) {
+    const std::size_t N = static_cast<std::size_t>(state.range(0));
+
+    LocalQueueType<std::size_t> queue;
+
+    for (auto _ : state) {
+        queue.push(N);
+        while (queue.size() != 0U) {
+            const std::size_t num = queue.top();
+            queue.pop();
+
+            if (num > 0U) { queue.push(num - 1U); }
+            if (num > 1U) { queue.push(num - 2U); }
+        }
+
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(fibonacciProcessedElements(static_cast<std::size_t>(state.range(0)))
+                            * state.iterations());
+}
+
+BENCHMARK(BM_Baseline_Fibonacci_1_Worker)->Arg(fibonacciTestSize)->UseRealTime();
+
 static void BM_SpapQueue_Fibonacci_1_Worker(benchmark::State &state) {
     const std::size_t N = static_cast<std::size_t>(state.range(0));
 
@@ -54,7 +78,7 @@ static void BM_SpapQueue_Fibonacci_1_Worker(benchmark::State &state) {
     constexpr std::array<std::size_t, workers> logicalCore = {0};
     constexpr std::array<std::size_t, channels> multiplicities = {1};
     constexpr std::array<std::size_t, channels> batchSize = {8};
-    constexpr std::size_t enqueueFrequency = 24;
+    constexpr std::size_t enqueueFrequency = 64;
     constexpr std::size_t channelBufferSize = 8;
     constexpr std::size_t maxPushAttempts = 1;
 
@@ -98,9 +122,9 @@ static void BM_SpapQueue_Fibonacci_2_Workers(benchmark::State &state) {
     constexpr std::array<std::size_t, workers> logicalCore = {0, 1};
     constexpr std::array<std::size_t, channels> multiplicities = {2, 1, 2, 1};
     constexpr std::array<std::size_t, channels> batchSize = {8, 16, 8, 16};
-    constexpr std::size_t enqueueFrequency = 24;
+    constexpr std::size_t enqueueFrequency = 64;
     constexpr std::size_t channelBufferSize = 64;
-    constexpr std::size_t maxPushAttempts = 2;
+    constexpr std::size_t maxPushAttempts = 1;
 
     constexpr QNetwork<workers, channels> netw(vertexPointer,
                                                edgeTargets,
@@ -146,9 +170,9 @@ static void BM_SpapQueue_Fibonacci_4_Workers(benchmark::State &state) {
         = {numaMultiplier, numaMultiplier, 1, 1, numaMultiplier, numaMultiplier, 1, 1};
     constexpr std::array<std::size_t, channels> batchSize
         = {8, 8, 8 * numaMultiplier, 8 * numaMultiplier, 8, 8, 8 * numaMultiplier, 8 * numaMultiplier};
-    constexpr std::size_t enqueueFrequency = 24;
+    constexpr std::size_t enqueueFrequency = 64;
     constexpr std::size_t channelBufferSize = 8 * numaMultiplier;
-    constexpr std::size_t maxPushAttempts = 2;
+    constexpr std::size_t maxPushAttempts = 1;
 
     constexpr QNetwork<workers, channels> netw(vertexPointer,
                                                edgeTargets,
@@ -192,9 +216,9 @@ static void BM_SpapQueue_Fibonacci_8_Workers(benchmark::State &state) {
     constexpr std::array<std::size_t, workers> logicalCore = {0, 1};
     constexpr std::array<std::size_t, channels> multiplicities = {1, 1, 1, 1};
     constexpr std::array<std::size_t, channels> batchSize = {8, 8 * numaMultiplier, 8, 8 * numaMultiplier};
-    constexpr std::size_t enqueueFrequency = 24;
+    constexpr std::size_t enqueueFrequency = 64;
     constexpr std::size_t channelBufferSize = 8 * numaMultiplier;
-    constexpr std::size_t maxPushAttempts = 4;
+    constexpr std::size_t maxPushAttempts = 1;
 
     constexpr QNetwork<workers, channels> netw2(vertexPointer,
                                                 edgeTargets,

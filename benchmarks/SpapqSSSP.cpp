@@ -88,6 +88,55 @@ CSRGraph makeGraph(const unsigned numVertices, const unsigned edgesPerVertex, co
     return graph;
 };
 
+static void BM_Baseline_SSSP_1_Worker(benchmark::State &state) {
+    const unsigned nVerts = static_cast<unsigned>(state.range(0));
+    const unsigned ePerVerts = static_cast<unsigned>(state.range(1));
+    const std::size_t seed = static_cast<std::size_t>(state.range(2));
+
+    const CSRGraph graph = makeGraph(nVerts, ePerVerts, seed);
+    std::vector<unsigned> distances(nVerts);
+
+    std::priority_queue<std::array<unsigned, 2U>,
+                        std::vector<std::array<unsigned, 2U>>,
+                        std::greater<std::array<unsigned, 2U>>>
+        queue;
+
+    for (auto _ : state) {
+        state.PauseTiming();
+
+        distances = std::vector<unsigned>(nVerts, std::numeric_limits<unsigned>::max());
+        distances[0] = 0U;
+        queue.emplace(std::array<unsigned, 2U>{0U, 0U});
+
+        state.ResumeTiming();
+
+        while (not queue.empty()) {
+            const auto [dist, vertex] = queue.top();
+            queue.pop();
+
+            if (dist == distances[vertex]) {
+                const unsigned newDist = dist + 1U;
+
+                for (auto indx = graph.sourcePointers_[vertex]; indx < graph.sourcePointers_[vertex + 1U];
+                     ++indx) {
+                    const unsigned tgt = graph.edgeTargets_[indx];
+
+                    if (newDist < distances[tgt]) {
+                        distances[tgt] = newDist;
+                        queue.emplace(std::array<unsigned, 2U>{newDist, tgt});
+                    }
+                }
+            }
+        }
+
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(state.range(0) * state.iterations());
+}
+
+BENCHMARK(BM_Baseline_SSSP_1_Worker)->Args({numVertices_, edgesPerVertex_, seedNumber_})->UseRealTime();
+
 static void BM_SpapQueue_SSSP_1_Worker(benchmark::State &state) {
     constexpr std::size_t workers = 1U;
     constexpr std::size_t channels = 1U;
@@ -97,7 +146,7 @@ static void BM_SpapQueue_SSSP_1_Worker(benchmark::State &state) {
     constexpr std::array<std::size_t, workers> logicalCore = {0};
     constexpr std::array<std::size_t, channels> multiplicities = {1};
     constexpr std::array<std::size_t, channels> batchSize = {8};
-    constexpr std::size_t enqueueFrequency = 24;
+    constexpr std::size_t enqueueFrequency = 32;
     constexpr std::size_t channelBufferSize = 8;
     constexpr std::size_t maxPushAttempts = 1;
 
@@ -160,7 +209,7 @@ static void BM_SpapQueue_SSSP_2_Workers(benchmark::State &state) {
     constexpr std::array<std::size_t, channels> batchSize = {8, 16, 8, 16};
     constexpr std::size_t enqueueFrequency = 24;
     constexpr std::size_t channelBufferSize = 64;
-    constexpr std::size_t maxPushAttempts = 2;
+    constexpr std::size_t maxPushAttempts = 1;
 
     constexpr QNetwork<workers, channels> netw(vertexPointer,
                                                edgeTargets,
@@ -221,7 +270,7 @@ static void BM_SpapQueue_SSSP_4_Workers(benchmark::State &state) {
     constexpr std::array<std::size_t, channels> batchSize = {8, 8, 16, 16, 8, 8, 16, 16};
     constexpr std::size_t enqueueFrequency = 24;
     constexpr std::size_t channelBufferSize = 64;
-    constexpr std::size_t maxPushAttempts = 2;
+    constexpr std::size_t maxPushAttempts = 1;
 
     constexpr QNetwork<workers, channels> netw(vertexPointer,
                                                edgeTargets,
@@ -282,7 +331,7 @@ static void BM_SpapQueue_SSSP_8_Workers(benchmark::State &state) {
     constexpr std::array<std::size_t, channels> batchSize = {8, 16, 8, 16};
     constexpr std::size_t enqueueFrequency = 24;
     constexpr std::size_t channelBufferSize = 64;
-    constexpr std::size_t maxPushAttempts = 4;
+    constexpr std::size_t maxPushAttempts = 1;
 
     constexpr QNetwork<workers, channels> netw2(vertexPointer,
                                                 edgeTargets,
