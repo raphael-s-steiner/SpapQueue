@@ -56,13 +56,6 @@ class alignas(CACHE_LINE_SIZE) RingBuffer {
     inline void advanceHead(const std::size_t n = 1U) noexcept;
 
   public:
-    RingBuffer() = default;
-    RingBuffer(const RingBuffer &other) = delete;
-    RingBuffer(RingBuffer &&other) = delete;
-    RingBuffer &operator=(const RingBuffer &other) = delete;
-    RingBuffer &operator=(RingBuffer &&other) = delete;
-    ~RingBuffer() = default;
-
     inline constexpr std::size_t capacity() const noexcept;
 
     inline bool empty() const noexcept;
@@ -75,6 +68,13 @@ class alignas(CACHE_LINE_SIZE) RingBuffer {
     template <class InputIt>
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool push(InputIt first,
                                                                           InputIt last) noexcept;
+
+    RingBuffer() = default;
+    RingBuffer(const RingBuffer &other) = delete;
+    RingBuffer(RingBuffer &&other) = delete;
+    RingBuffer &operator=(const RingBuffer &other) = delete;
+    RingBuffer &operator=(RingBuffer &&other) = delete;
+    ~RingBuffer() = default;
 
     // assertions
     static_assert(N > 0U, "No trivial RingBuffers allowed!\n");
