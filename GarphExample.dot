@@ -1,0 +1,138 @@
+digraph QNetwork{
+    node [shape=plaintext;]
+    edge [shape=plaintext; arrowhead="vee"; fontsize="8";]
+
+    subgraph Info{
+    layer="0";
+
+    NetworkInfo [
+        label=<
+            <table border='3' cellborder='1' cellspacing='4'>
+                <tr><td align="center">QNetwork Information</td></tr>
+                <tr><td align="center"><table border='0' cellborder='0' cellspacing='1'>
+                    <tr><td align="left">Number of Workers</td><td align="right">4</td></tr>
+                    <tr><td align="left">Number of Channels</td><td align="right">4</td></tr>
+                    <tr><td align="left">Buffer Size</td><td align="right">16</td></tr>
+                    <tr><td align="left">Enqueue Frequency</td><td align="right">8</td></tr>
+                    <tr><td align="left">Max. Push Attempts</td><td align="right">8</td></tr>
+                </table></td></tr>
+            </table>
+        >
+    ];
+    }
+
+    subgraph cluster_network{
+    label="QNetwork";
+    layer="1";
+    margin="30";
+
+    Worker0 [
+        label=<
+            <table border='2' cellborder='1' cellspacing='2'>
+                <tr><td align="center" colspan='2'><b>Worker 0</b></td></tr>
+                <tr><td align="left">Core</td><td align="right">0</td></tr>
+                <tr><td align="left">Load</td><td align="right">0.25</td></tr>
+            </table>
+        >
+    ];
+
+    Worker1 [
+        label=<
+            <table border='2' cellborder='1' cellspacing='2'>
+                <tr><td align="center" colspan='2'><b>Worker 1</b></td></tr>
+                <tr><td align="left">Core</td><td align="right">1</td></tr>
+                <tr><td align="left">Load</td><td align="right">0.25</td></tr>
+            </table>
+        >
+    ];
+
+    Worker2 [
+        label=<
+            <table border='2' cellborder='1' cellspacing='2'>
+                <tr><td align="center" colspan='2'><b>Worker 2</b></td></tr>
+                <tr><td align="left">Core</td><td align="right">2</td></tr>
+                <tr><td align="left">Load</td><td align="right">0.25</td></tr>
+            </table>
+        >
+    ];
+
+    Worker3 [
+        label=<
+            <table border='2' cellborder='1' cellspacing='2'>
+                <tr><td align="center" colspan='2'><b>Worker 3</b></td></tr>
+                <tr><td align="left">Core</td><td align="right">3</td></tr>
+                <tr><td align="left">Load</td><td align="right">0.25</td></tr>
+            </table>
+        >
+    ];
+
+    Worker0 -> Worker0 [
+        label=<
+            <table border='0' cellborder='1' cellspacing='0'>
+                <tr><td align="left">Mult.</td><td align="right">1</td></tr>
+                <tr><td align="left">Batch</td><td align="right">4</td></tr>
+            </table>
+        >
+    ];
+    Worker0 -> Worker1 [
+        label=<
+            <table border='0' cellborder='1' cellspacing='0'>
+                <tr><td align="left">Mult.</td><td align="right">1</td></tr>
+                <tr><td align="left">Batch</td><td align="right">4</td></tr>
+            </table>
+        >
+    ];
+
+    Worker1 -> Worker2 [
+        label=<
+            <table border='0' cellborder='1' cellspacing='0'>
+                <tr><td align="left">Mult.</td><td align="right">1</td></tr>
+                <tr><td align="left">Batch</td><td align="right">8</td></tr>
+            </table>
+        >
+    ];
+    Worker1 -> Worker3 [
+        label=<
+            <table border='0' cellborder='1' cellspacing='0'>
+                <tr><td align="left">Mult.</td><td align="right">1</td></tr>
+                <tr><td align="left">Batch</td><td align="right">8</td></tr>
+            </table>
+        >
+    ];
+
+    Worker2 -> Worker2 [
+        label=<
+            <table border='0' cellborder='1' cellspacing='0'>
+                <tr><td align="left">Mult.</td><td align="right">1</td></tr>
+                <tr><td align="left">Batch</td><td align="right">4</td></tr>
+            </table>
+        >
+    ];
+    Worker2 -> Worker3 [
+        label=<
+            <table border='0' cellborder='1' cellspacing='0'>
+                <tr><td align="left">Mult.</td><td align="right">1</td></tr>
+                <tr><td align="left">Batch</td><td align="right">4</td></tr>
+            </table>
+        >
+    ];
+
+    Worker3 -> Worker0 [
+        label=<
+            <table border='0' cellborder='1' cellspacing='0'>
+                <tr><td align="left">Mult.</td><td align="right">1</td></tr>
+                <tr><td align="left">Batch</td><td align="right">8</td></tr>
+            </table>
+        >
+    ];
+    Worker3 -> Worker1 [
+        label=<
+            <table border='0' cellborder='1' cellspacing='0'>
+                <tr><td align="left">Mult.</td><td align="right">1</td></tr>
+                <tr><td align="left">Batch</td><td align="right">8</td></tr>
+            </table>
+        >
+    ];
+
+    }
+}
