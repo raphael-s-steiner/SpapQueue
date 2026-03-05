@@ -59,8 +59,8 @@ class WorkerResource {
     const std::size_t workerId_;        ///< Worker Id in the global queue.
     std::size_t localCount_{0U};        ///< A partial account of the number of tasks in the global queue.
     GlobalQType &globalQueue_;          ///< Reference to the global queue.
-    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator
-        bufferPointer_;        ///< Pointer to the next free spot in the outBuffer_.
+    std::size_t bufferHead_{0U};        ///< Head of out ring buffer
+    std::size_t bufferTail_{0U};        ///< Tail of out ring buffer
     typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
         channelPointer_;        ///< Pointer to the next outgoing channel.
     const typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
@@ -75,8 +75,7 @@ class WorkerResource {
     inline void decrGlobalCount() noexcept;
 
     [[nodiscard("Push may fail when channel is full.\n")]] inline bool pushOutBuffer() noexcept;
-    inline void pushOutBufferSelf(
-        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) noexcept;
+    inline void pushOutBufferSelf(const std::size_t numElements) noexcept;
 
     inline void enqueueInChannels() noexcept;
     virtual void processElement(const value_type val) noexcept = 0;
@@ -121,7 +120,10 @@ class WorkerResource {
  * @see SpapQueue
  * @see WorkerResource
  */
-template <template <class, BasicQueue, std::size_t> class WorkerTemplate, class GlobalQType, BasicQueue LocalQType, std::size_t N>
+template <template <class, BasicQueue, std::size_t> class WorkerTemplate,
+          class GlobalQType,
+          BasicQueue LocalQType,
+          std::size_t N>
 consteval bool isDerivedWorkerResource() {
     static_assert(N <= GlobalQType::netw_.numWorkers_);
 
@@ -143,7 +145,10 @@ consteval bool isDerivedWorkerResource() {
  * @tparam LocalQType Worker local queue type.
  * @tparam N Tuple of first N workers.
  */
-template <template <class, BasicQueue, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType, std::size_t N>
+template <template <class, BasicQueue, std::size_t> class WorkerTemplate,
+          class GlobalQType,
+          class LocalQType,
+          std::size_t N>
 struct WorkerCollectiveHelper {
     static_assert(N <= GlobalQType::netw_.numWorkers_);
     template <typename... Args>
@@ -170,7 +175,6 @@ constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
         tables::extendTable<tables::maxTableSize<GlobalQType::netw_>(), channelIndicesLength>(channelIndices)),
     workerId_(workerId),
     globalQueue_(globalQueue),
-    bufferPointer_(outBuffer_.begin()),
     channelPointer_(channelIndices_.cbegin()),
     channelTableEndPointer_(std::next(channelIndices_.cbegin(), channelIndicesLength)),
     queue_(std::forward<Args>(localQargs)...) { }
@@ -196,22 +200,21 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(InputIt firs
  */
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(const value_type val) noexcept {
-    assert(bufferPointer_ != outBuffer_.end());
+    assert(bufferTail_ <= bufferHead_);
+    assert(bufferHead_ < bufferTail_ + GlobalQType::netw_.maxBatchSize());
 
     incrGlobalCount();
-    *bufferPointer_ = val;
-    ++bufferPointer_;
+    outBuffer_[bufferHead_ % GlobalQType::netw_.maxBatchSize()] = val;
+    ++bufferHead_;
 
     std::size_t maxAttempts = GlobalQType::netw_.maxPushAttempts_;
-    while (static_cast<std::size_t>(std::distance(outBuffer_.begin(), bufferPointer_))
-               >= GlobalQType::netw_.batchSize_[*channelPointer_]
-           && maxAttempts > 0U) {
+    while (bufferHead_ - bufferTail_ >= GlobalQType::netw_.batchSize_[*channelPointer_] && maxAttempts > 0U) {
         if (not pushOutBuffer()) { --maxAttempts; }
 
         ++channelPointer_;
         if (channelPointer_ == channelTableEndPointer_) { channelPointer_ = channelIndices_.cbegin(); }
     }
-    if (maxAttempts == 0U) [[unlikely]] { pushOutBufferSelf(outBuffer_.begin()); }
+    if (maxAttempts == 0U) [[unlikely]] { pushOutBufferSelf(bufferHead_ - bufferTail_); }
 }
 
 /**
@@ -223,20 +226,43 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() n
     bool successfulPush;
 
     const std::size_t batch = GlobalQType::netw_.batchSize_[*channelPointer_];
-    assert(batch <= static_cast<std::size_t>(std::distance(outBuffer_.begin(), bufferPointer_)));
-    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBegin = std::prev(
-        bufferPointer_,
-        static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
-            batch));
+    assert(batch <= bufferHead_ - bufferTail_);
 
     const std::size_t targetWorker = GlobalQType::netw_.edgeTargets_[*channelPointer_];
     if (targetWorker == GlobalQType::netw_.numWorkers_) {        // netw.numWorkers_ is reserved for self-push
-        pushOutBufferSelf(itBegin);
+        pushOutBufferSelf(batch);
         successfulPush = true;
     } else {
+        const std::size_t reducedTail = bufferTail_ % GlobalQType::netw_.maxBatchSize();
+        const std::size_t numElementsFirstPush
+            = std::min(GlobalQType::netw_.maxBatchSize() - reducedTail, batch);
+        const std::size_t numElementsSecondPush = batch - numElementsFirstPush;
+
+        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBeginFirst
+            = std::next(
+                outBuffer_.begin(),
+                static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+                    reducedTail));
+        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itEndFirst = std::next(
+            itBeginFirst,
+            static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+                numElementsFirstPush));
+        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itEndSecond
+            = std::next(
+                outBuffer_.begin(),
+                static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+                    numElementsSecondPush));
+
         const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
-        successfulPush = globalQueue_.pushInternal(itBegin, bufferPointer_, targetWorker, port);
-        if (successfulPush) { bufferPointer_ = itBegin; }
+        successfulPush = globalQueue_.pushInternal(itBeginFirst, itEndFirst, targetWorker, port);
+        if (successfulPush) { bufferTail_ += numElementsFirstPush; }
+
+        if (numElementsSecondPush > 0U) {
+            const bool successfulSecondPush
+                = globalQueue_.pushInternal(outBuffer_.begin(), itEndSecond, targetWorker, port);
+            successfulPush |= successfulSecondPush;
+            if (successfulSecondPush) { bufferTail_ += numElementsSecondPush; };
+        }
     }
 
     return successfulPush;
@@ -246,10 +272,11 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() n
  * @brief Pushes all task from (including) fromPointer in the outbuffer to the local queue.
  *
  * @param fromPointer
+ * @param toPointer
  */
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf(
-    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) noexcept {
+    const std::size_t numElements) noexcept {
     constexpr bool hasBatchPush
         = requires (LocalQType &q,
                     typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator first,
@@ -257,13 +284,34 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf
               q.push(first, last);
           };
 
+    const std::size_t reducedTail = bufferTail_ % GlobalQType::netw_.maxBatchSize();
+    const std::size_t numElementsFirstPush
+        = std::min(GlobalQType::netw_.maxBatchSize() - reducedTail, numElements);
+    const std::size_t numElementsSecondPush = numElements - numElementsFirstPush;
+
+    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBeginFirst
+        = std::next(
+            outBuffer_.begin(),
+            static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+                reducedTail));
+    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itEndFirst = std::next(
+        itBeginFirst,
+        static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+            numElementsFirstPush));
+    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itEndSecond = std::next(
+        outBuffer_.begin(),
+        static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+            numElementsSecondPush));
+
     if constexpr (hasBatchPush) {
-        auto it = fromPointer;
-        queue_.push(it, bufferPointer_);
+        queue_.push(itBeginFirst, itEndFirst);
+        queue_.push(outBuffer_.begin(), itEndSecond);
     } else {
-        for (auto it = fromPointer; it != bufferPointer_; ++it) { queue_.push(*it); }
+        for (auto it = itBeginFirst; it != itEndFirst; ++it) { queue_.push(*it); }
+        for (auto it = outBuffer_.begin(); it != itEndSecond; ++it) { queue_.push(*it); }
     }
-    bufferPointer_ = fromPointer;
+
+    bufferTail_ += numElements;
 }
 
 /**
@@ -306,7 +354,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_tok
             ++cntr;
         }
         enqueueInChannels();
-        pushOutBufferSelf(outBuffer_.begin());
+        pushOutBufferSelf(bufferHead_ - bufferTail_);
     }
 }
 
