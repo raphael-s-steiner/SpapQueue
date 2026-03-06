@@ -50,11 +50,11 @@ class WorkerResource {
 
   private:
     const std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>
-        channelIndices_;                                                         ///< Order of outgoing
-                                                                                 ///< channels to push to.
+        channelIndices_;        ///< Order of outgoing
+                                ///< channels to push to.
     std::array<value_type, 2U * GlobalQType::netw_.maxBatchSize()> outBuffer_;        ///< Small buffer before
-                                                                                 ///< pushing to outgoing
-                                                                                 ///< channel.
+                                                                                      ///< pushing to outgoing
+                                                                                      ///< channel.
 
     const std::size_t workerId_;        ///< Worker Id in the global queue.
     std::size_t localCount_{0U};        ///< A partial account of the number of tasks in the global queue.
@@ -234,24 +234,16 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() n
         successfulPush = true;
     } else {
         const std::size_t reducedTail = bufferTail_ % outBuffer_.size();
-        const std::size_t numElementsFirstPush
-            = std::min(outBuffer_.size() - reducedTail, batch);
+        const std::size_t numElementsFirstPush = std::min(outBuffer_.size() - reducedTail, batch);
         const std::size_t numElementsSecondPush = batch - numElementsFirstPush;
 
-        const typename std::array<value_type, outBuffer_.size()>::iterator itBeginFirst
-            = std::next(
-                outBuffer_.begin(),
-                static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
-                    reducedTail));
-        const typename std::array<value_type, outBuffer_.size()>::iterator itEndFirst = std::next(
-            itBeginFirst,
-            static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
-                numElementsFirstPush));
-        const typename std::array<value_type, outBuffer_.size()>::iterator itEndSecond
-            = std::next(
-                outBuffer_.begin(),
-                static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
-                    numElementsSecondPush));
+        const auto itBeginFirst = std::next(
+            outBuffer_.begin(), static_cast<typename decltype(outBuffer_)::difference_type>(reducedTail));
+        const auto itEndFirst = std::next(
+            itBeginFirst, static_cast<typename decltype(outBuffer_)::difference_type>(numElementsFirstPush));
+        const auto itEndSecond
+            = std::next(outBuffer_.begin(),
+                        static_cast<typename decltype(outBuffer_)::difference_type>(numElementsSecondPush));
 
         const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
         successfulPush = globalQueue_.pushInternal(itBeginFirst, itEndFirst, targetWorker, port);
@@ -278,29 +270,20 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf
     const std::size_t numElements) noexcept {
     constexpr bool hasBatchPush
         = requires (LocalQType &q,
-                    typename std::array<value_type, outBuffer_.size()>::iterator first,
-                    typename std::array<value_type, outBuffer_.size()>::iterator last) {
-              q.push(first, last);
-          };
+                    typename decltype(outBuffer_)::iterator first,
+                    typename decltype(outBuffer_)::iterator last) { q.push(first, last); };
 
     const std::size_t reducedTail = bufferTail_ % outBuffer_.size();
-    const std::size_t numElementsFirstPush
-        = std::min(outBuffer_.size() - reducedTail, numElements);
+    const std::size_t numElementsFirstPush = std::min(outBuffer_.size() - reducedTail, numElements);
     const std::size_t numElementsSecondPush = numElements - numElementsFirstPush;
 
-    const typename std::array<value_type, outBuffer_.size()>::iterator itBeginFirst
-        = std::next(
-            outBuffer_.begin(),
-            static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
-                reducedTail));
-    const typename std::array<value_type, outBuffer_.size()>::iterator itEndFirst = std::next(
-        itBeginFirst,
-        static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
-            numElementsFirstPush));
-    const typename std::array<value_type, outBuffer_.size()>::iterator itEndSecond = std::next(
-        outBuffer_.begin(),
-        static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
-            numElementsSecondPush));
+    const auto itBeginFirst = std::next(
+        outBuffer_.begin(), static_cast<typename decltype(outBuffer_)::difference_type>(reducedTail));
+    const auto itEndFirst = std::next(
+        itBeginFirst, static_cast<typename decltype(outBuffer_)::difference_type>(numElementsFirstPush));
+    const auto itEndSecond
+        = std::next(outBuffer_.begin(),
+                    static_cast<typename decltype(outBuffer_)::difference_type>(numElementsSecondPush));
 
     if constexpr (hasBatchPush) {
         queue_.push(itBeginFirst, itEndFirst);
