@@ -271,8 +271,7 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() n
 /**
  * @brief Pushes all task from (including) fromPointer in the outbuffer to the local queue.
  *
- * @param fromPointer
- * @param toPointer
+ * @param numElements
  */
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf(
