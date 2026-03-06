@@ -59,8 +59,8 @@ class WorkerResource {
     const std::size_t workerId_;        ///< Worker Id in the global queue.
     std::size_t localCount_{0U};        ///< A partial account of the number of tasks in the global queue.
     GlobalQType &globalQueue_;          ///< Reference to the global queue.
-    std::size_t bufferHead_{0U};        ///< Head of out ring buffer
-    std::size_t bufferTail_{0U};        ///< Tail of out ring buffer
+    std::size_t bufferHead_{0U};        ///< Head of out ring buffer.
+    std::size_t bufferTail_{0U};        ///< Tail of out ring buffer.
     typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
         channelPointer_;        ///< Pointer to the next outgoing channel.
     const typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
