@@ -52,7 +52,7 @@ class WorkerResource {
     const std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>
         channelIndices_;                                                         ///< Order of outgoing
                                                                                  ///< channels to push to.
-    std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;        ///< Small buffer before
+    std::array<value_type, 2U * GlobalQType::netw_.maxBatchSize()> outBuffer_;        ///< Small buffer before
                                                                                  ///< pushing to outgoing
                                                                                  ///< channel.
 
@@ -201,10 +201,10 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(InputIt firs
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(const value_type val) noexcept {
     assert(bufferTail_ <= bufferHead_);
-    assert(bufferHead_ < bufferTail_ + GlobalQType::netw_.maxBatchSize());
+    assert(bufferHead_ < bufferTail_ + outBuffer_.size());
 
     incrGlobalCount();
-    outBuffer_[bufferHead_ % GlobalQType::netw_.maxBatchSize()] = val;
+    outBuffer_[bufferHead_ % outBuffer_.size()] = val;
     ++bufferHead_;
 
     std::size_t maxAttempts = GlobalQType::netw_.maxPushAttempts_;
@@ -233,24 +233,24 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() n
         pushOutBufferSelf(batch);
         successfulPush = true;
     } else {
-        const std::size_t reducedTail = bufferTail_ % GlobalQType::netw_.maxBatchSize();
+        const std::size_t reducedTail = bufferTail_ % outBuffer_.size();
         const std::size_t numElementsFirstPush
-            = std::min(GlobalQType::netw_.maxBatchSize() - reducedTail, batch);
+            = std::min(outBuffer_.size() - reducedTail, batch);
         const std::size_t numElementsSecondPush = batch - numElementsFirstPush;
 
-        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBeginFirst
+        const typename std::array<value_type, outBuffer_.size()>::iterator itBeginFirst
             = std::next(
                 outBuffer_.begin(),
-                static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+                static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
                     reducedTail));
-        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itEndFirst = std::next(
+        const typename std::array<value_type, outBuffer_.size()>::iterator itEndFirst = std::next(
             itBeginFirst,
-            static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+            static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
                 numElementsFirstPush));
-        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itEndSecond
+        const typename std::array<value_type, outBuffer_.size()>::iterator itEndSecond
             = std::next(
                 outBuffer_.begin(),
-                static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+                static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
                     numElementsSecondPush));
 
         const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
@@ -278,28 +278,28 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf
     const std::size_t numElements) noexcept {
     constexpr bool hasBatchPush
         = requires (LocalQType &q,
-                    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator first,
-                    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator last) {
+                    typename std::array<value_type, outBuffer_.size()>::iterator first,
+                    typename std::array<value_type, outBuffer_.size()>::iterator last) {
               q.push(first, last);
           };
 
-    const std::size_t reducedTail = bufferTail_ % GlobalQType::netw_.maxBatchSize();
+    const std::size_t reducedTail = bufferTail_ % outBuffer_.size();
     const std::size_t numElementsFirstPush
-        = std::min(GlobalQType::netw_.maxBatchSize() - reducedTail, numElements);
+        = std::min(outBuffer_.size() - reducedTail, numElements);
     const std::size_t numElementsSecondPush = numElements - numElementsFirstPush;
 
-    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBeginFirst
+    const typename std::array<value_type, outBuffer_.size()>::iterator itBeginFirst
         = std::next(
             outBuffer_.begin(),
-            static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+            static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
                 reducedTail));
-    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itEndFirst = std::next(
+    const typename std::array<value_type, outBuffer_.size()>::iterator itEndFirst = std::next(
         itBeginFirst,
-        static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+        static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
             numElementsFirstPush));
-    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itEndSecond = std::next(
+    const typename std::array<value_type, outBuffer_.size()>::iterator itEndSecond = std::next(
         outBuffer_.begin(),
-        static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
+        static_cast<typename std::array<value_type, outBuffer_.size()>::difference_type>(
             numElementsSecondPush));
 
     if constexpr (hasBatchPush) {
