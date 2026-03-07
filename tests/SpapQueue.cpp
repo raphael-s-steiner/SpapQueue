@@ -640,7 +640,7 @@ TEST(SpapQueueTest, FibonacciHeterogeneousWorkers) {
 }
 
 TEST(SpapQueueTest, FibonacciHeterogeneousWorkersBatch) {
-    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1}, {0, 1}, {1, 2, 1}, {4, 8, 8});
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1}, {0, 1}, {1, 2, 1}, {4, 8, 4});
 
     std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
                                                      std::vector<std::size_t>(fibonacciTestSize + 1, 0));
@@ -663,6 +663,48 @@ TEST(SpapQueueTest, FibonacciHeterogeneousWorkersBatch) {
 
 TEST(SpapQueueTest, SSSPSingleWorker) {
     constexpr QNetwork<1, 1> netw = FULLY_CONNECTED_GRAPH<1U>();
+
+    SpapQueue<std::array<unsigned, 2U>,
+              netw,
+              SSSPWorker,
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
+        globalQ;
+
+    const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
+    const unsigned nVerts = SSSPTorusSideLength * SSSPTorusSideLength * SSSPTorusSideLength;
+
+    std::vector<std::atomic<unsigned>> distances(nVerts);
+    for (auto &dist : distances) {
+        dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
+    }
+    distances[0].store(0U, std::memory_order_relaxed);
+
+    EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
+    globalQ.pushBeforeProcessing({0U, 0U}, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    const unsigned sideLengthSqr = SSSPTorusSideLength * SSSPTorusSideLength;
+
+    for (unsigned i = 0U; i < SSSPTorusSideLength; ++i) {
+        for (unsigned j = 0U; j < SSSPTorusSideLength; ++j) {
+            for (unsigned k = 0U; k < SSSPTorusSideLength; ++k) {
+                const unsigned vert = k + (j * SSSPTorusSideLength) + (i * sideLengthSqr);
+
+                const unsigned dist = std::min(k, SSSPTorusSideLength - k)
+                                      + std::min(j, SSSPTorusSideLength - j)
+                                      + std::min(i, SSSPTorusSideLength - i);
+
+                EXPECT_EQ(distances[vert].load(std::memory_order_relaxed), dist);
+            }
+        }
+    }
+}
+
+TEST(SpapQueueTest, SSSPSingleWorkerBatch) {
+    constexpr QNetwork<1, 1> netw({0, 1}, {0}, {0}, {1}, {8});
 
     SpapQueue<std::array<unsigned, 2U>,
               netw,
@@ -745,8 +787,96 @@ TEST(SpapQueueTest, SSSPHomogeneousWorkers) {
     }
 }
 
+TEST(SpapQueueTest, SSSPHomogeneousWorkersBatch) {
+    constexpr QNetwork<4, 16> netw({0, 4, 8, 12, 16},
+                                   {0, 1, 2, 3, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2},
+                                   {0, 1, 2, 3},
+                                   {2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1},
+                                   {4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8});
+
+    SpapQueue<std::array<unsigned, 2U>,
+              netw,
+              SSSPWorker,
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
+        globalQ;
+
+    const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
+    const unsigned nVerts = SSSPTorusSideLength * SSSPTorusSideLength * SSSPTorusSideLength;
+
+    std::vector<std::atomic<unsigned>> distances(nVerts);
+    for (auto &dist : distances) {
+        dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
+    }
+    distances[0].store(0U, std::memory_order_relaxed);
+
+    EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
+    globalQ.pushBeforeProcessing({0U, 0U}, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    const unsigned sideLengthSqr = SSSPTorusSideLength * SSSPTorusSideLength;
+
+    for (unsigned i = 0U; i < SSSPTorusSideLength; ++i) {
+        for (unsigned j = 0U; j < SSSPTorusSideLength; ++j) {
+            for (unsigned k = 0U; k < SSSPTorusSideLength; ++k) {
+                const unsigned vert = k + (j * SSSPTorusSideLength) + (i * sideLengthSqr);
+
+                const unsigned dist = std::min(k, SSSPTorusSideLength - k)
+                                      + std::min(j, SSSPTorusSideLength - j)
+                                      + std::min(i, SSSPTorusSideLength - i);
+
+                EXPECT_EQ(distances[vert].load(std::memory_order_relaxed), dist);
+            }
+        }
+    }
+}
+
 TEST(SpapQueueTest, SSSPHeterogeneousWorkers) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
+
+    SpapQueue<std::array<unsigned, 2U>,
+              netw,
+              SSSPWorker,
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
+        globalQ;
+
+    const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
+    const unsigned nVerts = SSSPTorusSideLength * SSSPTorusSideLength * SSSPTorusSideLength;
+
+    std::vector<std::atomic<unsigned>> distances(nVerts);
+    for (auto &dist : distances) {
+        dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
+    }
+    distances[0].store(0U, std::memory_order_relaxed);
+
+    EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
+    globalQ.pushBeforeProcessing({0U, 0U}, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    const unsigned sideLengthSqr = SSSPTorusSideLength * SSSPTorusSideLength;
+
+    for (unsigned i = 0U; i < SSSPTorusSideLength; ++i) {
+        for (unsigned j = 0U; j < SSSPTorusSideLength; ++j) {
+            for (unsigned k = 0U; k < SSSPTorusSideLength; ++k) {
+                const unsigned vert = k + (j * SSSPTorusSideLength) + (i * sideLengthSqr);
+
+                const unsigned dist = std::min(k, SSSPTorusSideLength - k)
+                                      + std::min(j, SSSPTorusSideLength - j)
+                                      + std::min(i, SSSPTorusSideLength - i);
+
+                EXPECT_EQ(distances[vert].load(std::memory_order_relaxed), dist);
+            }
+        }
+    }
+}
+
+TEST(SpapQueueTest, SSSPHeterogeneousWorkersBatch) {
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1}, {0, 1}, {1, 2, 1}, {4, 8, 4});
 
     SpapQueue<std::array<unsigned, 2U>,
               netw,
