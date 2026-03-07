@@ -247,13 +247,15 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() n
 
         const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
         successfulPush = globalQueue_.pushInternal(itBeginFirst, itEndFirst, targetWorker, port);
-        if (successfulPush) { bufferTail_ += numElementsFirstPush; }
+        if (successfulPush) {
+            bufferTail_ += numElementsFirstPush;
 
-        if (numElementsSecondPush > 0U) {
-            const bool successfulSecondPush
-                = globalQueue_.pushInternal(outBuffer_.begin(), itEndSecond, targetWorker, port);
-            successfulPush |= successfulSecondPush;
-            if (successfulSecondPush) { bufferTail_ += numElementsSecondPush; };
+            if (numElementsSecondPush > 0U) {
+                const bool successfulSecondPush
+                    = globalQueue_.pushInternal(outBuffer_.begin(), itEndSecond, targetWorker, port);
+                successfulPush |= successfulSecondPush;
+                if (successfulSecondPush) { bufferTail_ += numElementsSecondPush; };
+            }
         }
     }
 
