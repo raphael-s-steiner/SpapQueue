@@ -374,7 +374,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::incrGlobalCount()
         const std::size_t diff = localCount_ - newLocalCount;
 
         localCount_ = newLocalCount;
-        globalQueue_.globalCount_.fetch_add(diff, std::memory_order_relaxed);
+        globalQueue_.globalCount_.fetch_add(diff, std::memory_order_acquire);
     }
 }
 
@@ -390,7 +390,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::decrGlobalCount()
         const std::size_t diff = newLocalCount + 1;
 
         localCount_ = newLocalCount;
-        globalQueue_.globalCount_.fetch_sub(diff, std::memory_order_relaxed);
+        globalQueue_.globalCount_.fetch_sub(diff, std::memory_order_release);
     } else {
         --localCount_;
     }
