@@ -58,7 +58,7 @@ class DivisorWorker final : public WorkerResource<GlobalQType, LocalQType, numPo
                             std::size_t workerId,
                             std::vector<std::vector<std::size_t>> &ansCounter) :
         WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices, workerId),
-        locAnsCounter_(ansCounter[workerId]){}
+        locAnsCounter_(ansCounter[workerId]) { }
 
     DivisorWorker(const DivisorWorker &other) = delete;
     DivisorWorker(DivisorWorker &&other) = delete;
@@ -116,7 +116,7 @@ class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, num
                               std::size_t workerId,
                               std::vector<std::vector<std::size_t>> &ansCounter) :
         WorkerResource<GlobalQType, LocalQType, numPorts>(globalQueue, channelIndices, workerId),
-        locAnsCounter_(ansCounter[workerId]){}
+        locAnsCounter_(ansCounter[workerId]) { }
 
     FibonacciWorker(const FibonacciWorker &other) = delete;
     FibonacciWorker(FibonacciWorker &&other) = delete;
@@ -267,6 +267,28 @@ TEST(SpapQueueTest, DivisorsSingleWorker) {
     for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
 }
 
+TEST(SpapQueueTest, DivisorsSingleWorkerBatch) {
+    constexpr QNetwork<1, 1> netw({0, 1}, {0}, {0}, {1}, {8});
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(divisorTestMaxSize, 0));
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushBeforeProcessing(1U, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerDivisors(divisorTestMaxSize);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < divisorTestMaxSize; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
 TEST(SpapQueueTest, DivisorsHomogeneousWorkers) {
     constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
 
@@ -289,8 +311,56 @@ TEST(SpapQueueTest, DivisorsHomogeneousWorkers) {
     for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
 }
 
+TEST(SpapQueueTest, DivisorsHomogeneousWorkersBatch) {
+    constexpr QNetwork<4, 16> netw({0, 4, 8, 12, 16},
+                                   {0, 1, 2, 3, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2},
+                                   {0, 1, 2, 3},
+                                   {2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1},
+                                   {4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8});
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(divisorTestMaxSize, 0));
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushBeforeProcessing(1U, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerDivisors(divisorTestMaxSize);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < divisorTestMaxSize; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
 TEST(SpapQueueTest, DivisorsHeterogeneousWorkers) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(divisorTestMaxSize, 0));
+
+    SpapQueue<std::size_t, netw, DivisorWorker, DivisorLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushBeforeProcessing(1U, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerDivisors(divisorTestMaxSize);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < divisorTestMaxSize; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < divisorTestMaxSize; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
+TEST(SpapQueueTest, DivisorsHeterogeneousWorkersBatch) {
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1}, {0, 1}, {1, 2, 1}, {4, 8, 4});
 
     std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
                                                      std::vector<std::size_t>(divisorTestMaxSize, 0));
@@ -477,8 +547,56 @@ TEST(SpapQueueTest, FibonacciSingleWorker) {
     for (std::size_t i = 0; i < fibonacciTestSize + 1; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
 }
 
+TEST(SpapQueueTest, FibonacciSingleWorkerBatch) {
+    constexpr QNetwork<1, 1> netw({0, 1}, {0}, {0}, {1}, {8});
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(fibonacciTestSize + 1, 0));
+
+    SpapQueue<std::size_t, netw, FibonacciWorker, FibonacchiLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushBeforeProcessing(fibonacciTestSize, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerFibonacci(fibonacciTestSize + 1);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < fibonacciTestSize + 1; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < fibonacciTestSize + 1; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
 TEST(SpapQueueTest, FibonacciHomogeneousWorkers) {
     constexpr QNetwork<4, 16> netw = FULLY_CONNECTED_GRAPH<4U>();
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(fibonacciTestSize + 1, 0));
+
+    SpapQueue<std::size_t, netw, FibonacciWorker, FibonacchiLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushBeforeProcessing(fibonacciTestSize, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerFibonacci(fibonacciTestSize + 1);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < fibonacciTestSize + 1; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < fibonacciTestSize + 1; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
+TEST(SpapQueueTest, FibonacciHomogeneousWorkersBatch) {
+    constexpr QNetwork<4, 16> netw({0, 4, 8, 12, 16},
+                                   {0, 1, 2, 3, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2},
+                                   {0, 1, 2, 3},
+                                   {2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1},
+                                   {4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8});
 
     std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
                                                      std::vector<std::size_t>(fibonacciTestSize + 1, 0));
@@ -521,8 +639,72 @@ TEST(SpapQueueTest, FibonacciHeterogeneousWorkers) {
     for (std::size_t i = 0; i < fibonacciTestSize + 1; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
 }
 
+TEST(SpapQueueTest, FibonacciHeterogeneousWorkersBatch) {
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1}, {0, 1}, {1, 2, 1}, {4, 8, 4});
+
+    std::vector<std::vector<std::size_t>> ansCounter(netw.numWorkers_,
+                                                     std::vector<std::size_t>(fibonacciTestSize + 1, 0));
+
+    SpapQueue<std::size_t, netw, FibonacciWorker, FibonacchiLocalQueueType> globalQ;
+    EXPECT_TRUE(globalQ.initQueue(std::ref(ansCounter)));
+    globalQ.pushBeforeProcessing(fibonacciTestSize, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    std::vector<std::size_t> solution = computeAnswerFibonacci(fibonacciTestSize + 1);
+
+    // Tallying up from all workers
+    for (std::size_t i = 1; i < netw.numWorkers_; ++i) {
+        for (std::size_t j = 0; j < fibonacciTestSize + 1; ++j) { ansCounter[0][j] += ansCounter[i][j]; }
+    }
+
+    for (std::size_t i = 0; i < fibonacciTestSize + 1; ++i) { EXPECT_EQ(ansCounter[0][i], solution[i]); }
+}
+
 TEST(SpapQueueTest, SSSPSingleWorker) {
     constexpr QNetwork<1, 1> netw = FULLY_CONNECTED_GRAPH<1U>();
+
+    SpapQueue<std::array<unsigned, 2U>,
+              netw,
+              SSSPWorker,
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
+        globalQ;
+
+    const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
+    const unsigned nVerts = SSSPTorusSideLength * SSSPTorusSideLength * SSSPTorusSideLength;
+
+    std::vector<std::atomic<unsigned>> distances(nVerts);
+    for (auto &dist : distances) {
+        dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
+    }
+    distances[0].store(0U, std::memory_order_relaxed);
+
+    EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
+    globalQ.pushBeforeProcessing({0U, 0U}, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    const unsigned sideLengthSqr = SSSPTorusSideLength * SSSPTorusSideLength;
+
+    for (unsigned i = 0U; i < SSSPTorusSideLength; ++i) {
+        for (unsigned j = 0U; j < SSSPTorusSideLength; ++j) {
+            for (unsigned k = 0U; k < SSSPTorusSideLength; ++k) {
+                const unsigned vert = k + (j * SSSPTorusSideLength) + (i * sideLengthSqr);
+
+                const unsigned dist = std::min(k, SSSPTorusSideLength - k)
+                                      + std::min(j, SSSPTorusSideLength - j)
+                                      + std::min(i, SSSPTorusSideLength - i);
+
+                EXPECT_EQ(distances[vert].load(std::memory_order_relaxed), dist);
+            }
+        }
+    }
+}
+
+TEST(SpapQueueTest, SSSPSingleWorkerBatch) {
+    constexpr QNetwork<1, 1> netw({0, 1}, {0}, {0}, {1}, {8});
 
     SpapQueue<std::array<unsigned, 2U>,
               netw,
@@ -605,8 +787,96 @@ TEST(SpapQueueTest, SSSPHomogeneousWorkers) {
     }
 }
 
+TEST(SpapQueueTest, SSSPHomogeneousWorkersBatch) {
+    constexpr QNetwork<4, 16> netw({0, 4, 8, 12, 16},
+                                   {0, 1, 2, 3, 1, 2, 3, 0, 2, 3, 0, 1, 3, 0, 1, 2},
+                                   {0, 1, 2, 3},
+                                   {2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1},
+                                   {4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8});
+
+    SpapQueue<std::array<unsigned, 2U>,
+              netw,
+              SSSPWorker,
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
+        globalQ;
+
+    const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
+    const unsigned nVerts = SSSPTorusSideLength * SSSPTorusSideLength * SSSPTorusSideLength;
+
+    std::vector<std::atomic<unsigned>> distances(nVerts);
+    for (auto &dist : distances) {
+        dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
+    }
+    distances[0].store(0U, std::memory_order_relaxed);
+
+    EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
+    globalQ.pushBeforeProcessing({0U, 0U}, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    const unsigned sideLengthSqr = SSSPTorusSideLength * SSSPTorusSideLength;
+
+    for (unsigned i = 0U; i < SSSPTorusSideLength; ++i) {
+        for (unsigned j = 0U; j < SSSPTorusSideLength; ++j) {
+            for (unsigned k = 0U; k < SSSPTorusSideLength; ++k) {
+                const unsigned vert = k + (j * SSSPTorusSideLength) + (i * sideLengthSqr);
+
+                const unsigned dist = std::min(k, SSSPTorusSideLength - k)
+                                      + std::min(j, SSSPTorusSideLength - j)
+                                      + std::min(i, SSSPTorusSideLength - i);
+
+                EXPECT_EQ(distances[vert].load(std::memory_order_relaxed), dist);
+            }
+        }
+    }
+}
+
 TEST(SpapQueueTest, SSSPHeterogeneousWorkers) {
     constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1});
+
+    SpapQueue<std::array<unsigned, 2U>,
+              netw,
+              SSSPWorker,
+              std::priority_queue<std::array<unsigned, 2U>,
+                                  std::vector<std::array<unsigned, 2U>>,
+                                  std::greater<std::array<unsigned, 2U>>>>
+        globalQ;
+
+    const CSRGraph graph = make3DTorus(SSSPTorusSideLength);
+    const unsigned nVerts = SSSPTorusSideLength * SSSPTorusSideLength * SSSPTorusSideLength;
+
+    std::vector<std::atomic<unsigned>> distances(nVerts);
+    for (auto &dist : distances) {
+        dist.store(std::numeric_limits<unsigned>::max(), std::memory_order_relaxed);
+    }
+    distances[0].store(0U, std::memory_order_relaxed);
+
+    EXPECT_TRUE(globalQ.initQueue(std::cref(graph), std::ref(distances)));
+    globalQ.pushBeforeProcessing({0U, 0U}, 0U);
+    globalQ.processQueue();
+    globalQ.waitProcessFinish();
+
+    const unsigned sideLengthSqr = SSSPTorusSideLength * SSSPTorusSideLength;
+
+    for (unsigned i = 0U; i < SSSPTorusSideLength; ++i) {
+        for (unsigned j = 0U; j < SSSPTorusSideLength; ++j) {
+            for (unsigned k = 0U; k < SSSPTorusSideLength; ++k) {
+                const unsigned vert = k + (j * SSSPTorusSideLength) + (i * sideLengthSqr);
+
+                const unsigned dist = std::min(k, SSSPTorusSideLength - k)
+                                      + std::min(j, SSSPTorusSideLength - j)
+                                      + std::min(i, SSSPTorusSideLength - i);
+
+                EXPECT_EQ(distances[vert].load(std::memory_order_relaxed), dist);
+            }
+        }
+    }
+}
+
+TEST(SpapQueueTest, SSSPHeterogeneousWorkersBatch) {
+    constexpr QNetwork<2, 3> netw({0, 1, 3}, {1, 0, 1}, {0, 1}, {1, 2, 1}, {4, 8, 4});
 
     SpapQueue<std::array<unsigned, 2U>,
               netw,
