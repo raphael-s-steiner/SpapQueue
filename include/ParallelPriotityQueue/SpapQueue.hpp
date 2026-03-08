@@ -115,9 +115,10 @@ class SpapQueue final {
                                           ///< queue.
     std::barrier<> allocateSignal_{netw.numWorkers_ + 1};        ///< Signals that it is now safe to enqueue
                                                                  ///< tasks.
-    std::barrier<> safeToDeallocateSignal_{netw.numWorkers_};        ///< Signal that all workers have finished
-                                                                     ///< working and that it is now safe to
-                                                                     ///< deallocate the worker resources.
+    std::barrier<> safeToDeallocateSignal_{netw.numWorkers_};        ///< Signal that all workers have
+                                                                     ///< finished working and that it is now
+                                                                     ///< safe to deallocate the worker
+                                                                     ///< resources.
 
     std::array<std::jthread, netw.numWorkers_> workers_;        ///< Worker threads.
 
@@ -183,16 +184,16 @@ bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue(Args &&...workerA
     if (queueActive_.exchange(true, std::memory_order_acq_rel)) {
         std::cerr << "SpapQueue is already active and cannot be initiated again!\n";
         return false;
+    } else {
+        [this, &workerArgs...]<std::size_t... I>(std::index_sequence<I...>) {
+            ((workers_[I] = std::jthread(std::bind_front(&ThisQType::threadWork<I, Args...>, this),
+                                         std::forward<Args>(workerArgs)...)),
+             ...);
+        }(std::make_index_sequence<netw.numWorkers_>{});
+
+        allocateSignal_.arrive_and_wait();
+        return true;
     }
-
-    [this, &workerArgs...]<std::size_t... I>(std::index_sequence<I...>) {
-        ((workers_[I] = std::jthread(std::bind_front(&ThisQType::threadWork<I, Args...>, this),
-                                     std::forward<Args>(workerArgs)...)),
-         ...);
-    }(std::make_index_sequence<netw.numWorkers_>{});
-
-    allocateSignal_.arrive_and_wait();
-    return true;
 }
 
 /**
@@ -413,7 +414,7 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing
     std::size_t prevCount = globalCount_.load(std::memory_order_relaxed);
     while (prevCount > 0U
            && (not globalCount_.compare_exchange_weak(
-               prevCount, prevCount + 1U, std::memory_order_relaxed, std::memory_order_relaxed))) { };
+               prevCount, prevCount + 1U, std::memory_order_acquire, std::memory_order_relaxed))) { };
 
     // Only inserts if queue is still running
     if (prevCount > 0U) {
@@ -426,7 +427,7 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing
             success = std::get<worker>(workerResources_)->push(val, port);
         }
 
-        if (not success) { globalCount_.fetch_sub(1U, std::memory_order_relaxed); }
+        if (not success) { globalCount_.fetch_sub(1U, std::memory_order_release); }
     }
 
     return success;
