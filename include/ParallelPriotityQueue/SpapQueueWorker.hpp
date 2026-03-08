@@ -223,15 +223,13 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(con
  */
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() noexcept {
-    bool successfulPush;
-
     const std::size_t batch = GlobalQType::netw_.batchSize_[*channelPointer_];
     assert(batch <= bufferHead_ - bufferTail_);
 
     const std::size_t targetWorker = GlobalQType::netw_.edgeTargets_[*channelPointer_];
     if (targetWorker == GlobalQType::netw_.numWorkers_) {        // netw.numWorkers_ is reserved for self-push
         pushOutBufferSelf(batch);
-        successfulPush = true;
+        return true;
     } else {
         const std::size_t reducedTail = bufferTail_ % outBuffer_.size();
         const std::size_t numElementsFirstPush = std::min(outBuffer_.size() - reducedTail, batch);
@@ -246,20 +244,18 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() n
                         static_cast<typename decltype(outBuffer_)::difference_type>(numElementsSecondPush));
 
         const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
-        successfulPush = globalQueue_.pushInternal(itBeginFirst, itEndFirst, targetWorker, port);
+        const bool successfulPush = globalQueue_.pushInternal(itBeginFirst, itEndFirst, targetWorker, port);
         if (successfulPush) {
             bufferTail_ += numElementsFirstPush;
 
             if (numElementsSecondPush > 0U) {
                 const bool successfulSecondPush
                     = globalQueue_.pushInternal(outBuffer_.begin(), itEndSecond, targetWorker, port);
-                successfulPush |= successfulSecondPush;
                 if (successfulSecondPush) { bufferTail_ += numElementsSecondPush; };
             }
         }
+        return successfulPush;
     }
-
-    return successfulPush;
 }
 
 /**
