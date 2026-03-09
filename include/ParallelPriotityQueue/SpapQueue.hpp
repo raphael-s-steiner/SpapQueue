@@ -55,7 +55,8 @@ namespace spapq {
  *
  * The SpapQueue class or object itself is generally not considered thread-safe with a few exceptions.\n
  * (a) pushBeforeProcessing can be called for each worker by at most one thread. Hence, netw.numWorker_ number
- *     of threads can populate the queue.\n
+ *     of threads can populate the queue. However, additional synchronisation between pushing threads and
+ *     the thread activating the queue is required.\n
  * (b) pushDuringProcessing can be called for each (self-push) channel by at most one thread.
  *
  * @tparam T Type of queue element or task.
@@ -384,12 +385,12 @@ inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing
 template <typename T, QNetwork netw, template <class, BasicQueue, std::size_t> class WorkerTemplate, BasicQueue LocalQType>
 inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing(
     const value_type val, const std::size_t workerId) noexcept {
+    globalCount_.fetch_add(1U, std::memory_order_relaxed);
     if constexpr (netw.hasHomogeneousInPorts()) {
         workerResources_[workerId]->pushUnsafe(val);
     } else {
         pushBeforeProcessingHelper<netw.numWorkers_>(val, workerId);
     }
-    globalCount_.fetch_add(1U, std::memory_order_release);
 }
 
 /**

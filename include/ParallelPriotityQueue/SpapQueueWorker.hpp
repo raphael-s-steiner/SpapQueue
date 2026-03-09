@@ -372,7 +372,10 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::incrGlobalCount()
         const std::size_t diff = localCount_ - newLocalCount;
 
         localCount_ = newLocalCount;
-        globalQueue_.globalCount_.fetch_add(diff, std::memory_order_acquire);
+        globalQueue_.globalCount_.fetch_add(diff, std::memory_order_relaxed);
+        // Can be relaxed as this is only ever called during enqueueGlobal which is only ever called during
+        // the processing of an element. This means we can be sure that the queue will not become empty until
+        // the processing has finished by which point the increment must have occured.
     }
 }
 
@@ -384,11 +387,16 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::incrGlobalCount()
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::decrGlobalCount() noexcept {
     if (localCount_ == 0) {
-        const std::size_t newLocalCount = queue_.size() / 2;
+        const std::size_t queueSize = queue_.size();
+        const std::size_t newLocalCount = queueSize / 2;
         const std::size_t diff = newLocalCount + 1;
 
         localCount_ = newLocalCount;
-        globalQueue_.globalCount_.fetch_sub(diff, std::memory_order_release);
+        if (queueSize > 0U) [[likely]] {        // Release is only needed to communicate completed work
+            globalQueue_.globalCount_.fetch_sub(diff, std::memory_order_relaxed);
+        } else {
+            globalQueue_.globalCount_.fetch_sub(diff, std::memory_order_release);
+        }
     } else {
         --localCount_;
     }
