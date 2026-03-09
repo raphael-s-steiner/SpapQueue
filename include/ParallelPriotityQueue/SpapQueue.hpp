@@ -55,7 +55,8 @@ namespace spapq {
  *
  * The SpapQueue class or object itself is generally not considered thread-safe with a few exceptions.\n
  * (a) pushBeforeProcessing can be called for each worker by at most one thread. Hence, netw.numWorker_ number
- *     of threads can populate the queue.\n
+ *     of threads can populate the queue. However, additional synchronisation between pushing threads and
+ *     the thread activating the queue is required.\n
  * (b) pushDuringProcessing can be called for each (self-push) channel by at most one thread.
  *
  * @tparam T Type of queue element or task.
@@ -115,9 +116,10 @@ class SpapQueue final {
                                           ///< queue.
     std::barrier<> allocateSignal_{netw.numWorkers_ + 1};        ///< Signals that it is now safe to enqueue
                                                                  ///< tasks.
-    std::barrier<> safeToDeallocateSignal_{netw.numWorkers_};        ///< Signal that all workers have finished
-                                                                     ///< working and that it is now safe to
-                                                                     ///< deallocate the worker resources.
+    std::barrier<> safeToDeallocateSignal_{netw.numWorkers_};        ///< Signal that all workers have
+                                                                     ///< finished working and that it is now
+                                                                     ///< safe to deallocate the worker
+                                                                     ///< resources.
 
     std::array<std::jthread, netw.numWorkers_> workers_;        ///< Worker threads.
 
@@ -183,16 +185,16 @@ bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::initQueue(Args &&...workerA
     if (queueActive_.exchange(true, std::memory_order_acq_rel)) {
         std::cerr << "SpapQueue is already active and cannot be initiated again!\n";
         return false;
+    } else {
+        [this, &workerArgs...]<std::size_t... I>(std::index_sequence<I...>) {
+            ((workers_[I] = std::jthread(std::bind_front(&ThisQType::threadWork<I, Args...>, this),
+                                         std::forward<Args>(workerArgs)...)),
+             ...);
+        }(std::make_index_sequence<netw.numWorkers_>{});
+
+        allocateSignal_.arrive_and_wait();
+        return true;
     }
-
-    [this, &workerArgs...]<std::size_t... I>(std::index_sequence<I...>) {
-        ((workers_[I] = std::jthread(std::bind_front(&ThisQType::threadWork<I, Args...>, this),
-                                     std::forward<Args>(workerArgs)...)),
-         ...);
-    }(std::make_index_sequence<netw.numWorkers_>{});
-
-    allocateSignal_.arrive_and_wait();
-    return true;
 }
 
 /**
@@ -383,12 +385,12 @@ inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing
 template <typename T, QNetwork netw, template <class, BasicQueue, std::size_t> class WorkerTemplate, BasicQueue LocalQType>
 inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessing(
     const value_type val, const std::size_t workerId) noexcept {
+    globalCount_.fetch_add(1U, std::memory_order_relaxed);
     if constexpr (netw.hasHomogeneousInPorts()) {
         workerResources_[workerId]->pushUnsafe(val);
     } else {
         pushBeforeProcessingHelper<netw.numWorkers_>(val, workerId);
     }
-    globalCount_.fetch_add(1U, std::memory_order_release);
 }
 
 /**
@@ -413,7 +415,7 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing
     std::size_t prevCount = globalCount_.load(std::memory_order_relaxed);
     while (prevCount > 0U
            && (not globalCount_.compare_exchange_weak(
-               prevCount, prevCount + 1U, std::memory_order_relaxed, std::memory_order_relaxed))) { };
+               prevCount, prevCount + 1U, std::memory_order_acquire, std::memory_order_relaxed))) { };
 
     // Only inserts if queue is still running
     if (prevCount > 0U) {
@@ -426,7 +428,7 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing
             success = std::get<worker>(workerResources_)->push(val, port);
         }
 
-        if (not success) { globalCount_.fetch_sub(1U, std::memory_order_relaxed); }
+        if (not success) { globalCount_.fetch_sub(1U, std::memory_order_release); }
     }
 
     return success;
