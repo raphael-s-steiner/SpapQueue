@@ -30,17 +30,18 @@ using namespace spapq;
 
 TEST(QNetworkTest, Constructors1) {
     constexpr QNetwork<4, 4> netw(
-        {0, 1, 2, 3, 4}, {1, 2, 3, 0}, {11, 12, 13, 14}, {10, 9, 8, 7}, {1, 2, 3, 4});
+        {0, 1, 2, 3, 4}, {1, 2, 3, 0}, {11, 12, 13, 14}, {10, 9, 8, 7}, {2, 4, 6, 8});
     EXPECT_EQ(netw.numWorkers_, 4);
     EXPECT_EQ(netw.numChannels_, 4);
     for (std::size_t i = 0; i < 5; ++i) { EXPECT_EQ(netw.vertexPointer_[i], i); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.logicalCore_[i], i + 11U); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.edgeTargets_[i], (i + 1) % 4); }
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.multiplicities_[i], 10U - i); }
-    for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.batchSize_[i], (i + 1)); }
+    for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.batchSize_[i], 2U * (i + 1)); }
 
     EXPECT_EQ(netw.enqueueFrequency_, 16U);
-    EXPECT_EQ(netw.maxBatchSize(), 4U);
+    EXPECT_EQ(netw.gcdBatchSize(), 2U);
+    EXPECT_EQ(netw.maxBatchSize(), 8U);
     EXPECT_TRUE(netw.hasHomogeneousInPorts());
     EXPECT_TRUE(netw.hasHomogeneousOutPorts());
     EXPECT_TRUE(netw.hasHomogeneousPorts());
@@ -63,6 +64,7 @@ TEST(QNetworkTest, Constructors2) {
     for (std::size_t i = 0; i < 4; ++i) { EXPECT_EQ(netw.batchSize_[i], 1); }
 
     EXPECT_TRUE(netw.hasSeparateLogicalCores());
+    EXPECT_EQ(netw.gcdBatchSize(), 1U);
 }
 
 TEST(QNetworkTest, Ports1) {
@@ -394,7 +396,8 @@ TEST(QNetworkTest, Connectivity) {
 TEST(QNetworkTest, SrcTgt) {
     constexpr QNetwork<10, 30> netw1 = PETERSEN_GRAPH;
     for (std::size_t worker = 0U; worker < netw1.numWorkers_; ++worker) {
-        for (std::size_t channel = netw1.vertexPointer_[worker]; channel < netw1.vertexPointer_[worker + 1U]; ++channel) {
+        for (std::size_t channel = netw1.vertexPointer_[worker]; channel < netw1.vertexPointer_[worker + 1U];
+             ++channel) {
             EXPECT_EQ(netw1.source(channel), worker);
             EXPECT_EQ(netw1.target(channel), netw1.edgeTargets_[channel]);
         }
@@ -403,7 +406,8 @@ TEST(QNetworkTest, SrcTgt) {
 
     constexpr auto netw2 = FULLY_CONNECTED_GRAPH<9U>();
     for (std::size_t worker = 0U; worker < netw2.numWorkers_; ++worker) {
-        for (std::size_t channel = netw2.vertexPointer_[worker]; channel < netw2.vertexPointer_[worker + 1U]; ++channel) {
+        for (std::size_t channel = netw2.vertexPointer_[worker]; channel < netw2.vertexPointer_[worker + 1U];
+             ++channel) {
             EXPECT_EQ(netw2.source(channel), worker);
             if (channel % 9U == 0U) {
                 EXPECT_EQ(netw2.target(channel), worker);
