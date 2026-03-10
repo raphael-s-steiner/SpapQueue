@@ -292,6 +292,19 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf
     }
 
     bufferTail_ += numElements;
+
+    // Realign outBuffer
+    if constexpr (GlobalQType::netw_.gcdBatchSize() > 1U) {
+        if (numElements % GlobalQType::netw_.gcdBatchSize() != 0U) [[unlikely]] {
+            if (bufferTail_ == bufferHead_) [[likely]] {        // should always be the case
+                const std::size_t residue = bufferTail_ % GlobalQType::netw_.gcdBatchSize();
+                const std::size_t shift = (residue == 0U) ? 0U : GlobalQType::netw_.gcdBatchSize() - residue;
+
+                bufferTail_ += shift;
+                bufferHead_ += shift;
+            }
+        }
+    }
 }
 
 /**
