@@ -21,6 +21,7 @@ limitations under the License.
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <numeric>
 
 namespace spapq {
 
@@ -71,6 +72,7 @@ struct QNetwork {
     constexpr bool isStronglyConnected() const;
     constexpr bool isValidQNetwork() const;
 
+    constexpr std::size_t gcdBatchSize() const;
     constexpr std::size_t maxBatchSize() const;
     constexpr std::size_t maxPortNum() const;
 
@@ -503,6 +505,17 @@ inline constexpr std::size_t QNetwork<workers, channels>::target(std::size_t cha
     std::size_t tgt = edgeTargets_.at(channel);
     if (tgt == numWorkers_) { tgt = source(channel); }
     return tgt;
+}
+
+/**
+ * @brief Returns greatest common divisor of a batchsizes.
+ *
+ */
+template <std::size_t workers, std::size_t channels>
+constexpr std::size_t QNetwork<workers, channels>::gcdBatchSize() const {
+    std::size_t gcd = 0U;
+    for (const std::size_t val : batchSize_) { gcd = std::gcd(gcd, val); }
+    return gcd;
 }
 
 }        // end namespace spapq
