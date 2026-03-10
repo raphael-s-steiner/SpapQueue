@@ -415,7 +415,7 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing
     std::size_t prevCount = globalCount_.load(std::memory_order_relaxed);
     while (prevCount > 0U
            && (not globalCount_.compare_exchange_weak(
-               prevCount, prevCount + 1U, std::memory_order_acquire, std::memory_order_relaxed))) { };
+               prevCount, prevCount + 1U, std::memory_order_relaxed, std::memory_order_relaxed))) { };
 
     // Only inserts if queue is still running
     if (prevCount > 0U) {
@@ -428,7 +428,7 @@ inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushDuringProcessing
             success = std::get<worker>(workerResources_)->push(val, port);
         }
 
-        if (not success) { globalCount_.fetch_sub(1U, std::memory_order_release); }
+        if (not success) { globalCount_.fetch_sub(1U, std::memory_order_relaxed); }
     }
 
     return success;
