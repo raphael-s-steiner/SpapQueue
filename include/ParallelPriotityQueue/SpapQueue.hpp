@@ -133,12 +133,14 @@ class SpapQueue final {
     // Helper functions
     template <std::size_t tupleSize,
               class InputIt,
+              typename... Args,
               bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
               std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
     [[nodiscard("Push may fail when queue is full.\n")]] inline bool pushInternalHelper(
         InputIt first, InputIt last, const std::size_t workerId, const std::size_t port) noexcept;
 
     template <std::size_t tupleSize,
+              typename... Args,
               bool networkHomogeneousInPorts = netw.hasHomogeneousInPorts(),
               std::enable_if_t<not networkHomogeneousInPorts, bool> = true>
     inline void pushBeforeProcessingHelper(const value_type val, const std::size_t workerId) noexcept;
@@ -210,10 +212,12 @@ void SpapQueue<T, netw, WorkerTemplate, LocalQType>::processQueue() {
 template <typename T, QNetwork netw, template <class, BasicQueue, std::size_t> class WorkerTemplate, BasicQueue LocalQType>
 template <std::size_t tupleSize,
           class InputIt,
+          typename... Args,
           bool networkHomogeneousInPorts,
           std::enable_if_t<not networkHomogeneousInPorts, bool>>
 inline bool SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushInternalHelper(
     InputIt first, InputIt last, const std::size_t workerId, const std::size_t port) noexcept {
+    static_assert(sizeof...(Args) == 0U);
     static_assert(0 < tupleSize && tupleSize <= netw.numWorkers_);
     if constexpr (tupleSize == netw.numWorkers_) { assert(workerId < netw.numWorkers_); }
 
@@ -361,10 +365,12 @@ SpapQueue<T, netw, WorkerTemplate, LocalQType>::~SpapQueue() noexcept {
 
 template <typename T, QNetwork netw, template <class, BasicQueue, std::size_t> class WorkerTemplate, BasicQueue LocalQType>
 template <std::size_t tupleSize,
+          typename... Args,
           bool networkHomogeneousInPorts,
           std::enable_if_t<not networkHomogeneousInPorts, bool>>
 inline void SpapQueue<T, netw, WorkerTemplate, LocalQType>::pushBeforeProcessingHelper(
     const value_type val, const std::size_t workerId) noexcept {
+    static_assert(sizeof...(Args) == 0U);
     static_assert(0 < tupleSize && tupleSize <= netw.numWorkers_);
     if constexpr (tupleSize == netw.numWorkers_) { assert(workerId < netw.numWorkers_); }
 
