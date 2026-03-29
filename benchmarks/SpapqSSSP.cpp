@@ -25,10 +25,10 @@ limitations under the License.
 #include <queue>
 #include <random>
 
-#include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
-#include "ParallelPriotityQueue/GraphExamples/LineGraph.hpp"
-#include "ParallelPriotityQueue/SpapQueue.hpp"
-#include "ParallelPriotityQueue/WorkerExamples/SSSPWorker.hpp"
+#include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriorityQueue/GraphExamples/LineGraph.hpp"
+#include "ParallelPriorityQueue/SpapQueue.hpp"
+#include "ParallelPriorityQueue/WorkerExamples/SSSPWorker.hpp"
 
 using namespace spapq;
 

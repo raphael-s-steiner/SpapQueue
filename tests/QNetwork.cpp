@@ -16,15 +16,15 @@ limitations under the License.
 @author Raphael S. Steiner
 */
 
-#include "ParallelPriotityQueue/QNetwork.hpp"
+#include "ParallelPriorityQueue/QNetwork.hpp"
 
 #include <gtest/gtest.h>
 
 #include <initializer_list>
 
-#include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
-#include "ParallelPriotityQueue/GraphExamples/LineGraph.hpp"
-#include "ParallelPriotityQueue/GraphExamples/PetersenGraph.hpp"
+#include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriorityQueue/GraphExamples/LineGraph.hpp"
+#include "ParallelPriorityQueue/GraphExamples/PetersenGraph.hpp"
 
 using namespace spapq;
 

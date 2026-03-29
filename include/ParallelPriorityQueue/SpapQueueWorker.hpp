@@ -23,7 +23,7 @@ limitations under the License.
 
 #include "Discrepancy/QNetworkTables.hpp"
 #include "Discrepancy/TableGenerator.hpp"
-#include "ParallelPriotityQueue/Concepts/BasicQueue.hpp"
+#include "ParallelPriorityQueue/Concepts/BasicQueue.hpp"
 #include "RingBuffer/RingBuffer.hpp"
 
 namespace spapq {
