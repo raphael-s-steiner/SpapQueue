@@ -137,6 +137,8 @@ else()
     message(STATUS "Benchmarks will not be built (BUILD_BENCHMARK is OFF).")
 endif()
 
+add_subdirectory(apps)
+
 # --- Documentation Generation ---
 # Add a custom target to build Doxygen documentation
 find_package(Doxygen QUIET)

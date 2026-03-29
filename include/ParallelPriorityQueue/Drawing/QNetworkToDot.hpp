@@ -78,11 +78,6 @@ void QNetworkChannelInfo(const QNetwork<workers, channels> &netw, const std::siz
 
 template <std::size_t workers, std::size_t channels>
 void QNetworkToDot(const QNetwork<workers, channels> &netw, std::ostream &os) {
-    if (!os.is_open()) {
-        std::cerr << "Failed to open file to write QNetwork dot!" << std::endl;
-        return;
-    }
-
     const std::array<double, workers> loads = workLoadDistribution(netw);
 
     // Header
@@ -90,6 +85,7 @@ void QNetworkToDot(const QNetwork<workers, channels> &netw, std::ostream &os) {
     os << "digraph QNetwork{\n";
     os << "    node [shape=plaintext;]\n";
     os << "    edge [shape=plaintext; arrowhead=\"vee\"; fontsize=\"8\";]\n\n";
+    os << "    rankdir=LR";
 
     //  Global Network Info
     globalQNetworkInfo(netw, os);
