@@ -1,5 +1,5 @@
 /*
-Copyright 2025 Raphael S. Steiner
+Copyright 2025, 2026 Raphael S. Steiner
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ limitations under the License.
 
 #include <initializer_list>
 
+#include "ParallelPriotityQueue/Drawing/WorkLoadDistribution.hpp"
 #include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
 #include "ParallelPriotityQueue/GraphExamples/LineGraph.hpp"
 #include "ParallelPriotityQueue/GraphExamples/PetersenGraph.hpp"
@@ -29,8 +30,7 @@ limitations under the License.
 using namespace spapq;
 
 TEST(QNetworkTest, Constructors1) {
-    constexpr QNetwork<4, 4> netw(
-        {0, 1, 2, 3, 4}, {1, 2, 3, 0}, {11, 12, 13, 14}, {10, 9, 8, 7}, {2, 4, 6, 8});
+    constexpr QNetwork<4, 4> netw({0, 1, 2, 3, 4}, {1, 2, 3, 0}, {11, 12, 13, 14}, {10, 9, 8, 7}, {2, 4, 6, 8});
     EXPECT_EQ(netw.numWorkers_, 4);
     EXPECT_EQ(netw.numChannels_, 4);
     for (std::size_t i = 0; i < 5; ++i) { EXPECT_EQ(netw.vertexPointer_[i], i); }
@@ -396,8 +396,7 @@ TEST(QNetworkTest, Connectivity) {
 TEST(QNetworkTest, SrcTgt) {
     constexpr QNetwork<10, 30> netw1 = PETERSEN_GRAPH;
     for (std::size_t worker = 0U; worker < netw1.numWorkers_; ++worker) {
-        for (std::size_t channel = netw1.vertexPointer_[worker]; channel < netw1.vertexPointer_[worker + 1U];
-             ++channel) {
+        for (std::size_t channel = netw1.vertexPointer_[worker]; channel < netw1.vertexPointer_[worker + 1U]; ++channel) {
             EXPECT_EQ(netw1.source(channel), worker);
             EXPECT_EQ(netw1.target(channel), netw1.edgeTargets_[channel]);
         }
@@ -406,8 +405,7 @@ TEST(QNetworkTest, SrcTgt) {
 
     constexpr auto netw2 = FULLY_CONNECTED_GRAPH<9U>();
     for (std::size_t worker = 0U; worker < netw2.numWorkers_; ++worker) {
-        for (std::size_t channel = netw2.vertexPointer_[worker]; channel < netw2.vertexPointer_[worker + 1U];
-             ++channel) {
+        for (std::size_t channel = netw2.vertexPointer_[worker]; channel < netw2.vertexPointer_[worker + 1U]; ++channel) {
             EXPECT_EQ(netw2.source(channel), worker);
             if (channel % 9U == 0U) {
                 EXPECT_EQ(netw2.target(channel), worker);
@@ -422,4 +420,52 @@ TEST(QNetworkTest, SrcTgt) {
 TEST(QNetworkTest, PrintQNetwork) {
     constexpr QNetwork<10, 30> netw = PETERSEN_GRAPH;
     netw.printQNetwork();
+}
+
+TEST(QNetworkTest, WorkLoads) {
+    constexpr auto netw1 = FULLY_CONNECTED_GRAPH<1U>();
+    std::array<double, netw1.numWorkers_> expectedLoad1;
+    for (double &val : expectedLoad1) { val = 1.0 / static_cast<double>(netw1.numWorkers_); }
+
+    const auto load1 = workLoadDistribution(netw1);
+    for (std::size_t worker = 0U; worker < netw1.numWorkers_; ++worker) {
+        EXPECT_DOUBLE_EQ(load1[worker], expectedLoad1[worker]);
+    }
+
+    constexpr auto netw3 = FULLY_CONNECTED_GRAPH<3U>();
+    std::array<double, netw3.numWorkers_> expectedLoad3;
+    for (double &val : expectedLoad3) { val = 1.0 / static_cast<double>(netw3.numWorkers_); }
+
+    const auto load3 = workLoadDistribution(netw3);
+    for (std::size_t worker = 0U; worker < netw3.numWorkers_; ++worker) {
+        EXPECT_DOUBLE_EQ(load3[worker], expectedLoad3[worker]);
+    }
+
+    constexpr auto netw12 = FULLY_CONNECTED_GRAPH<12U>();
+    std::array<double, netw12.numWorkers_> expectedLoad12;
+    for (double &val : expectedLoad12) { val = 1.0 / static_cast<double>(netw12.numWorkers_); }
+
+    const auto load12 = workLoadDistribution(netw12);
+    for (std::size_t worker = 0U; worker < netw12.numWorkers_; ++worker) {
+        EXPECT_DOUBLE_EQ(load12[worker], expectedLoad12[worker]);
+    }
+
+    constexpr auto netw10 = PETERSEN_GRAPH;
+    std::array<double, netw10.numWorkers_> expectedLoad10;
+    for (double &val : expectedLoad10) { val = 1.0 / static_cast<double>(netw10.numWorkers_); }
+
+    const auto load10 = workLoadDistribution(netw10);
+    for (std::size_t worker = 0U; worker < netw10.numWorkers_; ++worker) {
+        EXPECT_DOUBLE_EQ(load10[worker], expectedLoad10[worker]);
+    }
+
+    constexpr auto netw = QNetwork<4U, 10U>(
+        {0, 2, 4, 7, 10}, {0, 1, 2, 3, 0, 2, 3, 0, 2, 3}, {0, 1, 2, 3}, {1, 1, 1, 1, 1, 2, 2, 1, 2, 2}
+    );
+    std::array<double, netw.numWorkers_> expectedLoad = {1.0 / 4.0, 1.0 / 8.0, 5.0 / 16.0, 5.0 / 16.0};
+
+    const auto load = workLoadDistribution(netw);
+    for (std::size_t worker = 0U; worker < netw.numWorkers_; ++worker) {
+        EXPECT_NEAR(load[worker], expectedLoad[worker], 1e-8);
+    }
 }
