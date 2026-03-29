@@ -84,8 +84,8 @@ void QNetworkToDot(const QNetwork<workers, channels> &netw, std::ostream &os) {
     os << std::fixed << std::setprecision(2);
     os << "digraph QNetwork{\n";
     os << "    node [shape=plaintext;]\n";
-    os << "    edge [shape=plaintext; arrowhead=\"vee\"; fontsize=\"8\";]\n\n";
-    os << "    rankdir=LR";
+    os << "    edge [shape=plaintext; arrowhead=\"vee\"; fontsize=\"8\";]\n";
+    os << "    rankdir=LR\n\n";
 
     //  Global Network Info
     globalQNetworkInfo(netw, os);
