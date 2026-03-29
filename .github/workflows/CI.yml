@@ -17,7 +17,7 @@ jobs:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6.0.2
 
       - name: Install dependencies
         run: |
@@ -57,13 +57,13 @@ jobs:
         continue-on-error: true
 
       - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: build/coverage_html
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-debug
           path: build/test_results_debug.xml
@@ -78,7 +78,7 @@ jobs:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6.0.2
 
       - name: Install dependencies
         run: |
@@ -102,7 +102,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-release
           path: build/test_results_release.xml
@@ -114,7 +114,7 @@ jobs:
           cp -r doc/html/* public
 
       - name: Upload docs artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docs
           path: public

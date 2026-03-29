@@ -50,17 +50,17 @@ class WorkerResource {
 
   private:
     const std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>
-        channelIndices_;                                                         ///< Order of outgoing
-                                                                                 ///< channels to push to.
-    std::array<value_type, GlobalQType::netw_.maxBatchSize()> outBuffer_;        ///< Small buffer before
-                                                                                 ///< pushing to outgoing
-                                                                                 ///< channel.
+        channelIndices_;        ///< Order of outgoing
+                                ///< channels to push to.
+    std::array<value_type, 2U * GlobalQType::netw_.maxBatchSize()> outBuffer_;        ///< Small buffer before
+                                                                                      ///< pushing to outgoing
+                                                                                      ///< channel.
 
     const std::size_t workerId_;        ///< Worker Id in the global queue.
     std::size_t localCount_{0U};        ///< A partial account of the number of tasks in the global queue.
     GlobalQType &globalQueue_;          ///< Reference to the global queue.
-    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator
-        bufferPointer_;        ///< Pointer to the next free spot in the outBuffer_.
+    std::size_t bufferHead_{0U};        ///< Head of out ring buffer.
+    std::size_t bufferTail_{0U};        ///< Tail of out ring buffer.
     typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
         channelPointer_;        ///< Pointer to the next outgoing channel.
     const typename std::array<std::size_t, tables::maxTableSize<GlobalQType::netw_>()>::const_iterator
@@ -75,8 +75,7 @@ class WorkerResource {
     inline void decrGlobalCount() noexcept;
 
     [[nodiscard("Push may fail when channel is full.\n")]] inline bool pushOutBuffer() noexcept;
-    inline void pushOutBufferSelf(
-        const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) noexcept;
+    inline void pushOutBufferSelf(const std::size_t numElements) noexcept;
 
     inline void enqueueInChannels() noexcept;
     virtual void processElement(const value_type val) noexcept = 0;
@@ -121,7 +120,10 @@ class WorkerResource {
  * @see SpapQueue
  * @see WorkerResource
  */
-template <template <class, BasicQueue, std::size_t> class WorkerTemplate, class GlobalQType, BasicQueue LocalQType, std::size_t N>
+template <template <class, BasicQueue, std::size_t> class WorkerTemplate,
+          class GlobalQType,
+          BasicQueue LocalQType,
+          std::size_t N>
 consteval bool isDerivedWorkerResource() {
     static_assert(N <= GlobalQType::netw_.numWorkers_);
 
@@ -143,7 +145,10 @@ consteval bool isDerivedWorkerResource() {
  * @tparam LocalQType Worker local queue type.
  * @tparam N Tuple of first N workers.
  */
-template <template <class, BasicQueue, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType, std::size_t N>
+template <template <class, BasicQueue, std::size_t> class WorkerTemplate,
+          class GlobalQType,
+          class LocalQType,
+          std::size_t N>
 struct WorkerCollectiveHelper {
     static_assert(N <= GlobalQType::netw_.numWorkers_);
     template <typename... Args>
@@ -170,7 +175,6 @@ constexpr WorkerResource<GlobalQType, LocalQType, numPorts>::WorkerResource(
         tables::extendTable<tables::maxTableSize<GlobalQType::netw_>(), channelIndicesLength>(channelIndices)),
     workerId_(workerId),
     globalQueue_(globalQueue),
-    bufferPointer_(outBuffer_.begin()),
     channelPointer_(channelIndices_.cbegin()),
     channelTableEndPointer_(std::next(channelIndices_.cbegin(), channelIndicesLength)),
     queue_(std::forward<Args>(localQargs)...) { }
@@ -196,22 +200,21 @@ inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::push(InputIt firs
  */
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(const value_type val) noexcept {
-    assert(bufferPointer_ != outBuffer_.end());
+    assert(bufferTail_ <= bufferHead_);
+    assert(bufferHead_ < bufferTail_ + outBuffer_.size());
 
     incrGlobalCount();
-    *bufferPointer_ = val;
-    ++bufferPointer_;
+    outBuffer_[bufferHead_ % outBuffer_.size()] = val;
+    ++bufferHead_;
 
     std::size_t maxAttempts = GlobalQType::netw_.maxPushAttempts_;
-    while (static_cast<std::size_t>(std::distance(outBuffer_.begin(), bufferPointer_))
-               >= GlobalQType::netw_.batchSize_[*channelPointer_]
-           && maxAttempts > 0U) {
+    while (bufferHead_ - bufferTail_ >= GlobalQType::netw_.batchSize_[*channelPointer_] && maxAttempts > 0U) {
         if (not pushOutBuffer()) { --maxAttempts; }
 
         ++channelPointer_;
         if (channelPointer_ == channelTableEndPointer_) { channelPointer_ = channelIndices_.cbegin(); }
     }
-    if (maxAttempts == 0U) [[unlikely]] { pushOutBufferSelf(outBuffer_.begin()); }
+    if (maxAttempts == 0U) [[unlikely]] { pushOutBufferSelf(bufferHead_ - bufferTail_); }
 }
 
 /**
@@ -220,50 +223,88 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueGlobal(con
  */
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline bool WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBuffer() noexcept {
-    bool successfulPush;
-
     const std::size_t batch = GlobalQType::netw_.batchSize_[*channelPointer_];
-    assert(batch <= static_cast<std::size_t>(std::distance(outBuffer_.begin(), bufferPointer_)));
-    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator itBegin = std::prev(
-        bufferPointer_,
-        static_cast<typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::difference_type>(
-            batch));
+    assert(batch <= bufferHead_ - bufferTail_);
 
     const std::size_t targetWorker = GlobalQType::netw_.edgeTargets_[*channelPointer_];
     if (targetWorker == GlobalQType::netw_.numWorkers_) {        // netw.numWorkers_ is reserved for self-push
-        pushOutBufferSelf(itBegin);
-        successfulPush = true;
+        pushOutBufferSelf(batch);
+        return true;
     } else {
-        const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
-        successfulPush = globalQueue_.pushInternal(itBegin, bufferPointer_, targetWorker, port);
-        if (successfulPush) { bufferPointer_ = itBegin; }
-    }
+        const std::size_t reducedTail = bufferTail_ % outBuffer_.size();
+        const std::size_t numElementsFirstPush = std::min(outBuffer_.size() - reducedTail, batch);
+        const std::size_t numElementsSecondPush = batch - numElementsFirstPush;
 
-    return successfulPush;
+        const auto itBeginFirst = std::next(
+            outBuffer_.begin(), static_cast<typename decltype(outBuffer_)::difference_type>(reducedTail));
+        const auto itEndFirst = std::next(
+            itBeginFirst, static_cast<typename decltype(outBuffer_)::difference_type>(numElementsFirstPush));
+        const auto itEndSecond
+            = std::next(outBuffer_.begin(),
+                        static_cast<typename decltype(outBuffer_)::difference_type>(numElementsSecondPush));
+
+        const std::size_t port = GlobalQType::netw_.targetPort_[*channelPointer_];
+        const bool successfulPush = globalQueue_.pushInternal(itBeginFirst, itEndFirst, targetWorker, port);
+        if (successfulPush) {
+            bufferTail_ += numElementsFirstPush;
+
+            if (numElementsSecondPush > 0U) {
+                const bool successfulSecondPush
+                    = globalQueue_.pushInternal(outBuffer_.begin(), itEndSecond, targetWorker, port);
+                if (successfulSecondPush) { bufferTail_ += numElementsSecondPush; };
+            }
+        }
+        return successfulPush;
+    }
 }
 
 /**
  * @brief Pushes all task from (including) fromPointer in the outbuffer to the local queue.
  *
- * @param fromPointer
+ * @param numElements
  */
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf(
-    const typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator fromPointer) noexcept {
+    const std::size_t numElements) noexcept {
     constexpr bool hasBatchPush
         = requires (LocalQType &q,
-                    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator first,
-                    typename std::array<value_type, GlobalQType::netw_.maxBatchSize()>::iterator last) {
-              q.push(first, last);
-          };
+                    typename decltype(outBuffer_)::iterator first,
+                    typename decltype(outBuffer_)::iterator last) { q.push(first, last); };
+
+    const std::size_t reducedTail = bufferTail_ % outBuffer_.size();
+    const std::size_t numElementsFirstPush = std::min(outBuffer_.size() - reducedTail, numElements);
+    const std::size_t numElementsSecondPush = numElements - numElementsFirstPush;
+
+    const auto itBeginFirst = std::next(
+        outBuffer_.begin(), static_cast<typename decltype(outBuffer_)::difference_type>(reducedTail));
+    const auto itEndFirst = std::next(
+        itBeginFirst, static_cast<typename decltype(outBuffer_)::difference_type>(numElementsFirstPush));
+    const auto itEndSecond
+        = std::next(outBuffer_.begin(),
+                    static_cast<typename decltype(outBuffer_)::difference_type>(numElementsSecondPush));
 
     if constexpr (hasBatchPush) {
-        auto it = fromPointer;
-        queue_.push(it, bufferPointer_);
+        queue_.push(itBeginFirst, itEndFirst);
+        queue_.push(outBuffer_.begin(), itEndSecond);
     } else {
-        for (auto it = fromPointer; it != bufferPointer_; ++it) { queue_.push(*it); }
+        for (auto it = itBeginFirst; it != itEndFirst; ++it) { queue_.push(*it); }
+        for (auto it = outBuffer_.begin(); it != itEndSecond; ++it) { queue_.push(*it); }
     }
-    bufferPointer_ = fromPointer;
+
+    bufferTail_ += numElements;
+
+    // Realign outBuffer
+    if constexpr (GlobalQType::netw_.gcdBatchSize() > 1U) {
+        if (numElements % GlobalQType::netw_.gcdBatchSize() != 0U) [[unlikely]] {
+            if (bufferTail_ == bufferHead_) [[likely]] {        // should always be the case
+                const std::size_t residue = bufferTail_ % GlobalQType::netw_.gcdBatchSize();
+                const std::size_t shift = (residue == 0U) ? 0U : GlobalQType::netw_.gcdBatchSize() - residue;
+
+                bufferTail_ += shift;
+                bufferHead_ += shift;
+            }
+        }
+    }
 }
 
 /**
@@ -306,7 +347,7 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::run(std::stop_tok
             ++cntr;
         }
         enqueueInChannels();
-        pushOutBufferSelf(outBuffer_.begin());
+        pushOutBufferSelf(bufferHead_ - bufferTail_);
     }
 }
 
@@ -345,6 +386,9 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::incrGlobalCount()
 
         localCount_ = newLocalCount;
         globalQueue_.globalCount_.fetch_add(diff, std::memory_order_relaxed);
+        // Can be relaxed as this is only ever called during enqueueGlobal which is only ever called during
+        // the processing of an element. This means we can be sure that the queue will not become empty until
+        // the processing has finished by which point the increment must have occured.
     }
 }
 
@@ -356,11 +400,16 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::incrGlobalCount()
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::decrGlobalCount() noexcept {
     if (localCount_ == 0) {
-        const std::size_t newLocalCount = queue_.size() / 2;
+        const std::size_t queueSize = queue_.size();
+        const std::size_t newLocalCount = queueSize / 2;
         const std::size_t diff = newLocalCount + 1;
 
         localCount_ = newLocalCount;
-        globalQueue_.globalCount_.fetch_sub(diff, std::memory_order_relaxed);
+        if (queueSize > 0U) [[likely]] {        // Release is only needed to communicate completed work
+            globalQueue_.globalCount_.fetch_sub(diff, std::memory_order_relaxed);
+        } else {
+            globalQueue_.globalCount_.fetch_sub(diff, std::memory_order_release);
+        }
     } else {
         --localCount_;
     }
