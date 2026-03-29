@@ -21,7 +21,7 @@ limitations under the License.
 #include <cassert>
 #include <cmath>
 
-#include "ParallelPriotityQueue/QNetwork.hpp"
+#include "ParallelPriorityQueue/QNetwork.hpp"
 
 namespace spapq {
 
