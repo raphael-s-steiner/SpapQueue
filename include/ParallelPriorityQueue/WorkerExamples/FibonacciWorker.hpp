@@ -18,7 +18,7 @@ limitations under the License.
 
 #pragma once
 
-#include "ParallelPriotityQueue/SpapQueueWorker.hpp"
+#include "ParallelPriorityQueue/SpapQueueWorker.hpp"
 
 namespace spapq {
 

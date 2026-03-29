@@ -16,14 +16,14 @@ limitations under the License.
 @author Raphael S. Steiner
 */
 
-#include "ParallelPriotityQueue/SpapQueue.hpp"
+#include "ParallelPriorityQueue/SpapQueue.hpp"
 
 #include <gtest/gtest.h>
 
 #include <vector>
 
-#include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
-#include "ParallelPriotityQueue/WorkerExamples/SSSPWorker.hpp"
+#include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriorityQueue/WorkerExamples/SSSPWorker.hpp"
 
 using namespace spapq;
 

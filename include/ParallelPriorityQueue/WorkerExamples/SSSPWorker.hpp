@@ -21,7 +21,7 @@ limitations under the License.
 #include <atomic>
 #include <vector>
 
-#include "ParallelPriotityQueue/SpapQueueWorker.hpp"
+#include "ParallelPriorityQueue/SpapQueueWorker.hpp"
 
 namespace spapq {
 
