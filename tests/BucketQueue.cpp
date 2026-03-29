@@ -16,14 +16,14 @@ limitations under the License.
 @author Raphael S. Steiner
 */
 
-#include "ParallelPriotityQueue/LocalQueues/BucketQueue.hpp"
+#include "ParallelPriorityQueue/LocalQueues/BucketQueue.hpp"
 
 #include <gtest/gtest.h>
 
 #include <algorithm>
 #include <numeric>
 
-#include "ParallelPriotityQueue/Concepts/BasicQueue.hpp"
+#include "ParallelPriorityQueue/Concepts/BasicQueue.hpp"
 
 using namespace spapq;
 

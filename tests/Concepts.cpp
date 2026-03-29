@@ -22,7 +22,7 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "ParallelPriotityQueue/Concepts/BasicQueue.hpp"
+#include "ParallelPriorityQueue/Concepts/BasicQueue.hpp"
 
 using namespace spapq;
 

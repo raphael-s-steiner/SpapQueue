@@ -16,13 +16,13 @@ limitations under the License.
 @author Raphael S. Steiner
 */
 
-#include "ParallelPriotityQueue/LocalQueues/Fifo.hpp"
+#include "ParallelPriorityQueue/LocalQueues/Fifo.hpp"
 
 #include <gtest/gtest.h>
 
 #include <numeric>
 
-#include "ParallelPriotityQueue/Concepts/BasicQueue.hpp"
+#include "ParallelPriorityQueue/Concepts/BasicQueue.hpp"
 
 using namespace spapq;
 

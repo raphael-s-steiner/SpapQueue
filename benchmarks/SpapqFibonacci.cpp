@@ -21,12 +21,12 @@ limitations under the License.
 #include <queue>
 #include <vector>
 
-#include "ParallelPriotityQueue/GraphExamples/FullyConnectedGraph.hpp"
-#include "ParallelPriotityQueue/GraphExamples/LineGraph.hpp"
-#include "ParallelPriotityQueue/LocalQueues/BucketQueue.hpp"
-#include "ParallelPriotityQueue/LocalQueues/Fifo.hpp"
-#include "ParallelPriotityQueue/SpapQueue.hpp"
-#include "ParallelPriotityQueue/WorkerExamples/FibonacciWorker.hpp"
+#include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriorityQueue/GraphExamples/LineGraph.hpp"
+#include "ParallelPriorityQueue/LocalQueues/BucketQueue.hpp"
+#include "ParallelPriorityQueue/LocalQueues/Fifo.hpp"
+#include "ParallelPriorityQueue/SpapQueue.hpp"
+#include "ParallelPriorityQueue/WorkerExamples/FibonacciWorker.hpp"
 
 using namespace spapq;
 
