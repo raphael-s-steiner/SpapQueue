@@ -30,7 +30,6 @@ namespace spapq {
 
 template <std::size_t workers, std::size_t channels>
 void globalQNetworkInfo(const QNetwork<workers, channels> &netw, std::ostream &os) {
-    os << "    subgraph Info{\n";
     os << "    NetworkInfo [\n";
     os << "        label=<\n";
     os << "            <table border='3' cellborder='1' cellspacing='4'>\n";
@@ -44,8 +43,7 @@ void globalQNetworkInfo(const QNetwork<workers, channels> &netw, std::ostream &o
     os << "                </table></td></tr>\n";
     os << "            </table>\n";
     os << "        >\n";
-    os << "    ];\n";
-    os << "    }\n\n";
+    os << "    ];\n\n";
 }
 
 template <std::size_t workers, std::size_t channels>
@@ -55,7 +53,7 @@ void QNetworkWorkerInfo(const QNetwork<workers, channels> &netw, const std::arra
     os << "            <table border='2' cellborder='1' cellspacing='2'>\n";
     os << "                <tr><td align=\"center\" colspan='2'><b>Worker " << worker << "</b></td></tr>\n";
     os << "                <tr><td align=\"left\">Core</td><td align=\"right\">" << netw.logicalCore_[worker] << "</td></tr>\n";
-    os << "                <tr><td align=\"left\">Load</td><td align=\"right\">" << loads[worker] << "</td></tr>\n";
+    os << "                <tr><td align=\"left\">Load</td><td align=\"right\">" << loads[worker] * 100.0 << "%</td></tr>\n";
     os << "            </table>\n";
     os << "        >\n";
     os << "    ];\n\n";
@@ -81,8 +79,13 @@ void QNetworkToDot(const QNetwork<workers, channels> &netw, std::ostream &os) {
     const std::array<double, workers> loads = workLoadDistribution(netw);
 
     // Header
-    os << std::fixed << std::setprecision(2);
+    os << std::fixed << std::setprecision(1);
     os << "digraph QNetwork{\n";
+    os << "    layout=\"fdp\";\n";
+    os << "    len=\"2.0\";\n";
+    os << "    sep=\"+45\";\n";
+    os << "    dim=3;\n\n";
+
     os << "    node [shape=plaintext;]\n";
     os << "    edge [shape=plaintext; arrowhead=\"vee\"; fontsize=\"8\";]\n";
     os << "    rankdir=LR\n\n";
@@ -91,10 +94,6 @@ void QNetworkToDot(const QNetwork<workers, channels> &netw, std::ostream &os) {
     globalQNetworkInfo(netw, os);
 
     //  Actual Network
-    os << "    subgraph cluster_network{\n";
-    os << "    label=\"QNetwork\";\n";
-    os << "    margin=\"30\";\n\n";
-
     // Workers (Vertices)
     for (std::size_t worker = 0U; worker < workers; ++worker) {
         QNetworkWorkerInfo(netw, loads, worker, os);
@@ -107,7 +106,6 @@ void QNetworkToDot(const QNetwork<workers, channels> &netw, std::ostream &os) {
         }
     }
 
-    os << "    }\n";
     os << "}\n";
 }
 

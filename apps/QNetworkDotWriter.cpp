@@ -19,6 +19,8 @@ limitations under the License.
 #include <iostream>
 
 #include "ParallelPriorityQueue/Drawing/QNetworkToDot.hpp"
+#include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriorityQueue/GraphExamples/LineGraph.hpp"
 #include "ParallelPriorityQueue/GraphExamples/PetersenGraph.hpp"
 
 using namespace spapq;
@@ -32,7 +34,7 @@ int main(int argc, char *argv[]) {
 
     std::ofstream os(argv[1]);
 
-    constexpr auto netw = PETERSEN_GRAPH;
+    constexpr auto netw = LINE_GRAPH(FULLY_CONNECTED_GRAPH<3U>());
 
     QNetworkToDot(netw, os);
     return 0;
