@@ -197,13 +197,13 @@ static void BM_RingBuffer_2Threads_reference(benchmark::State &state) {
 
     const bool producer = state.thread_index() & 1;
 
-    RingBuffer<std::size_t, capacity> chan_opt;
+    RingBuffer<std::size_t, capacity> chan_ref;
     if (producer) {
         pin_thread(producerCpu);
         start_reference.wait(false, std::memory_order_acquire);
     } else {
         pin_thread(consumerCpu);
-        channel_reference = &chan_opt;
+        channel_reference = &chan_ref;
         start_reference.test_and_set(std::memory_order_release);
         start_reference.notify_all();
     }
