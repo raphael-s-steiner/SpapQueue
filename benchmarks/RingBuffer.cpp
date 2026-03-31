@@ -19,6 +19,9 @@ limitations under the License.
 #include "RingBuffer/RingBuffer.hpp"
 
 #include <benchmark/benchmark.h>
+#include <pthread.h>
+
+#include <iostream>
 
 using namespace spapq;
 
@@ -101,8 +104,42 @@ static void BM_RingBuffer_2Threads_optional(benchmark::State &state) {
 
     RingBuffer<std::size_t, capacity> chan_opt;
     if (producer) {
+        pthread_t self = pthread_self();
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        const std::size_t logicalCore = 0U;
+        CPU_SET(logicalCore, &cpuset);
+
+        int rc = pthread_setaffinity_np(self, sizeof(cpu_set_t), &cpuset);
+        if (rc != 0) {
+            const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
+                                             + std::to_string(rc)
+                                             + ".\nFailed to pin producer's thread to logical core "
+                                             + std::to_string(logicalCore)
+                                             + ".\n";
+            std::cerr << errorMessage;
+            std::exit(EXIT_FAILURE);
+        }
+
         start_optional.wait(false, std::memory_order_acquire);
     } else {
+        pthread_t self = pthread_self();
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        const std::size_t logicalCore = 1U;
+        CPU_SET(logicalCore, &cpuset);
+
+        int rc = pthread_setaffinity_np(self, sizeof(cpu_set_t), &cpuset);
+        if (rc != 0) {
+            const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
+                                             + std::to_string(rc)
+                                             + ".\nFailed to pin consumer's thread to logical core "
+                                             + std::to_string(logicalCore)
+                                             + ".\n";
+            std::cerr << errorMessage;
+            std::exit(EXIT_FAILURE);
+        }
+
         channel_optional = &chan_opt;
         start_optional.test_and_set(std::memory_order_release);
         start_optional.notify_all();
@@ -150,8 +187,42 @@ static void BM_RingBuffer_2Threads_reference(benchmark::State &state) {
 
     RingBuffer<std::size_t, capacity> chan_opt;
     if (producer) {
+        pthread_t self = pthread_self();
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        const std::size_t logicalCore = 0U;
+        CPU_SET(logicalCore, &cpuset);
+
+        int rc = pthread_setaffinity_np(self, sizeof(cpu_set_t), &cpuset);
+        if (rc != 0) {
+            const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
+                                             + std::to_string(rc)
+                                             + ".\nFailed to pin producer's thread to logical core "
+                                             + std::to_string(logicalCore)
+                                             + ".\n";
+            std::cerr << errorMessage;
+            std::exit(EXIT_FAILURE);
+        }
+
         start_reference.wait(false, std::memory_order_acquire);
     } else {
+        pthread_t self = pthread_self();
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        const std::size_t logicalCore = 1U;
+        CPU_SET(logicalCore, &cpuset);
+
+        int rc = pthread_setaffinity_np(self, sizeof(cpu_set_t), &cpuset);
+        if (rc != 0) {
+            const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
+                                             + std::to_string(rc)
+                                             + ".\nFailed to pin consumer's thread to logical core "
+                                             + std::to_string(logicalCore)
+                                             + ".\n";
+            std::cerr << errorMessage;
+            std::exit(EXIT_FAILURE);
+        }
+
         channel_reference = &chan_opt;
         start_reference.test_and_set(std::memory_order_release);
         start_reference.notify_all();
