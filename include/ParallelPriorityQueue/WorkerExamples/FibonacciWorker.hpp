@@ -31,7 +31,7 @@ template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 class FibonacciWorker final : public WorkerResource<GlobalQType, LocalQType, numPorts> {
     template <typename, BasicQueue, std::size_t>
     friend class FibonacciWorker;
-    template <typename, QNetwork, template <class, BasicQueue, std::size_t> class, BasicQueue>
+    template <typename, QNetwork, template <typename, BasicQueue, std::size_t> class, BasicQueue>
     friend class SpapQueue;
 
     using BaseT = WorkerResource<GlobalQType, LocalQType, numPorts>;
