@@ -114,9 +114,7 @@ static void BM_RingBuffer_2Threads_optional(benchmark::State &state) {
         if (rc != 0) {
             const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
                                              + std::to_string(rc)
-                                             + ".\nFailed to pin worker number "
-                                             + std::to_string(N)
-                                             + "'s thread to logical core "
+                                             + ".\nFailed to pin producer's thread to logical core "
                                              + std::to_string(logicalCore)
                                              + ".\n";
             std::cerr << errorMessage;
@@ -135,9 +133,7 @@ static void BM_RingBuffer_2Threads_optional(benchmark::State &state) {
         if (rc != 0) {
             const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
                                              + std::to_string(rc)
-                                             + ".\nFailed to pin worker number "
-                                             + std::to_string(N)
-                                             + "'s thread to logical core "
+                                             + ".\nFailed to pin consumer's thread to logical core "
                                              + std::to_string(logicalCore)
                                              + ".\n";
             std::cerr << errorMessage;
@@ -201,9 +197,7 @@ static void BM_RingBuffer_2Threads_reference(benchmark::State &state) {
         if (rc != 0) {
             const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
                                              + std::to_string(rc)
-                                             + ".\nFailed to pin worker number "
-                                             + std::to_string(N)
-                                             + "'s thread to logical core "
+                                             + ".\nFailed to pin producer's thread to logical core "
                                              + std::to_string(logicalCore)
                                              + ".\n";
             std::cerr << errorMessage;
@@ -222,9 +216,7 @@ static void BM_RingBuffer_2Threads_reference(benchmark::State &state) {
         if (rc != 0) {
             const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
                                              + std::to_string(rc)
-                                             + ".\nFailed to pin worker number "
-                                             + std::to_string(N)
-                                             + "'s thread to logical core "
+                                             + ".\nFailed to pin consumer's thread to logical core "
                                              + std::to_string(logicalCore)
                                              + ".\n";
             std::cerr << errorMessage;
