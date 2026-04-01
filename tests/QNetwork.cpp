@@ -26,6 +26,7 @@ limitations under the License.
 #include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
 #include "ParallelPriorityQueue/GraphExamples/LineGraph.hpp"
 #include "ParallelPriorityQueue/GraphExamples/PetersenGraph.hpp"
+#include "ParallelPriorityQueue/GraphExamples/SelfLoopGraph.hpp"
 
 using namespace spapq;
 
@@ -467,5 +468,43 @@ TEST(QNetworkTest, WorkLoads) {
     const auto load = workLoadDistribution(netw);
     for (std::size_t worker = 0U; worker < netw.numWorkers_; ++worker) {
         EXPECT_NEAR(load[worker], expectedLoad[worker], 1e-8);
+    }
+}
+
+TEST(QNetworkTest, SelfLoops) {
+    constexpr std::size_t N1 = 1U;
+    constexpr auto netw1 = SELF_LOOP_GRAPH<N1>();
+    EXPECT_EQ(netw1.numWorkers_, N1);
+    EXPECT_EQ(netw1.numChannels_, N1);
+    for (std::size_t i = 0U; i < N1; ++i) {
+        EXPECT_EQ(netw1.outDegree(i), 1U);
+        EXPECT_EQ(netw1.inDegree(i), 1U);
+    }
+    for (std::size_t e = 0U; e < netw1.numChannels_; ++e) {
+        EXPECT_EQ(netw1.edgeTargets_[e], N1);
+    }
+
+    constexpr std::size_t N3 = 3U;
+    constexpr auto netw3 = SELF_LOOP_GRAPH<N3>();
+    EXPECT_EQ(netw3.numWorkers_, N3);
+    EXPECT_EQ(netw3.numChannels_, N3);
+    for (std::size_t i = 0U; i < N3; ++i) {
+        EXPECT_EQ(netw3.outDegree(i), 1U);
+        EXPECT_EQ(netw3.inDegree(i), 1U);
+    }
+    for (std::size_t e = 0U; e < netw3.numChannels_; ++e) {
+        EXPECT_EQ(netw3.edgeTargets_[e], N3);
+    }
+
+    constexpr std::size_t N17 = 17U;
+    constexpr auto netw17 = SELF_LOOP_GRAPH<N17>();
+    EXPECT_EQ(netw17.numWorkers_, N17);
+    EXPECT_EQ(netw17.numChannels_, N17);
+    for (std::size_t i = 0U; i < N17; ++i) {
+        EXPECT_EQ(netw17.outDegree(i), 1U);
+        EXPECT_EQ(netw17.inDegree(i), 1U);
+    }
+    for (std::size_t e = 0U; e < netw17.numChannels_; ++e) {
+        EXPECT_EQ(netw17.edgeTargets_[e], N17);
     }
 }
