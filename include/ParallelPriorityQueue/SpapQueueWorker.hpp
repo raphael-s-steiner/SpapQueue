@@ -42,7 +42,7 @@ template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 class WorkerResource {
     template <typename, BasicQueue, std::size_t>
     friend class WorkerResource;
-    template <typename, QNetwork, template <class, BasicQueue, std::size_t> class, BasicQueue>
+    template <typename, QNetwork, template <typename, BasicQueue, std::size_t> class, BasicQueue>
     friend class SpapQueue;
 
   public:
@@ -120,8 +120,8 @@ class WorkerResource {
  * @see SpapQueue
  * @see WorkerResource
  */
-template <template <class, BasicQueue, std::size_t> class WorkerTemplate,
-          class GlobalQType,
+template <template <typename, BasicQueue, std::size_t> class WorkerTemplate,
+          typename GlobalQType,
           BasicQueue LocalQType,
           std::size_t N>
 consteval bool isDerivedWorkerResource() {
@@ -145,9 +145,9 @@ consteval bool isDerivedWorkerResource() {
  * @tparam LocalQType Worker local queue type.
  * @tparam N Tuple of first N workers.
  */
-template <template <class, BasicQueue, std::size_t> class WorkerTemplate,
-          class GlobalQType,
-          class LocalQType,
+template <template <typename, BasicQueue, std::size_t> class WorkerTemplate,
+          typename GlobalQType,
+          BasicQueue LocalQType,
           std::size_t N>
 struct WorkerCollectiveHelper {
     static_assert(N <= GlobalQType::netw_.numWorkers_);
@@ -156,7 +156,7 @@ struct WorkerCollectiveHelper {
         template type<WorkerTemplate<GlobalQType, LocalQType, GlobalQType::netw_.numPorts_[N - 1]> *, Args...>;
 };
 
-template <template <class, BasicQueue, std::size_t> class WorkerTemplate, class GlobalQType, class LocalQType>
+template <template <typename, BasicQueue, std::size_t> class WorkerTemplate, typename GlobalQType, BasicQueue LocalQType>
 struct WorkerCollectiveHelper<WorkerTemplate, GlobalQType, LocalQType, 0> {
     template <typename... Args>
     using type = std::tuple<Args...>;

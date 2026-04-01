@@ -19,12 +19,37 @@ limitations under the License.
 #include "RingBuffer/RingBuffer.hpp"
 
 #include <benchmark/benchmark.h>
+#include <pthread.h>
+
+#include <iostream>
 
 using namespace spapq;
 
-constexpr std::size_t capacity = 1024U;
+constexpr std::size_t capacity = 1U << 10;
 constexpr int64_t numItems = 1 << 20;
 constexpr unsigned seed = 42U;
+constexpr bool randomValues = true;
+
+constexpr std::size_t producerCpu = 0;
+constexpr std::size_t consumerCpu = 1;
+
+void pin_thread(std::size_t cpu) {
+    pthread_t self = pthread_self();
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(cpu, &cpuset);
+
+    const int rc = pthread_setaffinity_np(self, sizeof(cpu_set_t), &cpuset);
+    if (rc != 0) {
+        const std::string errorMessage = "Call to pthread_setaffinity_np returned error "
+                                            + std::to_string(rc)
+                                            + ".\nFailed to pin thread to core "
+                                            + std::to_string(cpu)
+                                            + ".\n";
+        std::cerr << errorMessage;
+        std::exit(EXIT_FAILURE);
+    }
+}
 
 static void BM_RingBuffer_1Threads_alternating(benchmark::State &state) {
     const std::size_t N = static_cast<std::size_t>(state.range(0));
@@ -38,7 +63,11 @@ static void BM_RingBuffer_1Threads_alternating(benchmark::State &state) {
     for (auto _ : state) {
         std::optional<std::size_t> popVal(std::nullopt);
         for (std::size_t i = 0U; i < values.size(); ++i) {
-            while (not channel.push(values[i])) { }
+            if constexpr (randomValues) {
+                while (not channel.push(values[i])) { }
+            } else {
+                while (not channel.push(i)) { }
+            }
             while (not (popVal = channel.pop())) { }
         }
         benchmark::DoNotOptimize(popVal);
@@ -66,11 +95,25 @@ static void BM_RingBuffer_1Threads_random(benchmark::State &state) {
         std::size_t popCntr = 0U;
         while (pushCntr < values.size() || popCntr < values.size()) {
             for (std::size_t j = pushCntr;; ++j) {
-                if (j == values.size()) { j = 0U; }
-                if (values[j] % 2U == 0) {
-                    if (pushCntr < values.size() && channel.push((values[pushCntr]))) {
-                        ++pushCntr;
-                        break;
+                bool producer;
+                if constexpr (randomValues) {
+                    if (j == values.size()) { j = 0U; }
+                    producer = values[j] % 2U == 0;
+                } else {
+                    producer = ((j * static_cast<std::size_t>(691U)) & static_cast<std::size_t>(8U)) == static_cast<std::size_t>(0U);
+                }
+
+                if (producer) {
+                    if constexpr (randomValues) {
+                        if (pushCntr < values.size() && channel.push((values[pushCntr]))) {
+                            ++pushCntr;
+                            break;
+                        }
+                    } else {
+                        if (pushCntr < values.size() && channel.push((pushCntr))) {
+                            ++pushCntr;
+                            break;
+                        }
                     }
                 } else {
                     if (popCntr < values.size() && (popVal = channel.pop())) {
@@ -101,8 +144,10 @@ static void BM_RingBuffer_2Threads_optional(benchmark::State &state) {
 
     RingBuffer<std::size_t, capacity> chan_opt;
     if (producer) {
+        pin_thread(producerCpu);
         start_optional.wait(false, std::memory_order_acquire);
     } else {
+        pin_thread(consumerCpu);
         channel_optional = &chan_opt;
         start_optional.test_and_set(std::memory_order_release);
         start_optional.notify_all();
@@ -114,7 +159,11 @@ static void BM_RingBuffer_2Threads_optional(benchmark::State &state) {
     for (auto _ : state) {
         if (producer) {
             for (std::size_t i = 0U; i < values.size(); ++i) {
-                while (not channel_optional->push(values[i])) { }
+                if constexpr (randomValues) {
+                    while (not channel_optional->push(values[i])) { }
+                } else {
+                    while (not channel_optional->push(i)) { }
+                }
             }
         } else {
             std::optional<std::size_t> popVal(std::nullopt);
@@ -148,11 +197,13 @@ static void BM_RingBuffer_2Threads_reference(benchmark::State &state) {
 
     const bool producer = state.thread_index() & 1;
 
-    RingBuffer<std::size_t, capacity> chan_opt;
+    RingBuffer<std::size_t, capacity> chan_ref;
     if (producer) {
+        pin_thread(producerCpu);
         start_reference.wait(false, std::memory_order_acquire);
     } else {
-        channel_reference = &chan_opt;
+        pin_thread(consumerCpu);
+        channel_reference = &chan_ref;
         start_reference.test_and_set(std::memory_order_release);
         start_reference.notify_all();
     }
@@ -163,7 +214,11 @@ static void BM_RingBuffer_2Threads_reference(benchmark::State &state) {
     for (auto _ : state) {
         if (producer) {
             for (std::size_t i = 0U; i < values.size(); ++i) {
-                while (not channel_reference->push(values[i])) { }
+                if constexpr (randomValues) {
+                    while (not channel_reference->push(values[i])) { }
+                } else {
+                    while (not channel_reference->push(i)) { }
+                }
             }
         } else {
             std::size_t val = 0U;
