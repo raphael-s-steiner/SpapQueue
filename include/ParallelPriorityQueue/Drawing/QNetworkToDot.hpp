@@ -100,10 +100,8 @@ void QNetworkToDot(const QNetwork<workers, channels> &netw, std::ostream &os) {
     }
 
     // Channels (Edges)
-    for (std::size_t worker = 0U; worker < workers; ++worker) {
-        for (std::size_t edge = netw.vertexPointer_[worker]; edge < netw.vertexPointer_[worker + 1U]; ++edge) {
-            QNetworkChannelInfo(netw, edge, os);
-        }
+    for (std::size_t edge = 0U; edge < channels; ++edge) {
+        QNetworkChannelInfo(netw, edge, os);
     }
 
     os << "}\n";

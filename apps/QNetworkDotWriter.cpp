@@ -1,5 +1,5 @@
 /*
-Copyright 2025 Raphael S. Steiner
+Copyright 2026 Raphael S. Steiner
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

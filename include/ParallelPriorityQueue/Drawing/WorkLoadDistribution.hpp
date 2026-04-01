@@ -26,7 +26,7 @@ limitations under the License.
 namespace spapq {
 
 template <std::size_t workers, std::size_t channels>
-std::array<double, workers> workLoadDistribution(const QNetwork<workers, channels> &netw) {
+std::array<double, workers> workLoadDistribution(const QNetwork<workers, channels> &netw, const double epsilon = 1e-10) {
     assert(netw.isValidQNetwork());
     assert(netw.isStronglyConnected());
 
@@ -59,7 +59,6 @@ std::array<double, workers> workLoadDistribution(const QNetwork<workers, channel
     for (double &val : dist) { val = 1.0 / static_cast<double>(workers); }
 
     std::array<double, workers> distAfterIteration;
-    constexpr double epsilon = 1e-10;
     bool loop = true;
     while (loop) {
         loop = false;
