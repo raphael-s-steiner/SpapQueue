@@ -18,10 +18,10 @@ limitations under the License.
 
 #include <iostream>
 
-#include "ParallelPriorityQueue/Drawing/QNetworkToDot.hpp"
-#include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
-#include "ParallelPriorityQueue/GraphExamples/LineGraph.hpp"
-#include "ParallelPriorityQueue/GraphExamples/PetersenGraph.hpp"
+#include "ParallelPriorityQueue/QNetwork/Drawing/QNetworkToDot.hpp"
+#include "ParallelPriorityQueue/QNetwork/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriorityQueue/QNetwork/GraphExamples/LineGraph.hpp"
+#include "ParallelPriorityQueue/QNetwork/GraphExamples/PetersenGraph.hpp"
 
 using namespace spapq;
 

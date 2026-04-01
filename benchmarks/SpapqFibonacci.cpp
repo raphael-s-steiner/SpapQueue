@@ -21,8 +21,8 @@ limitations under the License.
 #include <queue>
 #include <vector>
 
-#include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
-#include "ParallelPriorityQueue/GraphExamples/LineGraph.hpp"
+#include "ParallelPriorityQueue/QNetwork/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriorityQueue/QNetwork/GraphExamples/LineGraph.hpp"
 #include "ParallelPriorityQueue/LocalQueues/BucketQueue.hpp"
 #include "ParallelPriorityQueue/LocalQueues/Fifo.hpp"
 #include "ParallelPriorityQueue/SpapQueue.hpp"

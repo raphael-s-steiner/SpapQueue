@@ -1,5 +1,5 @@
 /*
-Copyright 2025 Raphael S. Steiner
+Copyright 2026 Raphael S. Steiner
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ limitations under the License.
 
 #pragma once
 
-#include "ParallelPriorityQueue/QNetwork.hpp"
+#include "ParallelPriorityQueue/QNetwork/QNetwork.hpp"
 
 namespace spapq {
 
@@ -30,17 +30,16 @@ namespace spapq {
  * @see QNetwork
  */
 template <std::size_t N>
-consteval QNetwork<N, N * N> FULLY_CONNECTED_GRAPH() {
+consteval QNetwork<N, N> SELF_LOOP_GRAPH() {
     static_assert(N > 0U, "Needs to have at least one worker!");
 
     std::array<std::size_t, N + 1U> vertexPtr;
-    std::array<std::size_t, N * N> edges;
+    std::array<std::size_t, N> edges;
 
-    for (std::size_t i = 0U; i < N + 1U; ++i) { vertexPtr[i] = N * i; }
+    for (std::size_t i = 0U; i < N + 1U; ++i) { vertexPtr[i] = i; }
+    for (std::size_t i = 0U; i < N; ++i) { edges[i] = i; }
 
-    for (std::size_t i = 0U; i < N * N; ++i) { edges[i] = (i + (i / N)) % N; }
-
-    return QNetwork<N, N * N>(vertexPtr, edges);
+    return QNetwork<N, N>(vertexPtr, edges);
 };
 
 }        // end namespace spapq

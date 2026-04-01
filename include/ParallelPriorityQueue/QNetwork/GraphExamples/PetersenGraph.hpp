@@ -18,7 +18,7 @@ limitations under the License.
 
 #pragma once
 
-#include "ParallelPriorityQueue/QNetwork.hpp"
+#include "ParallelPriorityQueue/QNetwork/QNetwork.hpp"
 
 namespace spapq {
 

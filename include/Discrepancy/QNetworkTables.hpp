@@ -19,7 +19,7 @@ limitations under the License.
 #pragma once
 
 #include "Discrepancy/TableGenerator.hpp"
-#include "ParallelPriorityQueue/QNetwork.hpp"
+#include "ParallelPriorityQueue/QNetwork/QNetwork.hpp"
 
 namespace spapq {
 namespace tables {

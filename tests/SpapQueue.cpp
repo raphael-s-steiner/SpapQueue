@@ -22,7 +22,7 @@ limitations under the License.
 
 #include <vector>
 
-#include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriorityQueue/QNetwork/GraphExamples/FullyConnectedGraph.hpp"
 #include "ParallelPriorityQueue/WorkerExamples/SSSPWorker.hpp"
 
 using namespace spapq;

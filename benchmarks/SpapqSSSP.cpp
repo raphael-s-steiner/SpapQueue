@@ -25,8 +25,8 @@ limitations under the License.
 #include <queue>
 #include <random>
 
-#include "ParallelPriorityQueue/GraphExamples/FullyConnectedGraph.hpp"
-#include "ParallelPriorityQueue/GraphExamples/LineGraph.hpp"
+#include "ParallelPriorityQueue/QNetwork/GraphExamples/FullyConnectedGraph.hpp"
+#include "ParallelPriorityQueue/QNetwork/GraphExamples/LineGraph.hpp"
 #include "ParallelPriorityQueue/SpapQueue.hpp"
 #include "ParallelPriorityQueue/WorkerExamples/SSSPWorker.hpp"
 

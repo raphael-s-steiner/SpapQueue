@@ -23,8 +23,8 @@ limitations under the License.
 #include <fstream>
 #include <string>
 
-#include "ParallelPriorityQueue/Drawing/WorkLoadDistribution.hpp"
-#include "ParallelPriorityQueue/QNetwork.hpp"
+#include "ParallelPriorityQueue/QNetwork/Drawing/WorkLoadDistribution.hpp"
+#include "ParallelPriorityQueue/QNetwork/QNetwork.hpp"
 
 namespace spapq {
 
