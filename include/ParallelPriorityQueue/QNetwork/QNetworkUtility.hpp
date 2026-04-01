@@ -63,7 +63,7 @@ constexpr QNetwork<workers, channels1 + channels2> combine(
     std::array<std::size_t, channels> batchSize = {};
 
     vertexPointers[0U] = 0U;
-    for (std::size_t worker = 0U, worker < workers; ++worker) {
+    for (std::size_t worker = 0U; worker < workers; ++worker) {
         const std::size_t outDegree = netw1.outDegree(worker) + netw2.outDegree(worker);
         vertexPointers[worker + 1U] = vertexPointers[worker] + outDegree;
 
@@ -73,14 +73,14 @@ constexpr QNetwork<workers, channels1 + channels2> combine(
             edgeTargets[edgeIdx] = netw1.edgeTargets_[e1];
             multiplicities[edgeIdx] = weight1 * netw1.multiplicities_[e1];
             gcd = std::gcd(gcd, multiplicities[edgeIdx]);
-            batchSize[edgeIdx] = netw1.batchSize[e1];
+            batchSize[edgeIdx] = netw1.batchSize_[e1];
             ++edgeIdx;
         }
         for (std::size_t e2 = netw2.vertexPointer_[worker]; e2 < netw2.vertexPointer_[worker + 1U]; ++e2) {
             edgeTargets[edgeIdx] = netw2.edgeTargets_[e2];
             multiplicities[edgeIdx] = weight2 * netw2.multiplicities_[e2];
             gcd = std::gcd(gcd, multiplicities[edgeIdx]);
-            batchSize[edgeIdx] = netw2.batchSize[e2];
+            batchSize[edgeIdx] = netw2.batchSize_[e2];
             ++edgeIdx;
         }
 

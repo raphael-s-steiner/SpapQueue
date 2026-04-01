@@ -27,6 +27,7 @@ limitations under the License.
 #include "ParallelPriorityQueue/QNetwork/GraphExamples/LineGraph.hpp"
 #include "ParallelPriorityQueue/QNetwork/GraphExamples/PetersenGraph.hpp"
 #include "ParallelPriorityQueue/QNetwork/GraphExamples/SelfLoopGraph.hpp"
+#include "ParallelPriorityQueue/QNetwork/QNetworkUtility.hpp"
 
 using namespace spapq;
 
@@ -506,5 +507,50 @@ TEST(QNetworkTest, SelfLoops) {
     }
     for (std::size_t e = 0U; e < netw17.numChannels_; ++e) {
         EXPECT_EQ(netw17.edgeTargets_[e], N17);
+    }
+}
+
+TEST(QNetworkTest, Combine1) {
+    constexpr auto netw1 = QNetwork<1U, 1U>({0, 1}, {0}, {0}, {2}, {4}, 8, 64, 1);
+    EXPECT_TRUE(netw1.isValidQNetwork());
+    constexpr auto netw2 = QNetwork<1U, 1U>({0, 1}, {0}, {1}, {1}, {6}, 6, 6, 2);
+    EXPECT_TRUE(netw2.isValidQNetwork());
+
+    constexpr auto netw3 = combine(netw1, netw2);
+    EXPECT_TRUE(netw3.isValidQNetwork());
+    EXPECT_EQ(netw3.numWorkers_, 1);
+    EXPECT_EQ(netw3.numChannels_, 2);
+    EXPECT_EQ(netw3.enqueueFrequency_, 8);
+    EXPECT_EQ(netw3.channelBufferSize_, 64);
+    EXPECT_EQ(netw3.maxPushAttempts_, 1);
+    EXPECT_EQ(netw3.multiplicities_[0], 2);
+    EXPECT_EQ(netw3.multiplicities_[1], 1);
+
+    constexpr auto netw4 = combine(netw2, netw1, 2, 1);
+    EXPECT_TRUE(netw4.isValidQNetwork());
+    EXPECT_EQ(netw4.numWorkers_, 1);
+    EXPECT_EQ(netw4.numChannels_, 2);
+    EXPECT_EQ(netw4.enqueueFrequency_, 6);
+    EXPECT_EQ(netw4.channelBufferSize_, 6);
+    EXPECT_EQ(netw4.maxPushAttempts_, 2);
+    EXPECT_EQ(netw4.multiplicities_[0], 1);
+    EXPECT_EQ(netw4.multiplicities_[1], 1);
+}
+
+TEST(QNetworkTest, Combine2) {
+    constexpr auto netw1 = QNetwork<4U, 2U>({0, 1, 1, 2, 2}, {1, 3}, {0, 1, 2, 3});
+    EXPECT_FALSE(netw1.isValidQNetwork());
+    constexpr auto netw2 = QNetwork<4U, 2U>({0, 0, 1, 1, 2}, {2, 0}, {2, 3, 4, 5});
+    EXPECT_FALSE(netw2.isValidQNetwork());
+
+    constexpr auto netw3 = combine(netw1, netw2, 5, 7);
+    EXPECT_TRUE(netw3.isValidQNetwork());
+    EXPECT_TRUE(netw3.isStronglyConnected());
+    EXPECT_EQ(netw3.numWorkers_, 4);
+    EXPECT_EQ(netw3.numChannels_, 4);
+    for (std::size_t e = 0; e < netw3.numChannels_; ++e) {
+        EXPECT_EQ(netw3.multiplicities_[e], 1);
+        EXPECT_EQ(netw3.outDegree(e), 1);
+        EXPECT_EQ(netw3.inDegree(e), 1);
     }
 }
