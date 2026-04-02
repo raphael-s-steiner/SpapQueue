@@ -52,8 +52,8 @@ class alignas(CACHE_LINE_SIZE) RingBuffer {
     inline std::size_t getTailPosition() const noexcept;
     inline std::size_t getHeadPosition() const noexcept;
 
-    inline void advanceTail(const std::size_t n = 1U) noexcept;
-    inline void advanceHead(const std::size_t n = 1U) noexcept;
+    inline void updateTail(const std::size_t n) noexcept;
+    inline void updateHead(const std::size_t n) noexcept;
 
   public:
     inline constexpr std::size_t capacity() const noexcept;
@@ -106,13 +106,13 @@ inline std::size_t RingBuffer<T, N>::getHeadPosition() const noexcept {
 };
 
 template <typename T, std::size_t N>
-inline void RingBuffer<T, N>::advanceTail(const std::size_t n) noexcept {
-    tailCounter_.fetch_add(n, std::memory_order_release);
+inline void RingBuffer<T, N>::updateTail(const std::size_t n) noexcept {
+    tailCounter_.store(n, std::memory_order_release);
 };
 
 template <typename T, std::size_t N>
-inline void RingBuffer<T, N>::advanceHead(const std::size_t n) noexcept {
-    headCounter_.fetch_add(n, std::memory_order_release);
+inline void RingBuffer<T, N>::updateHead(const std::size_t n) noexcept {
+    headCounter_.store(n, std::memory_order_release);
 };
 
 /**
@@ -161,7 +161,7 @@ inline std::optional<T> RingBuffer<T, N>::pop() noexcept {
         || ((cachedHeadCounter_ = headCounter_.load(std::memory_order_acquire)) != tail)) {
         const std::size_t pos = tail % N;
         std::optional<T> val(data_[pos]);
-        advanceTail();
+        updateTail(tail + 1U);
         return val;
     } else {
         return std::optional<T>(std::nullopt);
@@ -176,7 +176,7 @@ inline bool RingBuffer<T, N>::pop(T &out) noexcept {
     if (hasData) {
         const std::size_t pos = tail % N;
         out = data_[pos];
-        advanceTail();
+        updateTail(tail + 1U);
     }
     return hasData;
 }
@@ -190,7 +190,7 @@ inline bool RingBuffer<T, N>::push(const T value) noexcept {
           || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) != headLoopAround);
     if (nonFull) {
         data_[head % N] = value;
-        advanceHead();
+        updateHead(head + 1U);
     }
     return nonFull;
 }
@@ -226,7 +226,7 @@ inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
         std::advance(first, numElementsFirstPush);
         std::copy_n(std::execution::unseq, first, numElementsSecondPush, data_.begin());
 
-        advanceHead(numElements);
+        updateHead(head + numElements);
     }
     return enoughSpace;
 }
