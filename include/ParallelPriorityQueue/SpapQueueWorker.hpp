@@ -314,10 +314,9 @@ inline void WorkerResource<GlobalQType, LocalQType, numPorts>::pushOutBufferSelf
 template <typename GlobalQType, BasicQueue LocalQType, std::size_t numPorts>
 inline void WorkerResource<GlobalQType, LocalQType, numPorts>::enqueueInChannels() noexcept {
     for (auto &portRingBuffer : inPorts_) {
-        std::optional<value_type> data = portRingBuffer.pop();
-        while (data.has_value()) {
-            queue_.push(*data);
-            data = portRingBuffer.pop();
+        value_type data;
+        while (portRingBuffer.pop(data)) {
+            queue_.push(data);
         }
     }
 }

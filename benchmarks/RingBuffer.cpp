@@ -28,7 +28,7 @@ using namespace spapq;
 constexpr std::size_t capacity = 1U << 10;
 constexpr int64_t numItems = 1 << 20;
 constexpr unsigned seed = 42U;
-constexpr bool randomValues = true;
+constexpr bool randomValues = false;
 
 constexpr std::size_t producerCpu = 0;
 constexpr std::size_t consumerCpu = 1;
@@ -61,16 +61,16 @@ static void BM_RingBuffer_1Threads_alternating(benchmark::State &state) {
     for (std::size_t i = 0; i < values.size(); ++i) { values[i] = static_cast<std::size_t>(std::rand()); }
 
     for (auto _ : state) {
-        std::optional<std::size_t> popVal(std::nullopt);
         for (std::size_t i = 0U; i < values.size(); ++i) {
             if constexpr (randomValues) {
                 while (not channel.push(values[i])) { }
             } else {
                 while (not channel.push(i)) { }
             }
-            while (not (popVal = channel.pop())) { }
+            std::size_t val = 0U;
+            while (not channel.pop(val)) { }
+            benchmark::DoNotOptimize(val);
         }
-        benchmark::DoNotOptimize(popVal);
         benchmark::ClobberMemory();
     }
 
@@ -89,8 +89,6 @@ static void BM_RingBuffer_1Threads_random(benchmark::State &state) {
     for (std::size_t i = 0; i < values.size(); ++i) { values[i] = static_cast<std::size_t>(std::rand()); }
 
     for (auto _ : state) {
-        std::optional<std::size_t> popVal(std::nullopt);
-
         std::size_t pushCntr = 0U;
         std::size_t popCntr = 0U;
         while (pushCntr < values.size() || popCntr < values.size()) {
@@ -103,6 +101,7 @@ static void BM_RingBuffer_1Threads_random(benchmark::State &state) {
                     producer = ((j * static_cast<std::size_t>(691U)) & static_cast<std::size_t>(8U)) == static_cast<std::size_t>(0U);
                 }
 
+                std::size_t val = 0U;
                 if (producer) {
                     if constexpr (randomValues) {
                         if (pushCntr < values.size() && channel.push((values[pushCntr]))) {
@@ -116,14 +115,14 @@ static void BM_RingBuffer_1Threads_random(benchmark::State &state) {
                         }
                     }
                 } else {
-                    if (popCntr < values.size() && (popVal = channel.pop())) {
+                    if (popCntr < values.size() && channel.pop(val)) {
                         ++popCntr;
                         break;
                     }
                 }
+                benchmark::DoNotOptimize(val);
             }
         }
-        benchmark::DoNotOptimize(popVal);
         benchmark::ClobberMemory();
     }
 
