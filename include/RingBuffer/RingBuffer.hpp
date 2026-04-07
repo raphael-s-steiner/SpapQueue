@@ -141,7 +141,7 @@ inline bool RingBuffer<T, N>::empty() const noexcept {
  */
 template <typename T, std::size_t N>
 inline bool RingBuffer<T, N>::full() const noexcept {
-    return tailCounter_.load(std::memory_order_acquire) + N == headCounter_.load(std::memory_order_relaxed);
+    return tailCounter_.load(std::memory_order_relaxed) + N == headCounter_.load(std::memory_order_relaxed);
 };
 
 /**
@@ -151,7 +151,7 @@ inline bool RingBuffer<T, N>::full() const noexcept {
  */
 template <typename T, std::size_t N>
 inline std::size_t RingBuffer<T, N>::occupancy() const noexcept {
-    return headCounter_.load(std::memory_order_acquire) - tailCounter_.load(std::memory_order_acquire);
+    return headCounter_.load(std::memory_order_acquire) - tailCounter_.load(std::memory_order_relaxed);
 };
 
 template <typename T, std::size_t N>
@@ -187,7 +187,7 @@ inline bool RingBuffer<T, N>::push(const T value) noexcept {
     const std::size_t headLoopAround = head - N;
     const bool nonFull
         = (cachedTailCounter_ != headLoopAround)
-          || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) != headLoopAround);
+          || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_relaxed)) != headLoopAround);
     if (nonFull) {
         data_[head % N] = value;
         updateHead(head + 1U);
@@ -205,12 +205,12 @@ inline bool RingBuffer<T, N>::push(InputIt first, InputIt last) noexcept {
     if constexpr ((sizeof(std::size_t) >= 8) && (N <= ((std::numeric_limits<std::size_t>::max() / 2) + 1U))) {
         const std::size_t diff = head - N + numElements;
         enoughSpace = (cachedTailCounter_ >= diff)
-                      || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire)) >= diff);
+                      || ((cachedTailCounter_ = tailCounter_.load(std::memory_order_relaxed)) >= diff);
     } else {
         const std::size_t diff = N - numElements;
         enoughSpace
             = ((head - cachedTailCounter_ <= diff)
-               || ((head - (cachedTailCounter_ = tailCounter_.load(std::memory_order_acquire))) <= diff));
+               || ((head - (cachedTailCounter_ = tailCounter_.load(std::memory_order_relaxed))) <= diff));
     }
 
     if (enoughSpace) {
